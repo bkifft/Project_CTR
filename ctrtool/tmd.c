@@ -41,10 +41,12 @@ void tmd_process(tmd_context* ctx, u32 actions)
 		fseek(ctx->file, ctx->offset, SEEK_SET);
 		fread(ctx->buffer, 1, ctx->size, ctx->file);
 
+		/*
 		if (actions & InfoFlag)
 		{
 			tmd_print(ctx);
 		}
+		*/
 	}
 }
 

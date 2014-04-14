@@ -40,6 +40,8 @@ void cia_save(cia_context* ctx, u32 type, u32 flags)
 {
 	u32 offset;
 	u32 size;
+	u16 contentflags;
+	u8 docrypto;
 	filepath* path = 0;
 	ctr_tmd_body *body;
 	ctr_tmd_contentchunk *chunk;
@@ -101,16 +103,21 @@ void cia_save(cia_context* ctx, u32 type, u32 flags)
 			for(i = 0; i < getbe16(body->contentcount); i++) {
 				sprintf(tmpname, "%s.%04x.%08x", path->pathname, getbe16(chunk->index), getbe32(chunk->id));
 				fprintf(stdout, "Saving content #%04x to %s\n", getbe16(chunk->index), tmpname);
+				
+				contentflags = getbe16(chunk->type);
+				docrypto = contentflags & 1 && !(flags & PlainFlag);
 
-				ctx->iv[0] = (getbe16(chunk->index) >> 8) & 0xff;
-				ctx->iv[1] = getbe16(chunk->index) & 0xff;
+				if(docrypto) // Decrypt if needed
+				{
+					ctx->iv[0] = (getbe16(chunk->index) >> 8) & 0xff;
+					ctx->iv[1] = getbe16(chunk->index) & 0xff;
 
-				ctr_init_cbc_decrypt(&ctx->aes, ctx->titlekey, ctx->iv);
+					ctr_init_cbc_decrypt(&ctx->aes, ctx->titlekey, ctx->iv);
+				}
 
-				cia_save_blob(ctx, tmpname, offset, getbe64(chunk->size) & 0xffffffff, 1);
+				cia_save_blob(ctx, tmpname, offset, getbe64(chunk->size) & 0xffffffff, docrypto);
 
 				offset += getbe64(chunk->size) & 0xffffffff;
-
 				chunk++;
 			}
 
@@ -218,7 +225,7 @@ void cia_process(cia_context* ctx, u32 actions)
 
 	if (actions & VerifyFlag)
 	{
-		cia_verify_contents(ctx);
+		cia_verify_contents(ctx, actions);
 	}
 
 	if (actions & InfoFlag || actions & VerifyFlag)
@@ -237,8 +244,9 @@ clean:
 	return;
 }
 
-void cia_verify_contents(cia_context *ctx)
+void cia_verify_contents(cia_context *ctx, u32 actions)
 {
+	u16 contentflags;
 	ctr_tmd_body *body;
 	ctr_tmd_contentchunk *chunk;
 	u8 *verify_buf;
@@ -254,15 +262,20 @@ void cia_verify_contents(cia_context *ctx)
 	{
 		content_size = getbe64(chunk->size) & 0xffffffff;
 
-		ctx->iv[0] = (getbe16(chunk->index) >> 8) & 0xff;
-		ctx->iv[1] = getbe16(chunk->index) & 0xff;
-
-		ctr_init_cbc_decrypt(&ctx->aes, ctx->titlekey, ctx->iv);
+		contentflags = getbe16(chunk->type);
 
 		verify_buf = malloc(content_size);
 		fread(verify_buf, content_size, 1, ctx->file);
 
-		ctr_decrypt_cbc(&ctx->aes, verify_buf, verify_buf, content_size);
+		if(contentflags & 1 && !(actions & PlainFlag)) // Decrypt if needed
+		{
+			ctx->iv[0] = (getbe16(chunk->index) >> 8) & 0xff;
+			ctx->iv[1] = getbe16(chunk->index) & 0xff;
+
+			ctr_init_cbc_decrypt(&ctx->aes, ctx->titlekey, ctx->iv);
+		
+			ctr_decrypt_cbc(&ctx->aes, verify_buf, verify_buf, content_size);
+		}
 
 		if (ctr_sha_256_verify(verify_buf, content_size, chunk->hash) == Good)
 			ctx->tmd.content_hash_stat[i] = 1;
