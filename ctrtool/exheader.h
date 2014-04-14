@@ -39,8 +39,7 @@ typedef struct
 
 typedef struct
 {
-	u8 savedatasize[4];
-	u8 reserved[4];
+	u8 savedatasize[8];
 	u8 jumpid[8];
 	u8 reserved2[0x30];
 } exheader_systeminfo;
@@ -49,7 +48,7 @@ typedef struct
 {
 	u8 extsavedataid[8];
 	u8 systemsavedataid[8];
-	u8 reserved[8];
+	u8 accessibleuniqueids[8];
 	u8 accessinfo[7];
 	u8 otherattributes;
 } exheader_storageinfo;

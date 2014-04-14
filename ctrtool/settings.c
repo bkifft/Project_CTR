@@ -47,6 +47,14 @@ filepath* settings_get_exheader_path(settings* usersettings)
 		return 0;
 }
 
+filepath* settings_get_logo_path(settings* usersettings)
+{
+	if (usersettings)
+		return &usersettings->logopath;
+	else
+		return 0;
+}
+
 filepath* settings_get_exefs_dir_path(settings* usersettings)
 {
 	if (usersettings)
@@ -198,6 +206,11 @@ void settings_set_firm_dir_path(settings* usersettings, const char* path)
 void settings_set_exheader_path(settings* usersettings, const char* path)
 {
 	filepath_set(&usersettings->exheaderpath, path);
+}
+
+void settings_set_logo_path(settings* usersettings, const char* path)
+{
+	filepath_set(&usersettings->logopath, path);
 }
 
 void settings_set_certs_path(settings* usersettings, const char* path)

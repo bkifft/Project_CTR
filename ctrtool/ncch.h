@@ -15,6 +15,7 @@ typedef enum
 	NCCHTYPE_EXHEADER = 1,
 	NCCHTYPE_EXEFS = 2,
 	NCCHTYPE_ROMFS = 3,
+	NCCHTYPE_LOGO = 4,
 } ctr_ncchtypes;
 
 typedef struct
@@ -27,8 +28,8 @@ typedef struct
 	u8 version[2];
 	u8 reserved0[4];
 	u8 programid[8];
-	u8 tempflag;
-	u8 reserved1[0x2f];
+	u8 reserved1[0x10];
+	u8 logohash[0x20];
 	u8 productcode[0x10];
 	u8 extendedheaderhash[0x20];
 	u8 extendedheadersize[4];
@@ -36,7 +37,8 @@ typedef struct
 	u8 flags[8];
 	u8 plainregionoffset[4];
 	u8 plainregionsize[4];
-	u8 reserved3[8];
+	u8 logooffset[4];
+	u8 logosize[4];
 	u8 exefsoffset[4];
 	u8 exefssize[4];
 	u8 exefshashregionsize[4];
@@ -65,6 +67,7 @@ typedef struct
 	int exefshashcheck;
 	int romfshashcheck;
 	int exheaderhashcheck;
+	int logohashcheck;
 	int headersigcheck;
 	u32 extractsize;
 	u32 extractflags;
@@ -82,12 +85,14 @@ u32 ncch_get_romfs_offset(ncch_context* ctx);
 u32 ncch_get_romfs_size(ncch_context* ctx);
 u32 ncch_get_exheader_offset(ncch_context* ctx);
 u32 ncch_get_exheader_size(ncch_context* ctx);
+u32 ncch_get_logo_offset(ncch_context* ctx);
+u32 ncch_get_logo_size(ncch_context* ctx);
 void ncch_print(ncch_context* ctx);
 int ncch_signature_verify(ncch_context* ctx, rsakey2048* key);
 void ncch_verify(ncch_context* ctx, u32 flags);
 void ncch_save(ncch_context* ctx, u32 type, u32 flags);
 int ncch_extract_prepare(ncch_context* ctx, u32 type, u32 flags);
-int ncch_extract_buffer(ncch_context* ctx, u8* buffer, u32 buffersize, u32* outsize);
+int ncch_extract_buffer(ncch_context* ctx, u8* buffer, u32 buffersize, u32* outsize, u8 nocrypto);
 u32 ncch_get_mediaunit_size(ncch_context* ctx);
 void ncch_get_counter(ncch_context* ctx, u8 counter[16], u8 type);
 void ncch_determine_key(ncch_context* ctx, u32 actions);

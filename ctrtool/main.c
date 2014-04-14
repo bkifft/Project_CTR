@@ -66,6 +66,7 @@ static void usage(const char *argv0)
 		   "  --exefsdir=dir     Specify ExeFS directory path.\n"
 		   "  --romfs=file       Specify RomFS file path.\n"
 		   "  --exheader=file    Specify Extended Header file path.\n"
+		   "  --logo=file        Specify Logo file path.\n"
 		   "CIA options:\n"
 		   "  --certs=file       Specify Certificate chain file path.\n"
 		   "  --tik=file         Specify Ticket file path.\n"
@@ -140,6 +141,7 @@ int main(int argc, char* argv[])
 			{"romfsdir", 1, NULL, 17},
 			{"listromfs", 0, NULL, 18},
 			{"wavloops", 1, NULL, 19},
+			{"logo", 1, NULL, 20},
 			{NULL},
 		};
 
@@ -223,7 +225,7 @@ int main(int argc, char* argv[])
 			case 17: settings_set_romfs_dir_path(&ctx.usersettings, optarg); break;
 			case 18: settings_set_list_romfs_files(&ctx.usersettings, 1); break;
 			case 19: settings_set_cwav_loopcount(&ctx.usersettings, strtoul(optarg, 0, 0)); break;
-
+			case 20: settings_set_logo_path(&ctx.usersettings, optarg); break;
 
 			default:
 				usage(argv[0]);

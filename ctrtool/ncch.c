@@ -108,6 +108,13 @@ int ncch_extract_prepare(ncch_context* ctx, u32 type, u32 flags)
 		}
 		break;
 	
+		case NCCHTYPE_LOGO:
+		{
+			offset = ncch_get_logo_offset(ctx);
+			size = ncch_get_logo_size(ctx);
+		}
+		break;
+
 		default:
 		{
 			fprintf(stderr, "Error invalid NCCH type\n");
@@ -128,7 +135,7 @@ clean:
 	return 0;
 }
 
-int ncch_extract_buffer(ncch_context* ctx, u8* buffer, u32 buffersize, u32* outsize)
+int ncch_extract_buffer(ncch_context* ctx, u8* buffer, u32 buffersize, u32* outsize, u8 nocrypto)
 {
 	u32 max = buffersize;
 
@@ -145,7 +152,7 @@ int ncch_extract_buffer(ncch_context* ctx, u8* buffer, u32 buffersize, u32* outs
 			goto clean;
 		}
 
-		if (ctx->encrypted)
+		if (ctx->encrypted && !nocrypto)
 			ctr_crypt_counter(&ctx->aes, buffer, buffer, max);
 
 		ctx->extractsize -= max;
@@ -172,6 +179,7 @@ void ncch_save(ncch_context* ctx, u32 type, u32 flags)
 		case NCCHTYPE_EXEFS: path = settings_get_exefs_path(ctx->usersettings); break;
 		case NCCHTYPE_ROMFS: path = settings_get_romfs_path(ctx->usersettings); break;
 		case NCCHTYPE_EXHEADER: path = settings_get_exheader_path(ctx->usersettings); break;
+		case NCCHTYPE_LOGO: path = settings_get_logo_path(ctx->usersettings); break;
 	}
 
 	if (path == 0 || path->valid == 0)
@@ -189,13 +197,14 @@ void ncch_save(ncch_context* ctx, u32 type, u32 flags)
 		case NCCHTYPE_EXEFS: fprintf(stdout, "Saving ExeFS...\n"); break;
 		case NCCHTYPE_ROMFS: fprintf(stdout, "Saving RomFS...\n"); break;
 		case NCCHTYPE_EXHEADER: fprintf(stdout, "Saving Extended Header...\n"); break;
+		case NCCHTYPE_LOGO: fprintf(stdout, "Saving Logo...\n"); break;
 	}
 
 	while(1)
 	{
 		u32 max;
 
-		if (0 == ncch_extract_buffer(ctx, buffer, sizeof(buffer), &max))
+		if (0 == ncch_extract_buffer(ctx, buffer, sizeof(buffer), &max, type == NCCHTYPE_LOGO))
 			goto clean;
 
 		if (max == 0)
@@ -219,17 +228,21 @@ void ncch_verify(ncch_context* ctx, u32 flags)
 	u32 exefshashregionsize = getle32(ctx->header.exefshashregionsize) * mediaunitsize;
 	u32 romfshashregionsize = getle32(ctx->header.romfshashregionsize) * mediaunitsize;
 	u32 exheaderhashregionsize = getle32(ctx->header.extendedheadersize);
+	u32 logohashregionsize = getle32(ctx->header.logosize) * mediaunitsize;
 	u8* exefshashregion = 0;
 	u8* romfshashregion = 0;
 	u8* exheaderhashregion = 0;
+	u8* logohashregion = 0;
+	u8* tmphash = 0;
 	rsakey2048 ncchrsakey;
 
-	if (exefshashregionsize >= SIZE_128MB || romfshashregionsize >= SIZE_128MB || exheaderhashregionsize >= SIZE_128MB)
+	if (exefshashregionsize >= SIZE_128MB || romfshashregionsize >= SIZE_128MB || exheaderhashregionsize >= SIZE_128MB || logohashregionsize >= SIZE_128MB)
 		goto clean;
 
 	exefshashregion = malloc(exefshashregionsize);
 	romfshashregion = malloc(romfshashregionsize);
 	exheaderhashregion = malloc(exheaderhashregionsize);
+	logohashregion = malloc(logohashregionsize);
 
 
 	if (ctx->usersettings)
@@ -247,7 +260,7 @@ void ncch_verify(ncch_context* ctx, u32 flags)
 	{
 		if (0 == ncch_extract_prepare(ctx, NCCHTYPE_EXEFS, flags))
 			goto clean;
-		if (0 == ncch_extract_buffer(ctx, exefshashregion, exefshashregionsize, &exefshashregionsize))
+		if (0 == ncch_extract_buffer(ctx, exefshashregion, exefshashregionsize, &exefshashregionsize,0))
 			goto clean;
 		ctx->exefshashcheck = ctr_sha_256_verify(exefshashregion, exefshashregionsize, ctx->header.exefssuperblockhash);
 	}
@@ -255,7 +268,7 @@ void ncch_verify(ncch_context* ctx, u32 flags)
 	{
 		if (0 == ncch_extract_prepare(ctx, NCCHTYPE_ROMFS, flags))
 			goto clean;
-		if (0 == ncch_extract_buffer(ctx, romfshashregion, romfshashregionsize, &romfshashregionsize))
+		if (0 == ncch_extract_buffer(ctx, romfshashregion, romfshashregionsize, &romfshashregionsize,0))
 			goto clean;
 		ctx->romfshashcheck = ctr_sha_256_verify(romfshashregion, romfshashregionsize, ctx->header.romfssuperblockhash);
 	}
@@ -263,14 +276,24 @@ void ncch_verify(ncch_context* ctx, u32 flags)
 	{
 		if (0 == ncch_extract_prepare(ctx, NCCHTYPE_EXHEADER, flags))
 			goto clean;
-		if (0 == ncch_extract_buffer(ctx, exheaderhashregion, exheaderhashregionsize, &exheaderhashregionsize))
+		if (0 == ncch_extract_buffer(ctx, exheaderhashregion, exheaderhashregionsize, &exheaderhashregionsize,0))
 			goto clean;
 		ctx->exheaderhashcheck = ctr_sha_256_verify(exheaderhashregion, exheaderhashregionsize, ctx->header.extendedheaderhash);
 	}
+	if (logohashregionsize)
+	{
+		if (0 == ncch_extract_prepare(ctx, NCCHTYPE_LOGO, flags))
+			goto clean;
+		if (0 == ncch_extract_buffer(ctx, logohashregion, logohashregionsize, &logohashregionsize,1))
+			goto clean;
+		ctx->logohashcheck = ctr_sha_256_verify(logohashregion, logohashregionsize, ctx->header.logohash);
+	}
+
 
 	free(exefshashregion);
 	free(romfshashregion);
 	free(exheaderhashregion);
+	free(logohashregion);
 clean:
 	return;
 }
@@ -331,6 +354,7 @@ void ncch_process(ncch_context* ctx, u32 actions)
 		ncch_save(ctx, NCCHTYPE_EXEFS, actions);
 		ncch_save(ctx, NCCHTYPE_ROMFS, actions);
 		ncch_save(ctx, NCCHTYPE_EXHEADER, actions);
+		ncch_save(ctx, NCCHTYPE_LOGO, actions);
 	}
 
 
@@ -390,6 +414,18 @@ u32 ncch_get_exheader_offset(ncch_context* ctx)
 u32 ncch_get_exheader_size(ncch_context* ctx)
 {
 	return getle32(ctx->header.extendedheadersize);
+}
+
+u32 ncch_get_logo_offset(ncch_context* ctx)
+{
+	u32 mediaunitsize = ncch_get_mediaunit_size(ctx);
+	return ctx->offset + getle32(ctx->header.logooffset) * mediaunitsize;
+}
+
+u32 ncch_get_logo_size(ncch_context* ctx)
+{
+	u32 mediaunitsize = ncch_get_mediaunit_size(ctx);
+	return getle32(ctx->header.logosize) * mediaunitsize;
 }
 
 u32 ncch_get_mediaunit_size(ncch_context* ctx)
@@ -534,7 +570,12 @@ void ncch_print(ncch_context* ctx)
 	fprintf(stdout, "Maker code:             %04x\n", getle16(header->makercode));
 	fprintf(stdout, "Version:                %04x\n", getle16(header->version));
 	fprintf(stdout, "Program id:             %016llx\n", getle64(header->programid));
-	fprintf(stdout, "Temp flag:              %02x\n", header->tempflag);
+	if(ctx->logohashcheck == Unchecked)
+		memdump(stdout, "Logo hash:              ", header->logohash, 0x20);
+	else if(ctx->logohashcheck == Good)
+		memdump(stdout, "Logo hash (GOOD):       ", header->logohash, 0x20);
+	else
+		memdump(stdout, "Logo hash (FAIL):       ", header->logohash, 0x20);
 	fprintf(stdout, "Product code:           %s\n", productcode);
 	fprintf(stdout, "Exheader size:          %08x\n", getle32(header->extendedheadersize));
 	if (ctx->exheaderhashcheck == Unchecked)
@@ -549,6 +590,8 @@ void ncch_print(ncch_context* ctx)
 		fprintf(stdout, " > Crypto key:          None\n");
 	else if (header->flags[7] & 1)
 		fprintf(stdout, " > Crypto key:          %s\n", programid_is_system(header->programid)? "Fixed":"Zeros");
+	else if (header->flags[3] & 1)
+		fprintf(stdout, " > Crypto key:          Secure2\n");
 	else
 		fprintf(stdout, " > Crypto key:          Secure\n");
 	fprintf(stdout, " > Form type:           %s\n", formtypetostring(header->flags[5]));
@@ -561,6 +604,8 @@ void ncch_print(ncch_context* ctx)
 
 	fprintf(stdout, "Plain region offset:    0x%08x\n", getle32(header->plainregionsize)? offset+getle32(header->plainregionoffset)*mediaunitsize : 0);
 	fprintf(stdout, "Plain region size:      0x%08x\n", getle32(header->plainregionsize)*mediaunitsize);
+	fprintf(stdout, "Logo offset:            0x%08x\n", getle32(header->logosize)? offset+getle32(header->logooffset)*mediaunitsize : 0);
+	fprintf(stdout, "Logo size:              0x%08x\n", getle32(header->logosize)*mediaunitsize);
 	fprintf(stdout, "ExeFS offset:           0x%08x\n", getle32(header->exefssize)? offset+getle32(header->exefsoffset)*mediaunitsize : 0);
 	fprintf(stdout, "ExeFS size:             0x%08x\n", getle32(header->exefssize)*mediaunitsize);
 	fprintf(stdout, "ExeFS hash region size: 0x%08x\n", getle32(header->exefshashregionsize)*mediaunitsize);
