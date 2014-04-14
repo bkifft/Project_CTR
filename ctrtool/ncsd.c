@@ -80,6 +80,29 @@ unsigned int ncsd_get_mediaunit_size(ncsd_context* ctx)
 	return mediaunitsize;
 }
 
+const char* ncsd_print_mediatype(u8 type)
+{
+	switch(type)
+	{
+		case 0 : return "Internal Device";
+		case 1 : return "Card1";
+		case 2 : return "Card2";
+		case 3 : return "Extended Device";
+		default: return "Unknown";
+	}
+}
+
+const char* ncsd_print_carddevice(u8 type)
+{
+	switch(type)
+	{
+		case 1 : return "NorFlash";
+		case 2 : return "None";
+		case 3 : return "BT";
+		default: return "Unknown";
+	}
+}
+
 void ncsd_print(ncsd_context* ctx)
 {
 	char magic[5];
@@ -124,5 +147,7 @@ void ncsd_print(ncsd_context* ctx)
 	memdump(stdout, "Sector zero offset:     ", header->sectorzerooffset, 4);
 	memdump(stdout, "Flags:                  ", header->flags, 8);
 	fprintf(stdout, " > Mediaunit size:      0x%X\n", mediaunitsize);
+	fprintf(stdout, " > Mediatype:           %s\n", ncsd_print_mediatype(header->flags[5]));
+	fprintf(stdout, " > Card Device:         %s\n", ncsd_print_carddevice(header->flags[3] | header->flags[7]));
 
 }
