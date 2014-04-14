@@ -39,7 +39,7 @@ static void usage(const char *argv0)
 {
 	fprintf(stderr,
 		   "Usage: %s [options...] <file>\n"
-		   "CTRTOOL (c) neimod.\n"
+		   "CTRTOOL (c) neimod, 3DSGuy.\n"
            "\n"
            "Options:\n"
            "  -i, --info         Show file info.\n"
