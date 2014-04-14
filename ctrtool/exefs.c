@@ -129,7 +129,7 @@ void exefs_save(exefs_context* ctx, u32 index, u32 flags)
 	ctr_init_counter(&ctx->aes, ctx->key, ctx->counter);
 	ctr_add_counter(&ctx->aes, offset / 0x10);
 
-	if (index == 0 && ctx->compressedflag && ((flags & RawFlag) == 0))
+	if (strncmp(name,".code",5) == 0 && ctx->compressedflag && ((flags & RawFlag) == 0))
 	{
 		fprintf(stdout, "Decompressing section %s to %s...\n", name, outfname);
 

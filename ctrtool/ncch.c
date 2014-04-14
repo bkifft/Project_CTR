@@ -366,7 +366,7 @@ void ncch_process(ncch_context* ctx, u32 actions)
 		result = exheader_process(&ctx->exheader, actions);
 	} 
 
-	if (result && ncch_get_exheader_size(ctx))
+	if (result && ncch_get_exefs_size(ctx))
 	{
 		exefs_set_compressedflag(&ctx->exefs, exheader_get_compressedflag(&ctx->exheader));
 		exefs_process(&ctx->exefs, actions);
