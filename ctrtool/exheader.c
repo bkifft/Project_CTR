@@ -349,6 +349,7 @@ void exheader_print_arm11accessinfo(exheader_context* ctx)
 void exheader_print_arm11storageinfo(exheader_context* ctx)
 {
 	u32 i;
+
 	// Storage Info
 	u32 systemsaveID[2];
 	u64 extdataID;
@@ -356,7 +357,7 @@ void exheader_print_arm11storageinfo(exheader_context* ctx)
 	u32 accessiblesaveID[6];
 
 	u8 otherattibutes = ctx->header.arm11systemlocalcaps.storageinfo.otherattributes;
-	u8 accessOtherVariationSavedata = (getle64(ctx->header.arm11systemlocalcaps.storageinfo.accessibleuniqueids) & 0x1000000000000000) == 0x1000000000000000;
+	u8 accessOtherVariationSavedata = (getle64(ctx->header.arm11systemlocalcaps.storageinfo.accessibleuniqueids) & 0x1000000000000000) == 0x1000000000000000;	
 
 	systemsaveID[0] = getle32(ctx->header.arm11systemlocalcaps.storageinfo.systemsavedataid);
 	systemsaveID[1] = getle32(ctx->header.arm11systemlocalcaps.storageinfo.systemsavedataid+4);
@@ -388,7 +389,7 @@ void exheader_print_arm11storageinfo(exheader_context* ctx)
 
 	fprintf(stdout, "Ext savedata id:        0x%llX\n",extdataID);
 	for(i = 0; i < 2; i++)
-		fprintf(stdout, "System savedata id %d:   0x%08x\n",i+1,systemsaveID[i]);
+		fprintf(stdout, "System savedata id %d:   0x%08x %s\n",i+1,systemsaveID[i],exheader_getvalidstring(ctx->validsystemsaveID[i]));
 	for(i = 0; i < 3; i++)
 		fprintf(stdout, "OtherUserSaveDataId%d:   0x%05x\n",i+1,otherusersaveID[i]);
 	fprintf(stdout, "Accessible Savedata Ids:\n");
@@ -396,14 +397,21 @@ void exheader_print_arm11storageinfo(exheader_context* ctx)
 		fprintf(stdout, " > 0x%05x\n",accessiblesaveID[i]);
 	
 	fprintf(stdout, "Other Variation Saves:  %s\n", accessOtherVariationSavedata ? "Accessible" : "Inaccessible");
-	memdump(stdout, "Access info:            ", ctx->header.arm11systemlocalcaps.storageinfo.accessinfo, 7);
+	if(ctx->validaccessinfo == Unchecked)
+		memdump(stdout, "Access info:            ", ctx->header.arm11systemlocalcaps.storageinfo.accessinfo, 7);
+	else if(ctx->validaccessinfo == Good)
+		memdump(stdout, "Access info (GOOD):     ", ctx->header.arm11systemlocalcaps.storageinfo.accessinfo, 7);
+	else
+		memdump(stdout, "Access info (FAIL):     ", ctx->header.arm11systemlocalcaps.storageinfo.accessinfo, 7);
 	exheader_print_arm11accessinfo(ctx);
 	
 	fprintf(stdout, "Other attributes:       %02X", ctx->header.arm11systemlocalcaps.storageinfo.otherattributes);
+	/*
 	if(otherattibutes & 1)
 		fprintf(stdout," [no use romfs]");
 	if(otherattibutes & 2)
 		fprintf(stdout," [use extended savedata access control]");
+	*/
 	printf("\n");
 }
 
@@ -419,26 +427,62 @@ int exheader_signature_verify(exheader_context* ctx, rsakey2048* key)
 void exheader_verify(exheader_context* ctx)
 {
 	unsigned int i;
+	u8 exheaderflag6[3];
+	u8 descflag6[3];
 
-
+	ctx->validsystemsaveID[0] = Good;
+	ctx->validsystemsaveID[1] = Good;
+	ctx->validaccessinfo = Good;
 	ctx->validprogramid = Good;
 	ctx->validpriority = Good;
 	ctx->validaffinitymask = Good;
+	ctx->valididealprocessor = Good;
 
 	for(i=0; i<8; i++)
 	{
-		if (ctx->header.accessdesc.arm11systemlocalcaps.programid[i] == 0xFF)
-			continue;
-		if (ctx->header.accessdesc.arm11systemlocalcaps.programid[i] == ctx->header.arm11systemlocalcaps.programid[i])
+		if (0 == (ctx->header.arm11systemlocalcaps.programid[i] & ~ctx->header.accessdesc.arm11systemlocalcaps.programid[i]))
 			continue;
 		ctx->validprogramid = Fail;
 		break;
 	}
 
-	if (ctx->header.accessdesc.arm11systemlocalcaps.flags[7] > ctx->header.arm11systemlocalcaps.flags[7])
+	// Ideal Proccessor
+	exheaderflag6[0] = (ctx->header.arm11systemlocalcaps.flags[6]>>0)&0x3;
+	descflag6[0] = (ctx->header.accessdesc.arm11systemlocalcaps.flags[6]>>0)&0x3;
+	// Affinity Mask
+	exheaderflag6[1] = (ctx->header.arm11systemlocalcaps.flags[6]>>2)&0x3;
+	descflag6[1] = (ctx->header.accessdesc.arm11systemlocalcaps.flags[6]>>2)&0x3;
+	// System Mode
+	//exheaderflag6[2] = (ctx->header.arm11systemlocalcaps.flags[6]>>4)&0xf;
+	//descflag6[2] = (ctx->header.accessdesc.arm11systemlocalcaps.flags[6]>>4)&0xf;
+
+	if (ctx->header.accessdesc.arm11systemlocalcaps.flags[7] > ctx->header.arm11systemlocalcaps.flags[7] ||  ctx->header.arm11systemlocalcaps.flags[7] > 127)
 		ctx->validpriority = Fail;
-	if (ctx->header.arm11systemlocalcaps.flags[5] & ~ctx->header.accessdesc.arm11systemlocalcaps.flags[5])
+
+	if((1<<exheaderflag6[0] & descflag6[0]) == 0)
+		ctx->valididealprocessor = Fail;
+
+	if (exheaderflag6[1] & ~descflag6[1])
 		ctx->validaffinitymask = Fail;
+
+
+	// Storage Info Verify
+	for(i=0; i<8; i++)
+	{
+		if(0 == (ctx->header.arm11systemlocalcaps.storageinfo.systemsavedataid[i] & ~ctx->header.accessdesc.arm11systemlocalcaps.storageinfo.systemsavedataid[i]))
+			continue;
+		if(i < 4)
+			ctx->validsystemsaveID[0] = Fail;
+		else
+			ctx->validsystemsaveID[1] = Fail;
+	}
+	for(i=0; i<7; i++)
+	{
+		if(0 == (ctx->header.arm11systemlocalcaps.storageinfo.accessinfo[i] & ~ctx->header.accessdesc.arm11systemlocalcaps.storageinfo.accessinfo[i]))
+			continue;
+		ctx->validaccessinfo = Fail;
+		break;
+	}
 
 	if (ctx->usersettings)
 		ctx->validsignature = exheader_signature_verify(ctx, &ctx->usersettings->keys.ncchdescrsakey);
@@ -472,6 +516,8 @@ void exheader_print(exheader_context* ctx)
 		memdump(stdout, "Signature (GOOD):       ", ctx->header.accessdesc.signature, 0x100);
 	else if (ctx->validsignature == Fail)
 		memdump(stdout, "Signature (FAIL):       ", ctx->header.accessdesc.signature, 0x100);
+	printf("\n");
+	memdump(stdout, "NCCH Hdr RSA Modulus:   ", ctx->header.accessdesc.ncchpubkeymodulus, 0x100);
 	fprintf(stdout, "Name:                   %s\n", name);
 	fprintf(stdout, "Flag:                   %02X ", codesetinfo->flags.flag);
 	if (codesetinfo->flags.flag & 1)
@@ -506,7 +552,7 @@ void exheader_print(exheader_context* ctx)
 	memdump(stdout, "Flags:                  ", ctx->header.arm11systemlocalcaps.flags, 8);
 	fprintf(stdout, "Core version:           0x%X\n", getle32(ctx->header.arm11systemlocalcaps.flags));
 	fprintf(stdout, "System mode:            0x%X\n", (ctx->header.arm11systemlocalcaps.flags[6]>>4)&0xF);
-	fprintf(stdout, "Ideal processor:        %d\n", (ctx->header.arm11systemlocalcaps.flags[6]>>0)&0x3);
+	fprintf(stdout, "Ideal processor:        %d %s\n", (ctx->header.arm11systemlocalcaps.flags[6]>>0)&0x3, exheader_getvalidstring(ctx->valididealprocessor));
 	fprintf(stdout, "Affinity mask:          %d %s\n", (ctx->header.arm11systemlocalcaps.flags[6]>>2)&0x3, exheader_getvalidstring(ctx->validaffinitymask));
 	fprintf(stdout, "Main thread priority:   %d %s\n", ctx->header.arm11systemlocalcaps.flags[7], exheader_getvalidstring(ctx->validpriority));
 	// print resource limit descriptor too? currently mostly zeroes...
