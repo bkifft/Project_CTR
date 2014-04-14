@@ -42,6 +42,16 @@ int ncsd_signature_verify(const void* blob, rsakey2048* key)
 	return ctr_rsa_verify_hash(sig, hash, key);
 }
 
+unsigned int ncsd_get_mediaunit_size(ncsd_context* ctx)
+{
+	unsigned int mediaunitsize = settings_get_mediaunit_size(ctx->usersettings);
+
+	if (mediaunitsize == 0)
+		mediaunitsize = 1<<(9+ctx->header.flags[6]);
+
+	return mediaunitsize;
+}
+
 void ncsd_process(ncsd_context* ctx, u32 actions)
 {
 	fseek(ctx->file, ctx->offset, SEEK_SET);
@@ -64,20 +74,10 @@ void ncsd_process(ncsd_context* ctx, u32 actions)
 		ncsd_print(ctx);
 
 	ncch_set_file(&ctx->ncch, ctx->file);
-	ncch_set_offset(&ctx->ncch, 0x4000);
-	ncch_set_size(&ctx->ncch, ctx->size - 0x4000);
+	ncch_set_offset(&ctx->ncch, ctx->header.partitiongeometry[0].offset * ncsd_get_mediaunit_size(ctx));
+	ncch_set_size(&ctx->ncch, ctx->header.partitiongeometry[0].size * ncsd_get_mediaunit_size(ctx));
 	ncch_set_usersettings(&ctx->ncch, ctx->usersettings);
 	ncch_process(&ctx->ncch, actions);
-}
-
-unsigned int ncsd_get_mediaunit_size(ncsd_context* ctx)
-{
-	unsigned int mediaunitsize = settings_get_mediaunit_size(ctx->usersettings);
-
-	if (mediaunitsize == 0)
-		mediaunitsize = 1<<(9+ctx->header.flags[6]);
-
-	return mediaunitsize;
 }
 
 const char* ncsd_print_mediatype(u8 type)
