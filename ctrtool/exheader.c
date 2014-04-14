@@ -394,7 +394,10 @@ void exheader_print_arm11storageinfo(exheader_context* ctx)
 		fprintf(stdout, "OtherUserSaveDataId%d:   0x%05x\n",i+1,otherusersaveID[i]);
 	fprintf(stdout, "Accessible Savedata Ids:\n");
 	for(i = 0; i < 6; i++)
-		fprintf(stdout, " > 0x%05x\n",accessiblesaveID[i]);
+	{
+		if(accessiblesaveID[i] != 0x00000)
+			fprintf(stdout, " > 0x%05x\n",accessiblesaveID[i]);
+	}
 	
 	fprintf(stdout, "Other Variation Saves:  %s\n", accessOtherVariationSavedata ? "Accessible" : "Inaccessible");
 	if(ctx->validaccessinfo == Unchecked)
