@@ -470,15 +470,11 @@ void exheader_verify(exheader_context* ctx)
 
 
 	// Storage Info Verify
-	for(i=0; i<8; i++)
-	{
-		if(0 == (ctx->header.arm11systemlocalcaps.storageinfo.systemsavedataid[i] & ~ctx->header.accessdesc.arm11systemlocalcaps.storageinfo.systemsavedataid[i]))
-			continue;
-		if(i < 4)
-			ctx->validsystemsaveID[0] = Fail;
-		else
-			ctx->validsystemsaveID[1] = Fail;
-	}
+	if(0 != (getle32(ctx->header.arm11systemlocalcaps.storageinfo.systemsavedataid) & ~getle32(ctx->header.arm11systemlocalcaps.storageinfo.systemsavedataid)))
+		ctx->validsystemsaveID[0] = Fail;
+	if(0 != (getle32(ctx->header.arm11systemlocalcaps.storageinfo.systemsavedataid+4) & ~getle32(ctx->header.accessdesc.arm11systemlocalcaps.storageinfo.systemsavedataid+4)))
+		ctx->validsystemsaveID[1] = Fail;
+
 	for(i=0; i<7; i++)
 	{
 		if(0 == (ctx->header.arm11systemlocalcaps.storageinfo.accessinfo[i] & ~ctx->header.accessdesc.arm11systemlocalcaps.storageinfo.accessinfo[i]))
