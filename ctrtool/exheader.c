@@ -299,51 +299,92 @@ void exheader_print_arm11kernelcapabilities(exheader_context* ctx)
 	}
 }
 
+char* exheader_print_accessinfobit(u32 bit, char *str)
+{
+	switch(bit)
+	{
+		case 0 : 
+			sprintf(str,"Category System Application");
+			break;
+		case 1 : 
+			sprintf(str,"Category Hardware Check");
+			break;
+		case 2 : 
+			sprintf(str,"Category File System Tool");
+			break;
+		case 3 : 
+			sprintf(str,"Debug");
+			break;
+		case 4 : 
+			sprintf(str,"TWL Card Backup");
+			break;
+		case 5 : 
+			sprintf(str,"TWL Nand Data");
+			break;
+		case 6 : 
+			sprintf(str,"BOSS");
+			break;
+		case 7 : 
+			sprintf(str,"Direct SDMC");
+			break;
+		case 8 : 
+			sprintf(str,"Core");
+			break;
+		case 9 : 
+			sprintf(str,"CTR NAND RO");
+			break;
+		case 10 : 
+			sprintf(str,"CTR NAND RW");
+			break;
+		case 11 : 
+			sprintf(str,"CTR NAND RO (Write Access)");
+			break;
+		case 12 : 
+			sprintf(str,"Category System Settings");
+			break;
+		case 13 : 
+			sprintf(str,"CARD BOARD");
+			break;
+		case 14 : 
+			sprintf(str,"Export Import IVS");
+			break;
+		case 15 : 
+			sprintf(str,"Direct SDMC (Write Only)");
+			break;
+		case 16 : 
+			sprintf(str,"Switch Cleanup");
+			break;
+		case 17 : 
+			sprintf(str,"Save Data Move");
+			break;
+		case 18 : 
+			sprintf(str,"Shop");
+			break;
+		case 19 : 
+			sprintf(str,"Shell");
+			break;
+		case 20 : 
+			sprintf(str,"Category HomeMenu");
+			break;
+		default : 
+			sprintf(str,"Bit %d (unknown)",bit);
+			break;
+	}
+	
+	return str;
+}
+
 void exheader_print_arm11accessinfo(exheader_context* ctx)
 {
-	u32 accessinfo = getle32(ctx->header.arm11systemlocalcaps.storageinfo.accessinfo);
-	if((accessinfo & (1 << 0) )== (1 << 0))
-		fprintf(stdout, " > Category System Application\n"); 
-	if((accessinfo & (1 << 1) )== (1 << 1))
-		fprintf(stdout, " > Category Hardware Check\n"); 
-	if((accessinfo & (1 << 2) )== (1 << 2))
-		fprintf(stdout, " > Category File System Tool\n"); 
-	if((accessinfo & (1 << 3) )== (1 << 3))
-		fprintf(stdout, " > Debug\n"); 
-	if((accessinfo & (1 << 4) )== (1 << 4))
-		fprintf(stdout, " > TWL Card Backup\n");
-	if((accessinfo & (1 << 5) )== (1 << 5))
-		fprintf(stdout, " > TWL Nand Data\n"); 
-	if((accessinfo & (1 << 6) )== (1 << 6))
-		fprintf(stdout, " > BOSS\n"); 
-	if((accessinfo & (1 << 7) )== (1 << 7))
-		fprintf(stdout, " > Direct SDMC\n");
-	if((accessinfo & (1 << 8) )== (1 << 8))
-		fprintf(stdout, " > Core\n");
-	if((accessinfo & (1 << 9) )== (1 << 9))
-		fprintf(stdout, " > CTR NAND RO\n");
-	if((accessinfo & (1 << 10) )== (1 << 10))
-		fprintf(stdout, " > CTR NAND RW\n"); 
-	if((accessinfo & (1 << 11) )== (1 << 11))
-		fprintf(stdout, " > CTR NAND RO (Write Access)\n");
-	if((accessinfo & (1 << 12) )== (1 << 12))
-		fprintf(stdout, " > Category System Settings\n");
-	if((accessinfo & (1 << 13) )== (1 << 13))
-		fprintf(stdout, " > CARD BOARD\n");
-	if((accessinfo & (1 << 14) )== (1 << 14))
-		fprintf(stdout, " > Export Import IVS\n");
-	if((accessinfo & (1 << 15) )== (1 << 15))
-		fprintf(stdout, " > Direct SDMC (Write Only)\n");
-	if((accessinfo & (1 << 16) )== (1 << 16))
-		fprintf(stdout, " > Switch Cleanup\n");
-	if((accessinfo & (1 << 17) )== (1 << 17))
-		fprintf(stdout, " > Save Data Move\n");
-	if((accessinfo & (1 << 18) )== (1 << 18))
-		fprintf(stdout, " > Shop\n");
-	if((accessinfo & (1 << 19) )== (1 << 19))
-		fprintf(stdout, " > Shell\n");
-	if((accessinfo & (1 << 20) )== (1 << 20))
-		fprintf(stdout, " > Category HomeMenu\n");
+	char str[100];
+	u64 i, bit;
+	u64 accessinfo = 0xffffffffffffff & getle64(ctx->header.arm11systemlocalcaps.storageinfo.accessinfo);
+	for(i = 0; i < 56; i++)
+	{
+		bit = ((u64)1 << i);
+		if((accessinfo & bit) == bit)
+			fprintf(stdout, " > %s\n",exheader_print_accessinfobit((u32)i,str)); 
+	}
 }
 
 void exheader_print_arm11storageinfo(exheader_context* ctx)
@@ -387,7 +428,7 @@ void exheader_print_arm11storageinfo(exheader_context* ctx)
 			accessiblesaveID[i] = 0;
 	}
 
-	fprintf(stdout, "Ext savedata id:        0x%llX\n",extdataID);
+	fprintf(stdout, "Ext savedata id:        0x%08llX\n",extdataID);
 	for(i = 0; i < 2; i++)
 		fprintf(stdout, "System savedata id %d:   0x%08x %s\n",i+1,systemsaveID[i],exheader_getvalidstring(ctx->validsystemsaveID[i]));
 	for(i = 0; i < 3; i++)
@@ -450,16 +491,16 @@ void exheader_verify(exheader_context* ctx)
 	}
 
 	// Ideal Proccessor
-	exheaderflag6[0] = (ctx->header.arm11systemlocalcaps.flags[6]>>0)&0x3;
-	descflag6[0] = (ctx->header.accessdesc.arm11systemlocalcaps.flags[6]>>0)&0x3;
+	exheaderflag6[0] = (ctx->header.arm11systemlocalcaps.flag>>0)&0x3;
+	descflag6[0] = (ctx->header.accessdesc.arm11systemlocalcaps.flag>>0)&0x3;
 	// Affinity Mask
-	exheaderflag6[1] = (ctx->header.arm11systemlocalcaps.flags[6]>>2)&0x3;
-	descflag6[1] = (ctx->header.accessdesc.arm11systemlocalcaps.flags[6]>>2)&0x3;
+	exheaderflag6[1] = (ctx->header.arm11systemlocalcaps.flag>>2)&0x3;
+	descflag6[1] = (ctx->header.accessdesc.arm11systemlocalcaps.flag>>2)&0x3;
 	// System Mode
-	//exheaderflag6[2] = (ctx->header.arm11systemlocalcaps.flags[6]>>4)&0xf;
-	//descflag6[2] = (ctx->header.accessdesc.arm11systemlocalcaps.flags[6]>>4)&0xf;
+	//exheaderflag6[2] = (ctx->header.arm11systemlocalcaps.flag>>4)&0xf;
+	//descflag6[2] = (ctx->header.accessdesc.arm11systemlocalcaps.flag>>4)&0xf;
 
-	if (ctx->header.accessdesc.arm11systemlocalcaps.flags[7] > ctx->header.arm11systemlocalcaps.flags[7] ||  ctx->header.arm11systemlocalcaps.flags[7] > 127)
+	if (ctx->header.accessdesc.arm11systemlocalcaps.priority > ctx->header.arm11systemlocalcaps.priority ||  ctx->header.arm11systemlocalcaps.priority > 127)
 		ctx->validpriority = Fail;
 
 	if((1<<exheaderflag6[0] & descflag6[0]) == 0)
@@ -470,7 +511,7 @@ void exheader_verify(exheader_context* ctx)
 
 
 	// Storage Info Verify
-	if(0 != (getle32(ctx->header.arm11systemlocalcaps.storageinfo.systemsavedataid) & ~getle32(ctx->header.arm11systemlocalcaps.storageinfo.systemsavedataid)))
+	if(0 != (getle32(ctx->header.arm11systemlocalcaps.storageinfo.systemsavedataid) & ~getle32(ctx->header.accessdesc.arm11systemlocalcaps.storageinfo.systemsavedataid)))
 		ctx->validsystemsaveID[0] = Fail;
 	if(0 != (getle32(ctx->header.arm11systemlocalcaps.storageinfo.systemsavedataid+4) & ~getle32(ctx->header.accessdesc.arm11systemlocalcaps.storageinfo.systemsavedataid+4)))
 		ctx->validsystemsaveID[1] = Fail;
@@ -500,12 +541,8 @@ const char* exheader_getvalidstring(int valid)
 void exheader_print(exheader_context* ctx)
 {
 	u32 i;
-	char name[9];
-	char service[9];
+	u64 savedatasize = getle64(ctx->header.systeminfo.savedatasize);
 	exheader_codesetinfo* codesetinfo = &ctx->header.codesetinfo;
-
-	memset(name, 0, sizeof(name));
-	memcpy(name, codesetinfo->name, 8);
 
 
 	fprintf(stdout, "\nExtended header:\n");
@@ -517,12 +554,12 @@ void exheader_print(exheader_context* ctx)
 		memdump(stdout, "Signature (FAIL):       ", ctx->header.accessdesc.signature, 0x100);
 	printf("\n");
 	memdump(stdout, "NCCH Hdr RSA Modulus:   ", ctx->header.accessdesc.ncchpubkeymodulus, 0x100);
-	fprintf(stdout, "Name:                   %s\n", name);
+	fprintf(stdout, "Name:                   %.8s\n", codesetinfo->name);
 	fprintf(stdout, "Flag:                   %02X ", codesetinfo->flags.flag);
 	if (codesetinfo->flags.flag & 1)
 		fprintf(stdout, "[compressed]");
 	if (codesetinfo->flags.flag & 2)
-		fprintf(stdout, "[sd application]");
+		fprintf(stdout, "[sd app]");
 	fprintf(stdout, "\n");
 	fprintf(stdout, "Remaster version:       %04X\n", getle16(codesetinfo->flags.remasterversion));
 
@@ -543,17 +580,20 @@ void exheader_print(exheader_context* ctx)
 		if (getle64(ctx->header.deplist.programid[i]) != 0x0000000000000000UL)
 			fprintf(stdout, "Dependency:             %016llX\n", getle64(ctx->header.deplist.programid[i]));
 	}
-
-	fprintf(stdout, "Savedata size:          0x%016X\n", getle64(ctx->header.systeminfo.savedatasize));
+	if(savedatasize < sizeKB)
+		fprintf(stdout, "Savedata size:          0x%X\n", savedatasize);
+	else if(savedatasize < sizeMB)
+		fprintf(stdout, "Savedata size:          %dK\n", savedatasize/sizeKB);
+	else
+		fprintf(stdout, "Savedata size:          %dM\n", savedatasize/sizeMB);
 	fprintf(stdout, "Jump id:                %016llX\n", getle64(ctx->header.systeminfo.jumpid));
 
 	fprintf(stdout, "Program id:             %016llX %s\n", getle64(ctx->header.arm11systemlocalcaps.programid), exheader_getvalidstring(ctx->validprogramid));
-	memdump(stdout, "Flags:                  ", ctx->header.arm11systemlocalcaps.flags, 8);
-	fprintf(stdout, "Core version:           0x%X\n", getle32(ctx->header.arm11systemlocalcaps.flags));
-	fprintf(stdout, "System mode:            0x%X\n", (ctx->header.arm11systemlocalcaps.flags[6]>>4)&0xF);
-	fprintf(stdout, "Ideal processor:        %d %s\n", (ctx->header.arm11systemlocalcaps.flags[6]>>0)&0x3, exheader_getvalidstring(ctx->valididealprocessor));
-	fprintf(stdout, "Affinity mask:          %d %s\n", (ctx->header.arm11systemlocalcaps.flags[6]>>2)&0x3, exheader_getvalidstring(ctx->validaffinitymask));
-	fprintf(stdout, "Main thread priority:   %d %s\n", ctx->header.arm11systemlocalcaps.flags[7], exheader_getvalidstring(ctx->validpriority));
+	fprintf(stdout, "Core version:           0x%X\n", getle32(ctx->header.arm11systemlocalcaps.coreversion));
+	fprintf(stdout, "System mode:            0x%X\n", (ctx->header.arm11systemlocalcaps.flag>>4)&0xF);
+	fprintf(stdout, "Ideal processor:        %d %s\n", (ctx->header.arm11systemlocalcaps.flag>>0)&0x3, exheader_getvalidstring(ctx->valididealprocessor));
+	fprintf(stdout, "Affinity mask:          %d %s\n", (ctx->header.arm11systemlocalcaps.flag>>2)&0x3, exheader_getvalidstring(ctx->validaffinitymask));
+	fprintf(stdout, "Main thread priority:   %d %s\n", ctx->header.arm11systemlocalcaps.priority, exheader_getvalidstring(ctx->validpriority));
 	// print resource limit descriptor too? currently mostly zeroes...
 	exheader_print_arm11storageinfo(ctx);
 	exheader_print_arm11kernelcapabilities(ctx);
@@ -564,11 +604,7 @@ void exheader_print(exheader_context* ctx)
 	for(i=0; i<0x20; i++)
 	{
 		if (getle64(ctx->header.arm11systemlocalcaps.serviceaccesscontrol[i]) != 0x0000000000000000UL)
-		{
-			memset(service, 0, sizeof(service));
-			memcpy(service, ctx->header.arm11systemlocalcaps.serviceaccesscontrol[i], 8);
-			fprintf(stdout, "Service access:         %s\n", service);
-		}
+			fprintf(stdout, "Service access:         %.8s\n", ctx->header.arm11systemlocalcaps.serviceaccesscontrol[i]);
 	}
 	fprintf(stdout, "Reslimit category:      %02X\n", ctx->header.arm11systemlocalcaps.resourcelimitcategory);
 }

@@ -56,7 +56,10 @@ typedef struct
 typedef struct
 {
 	u8 programid[8];
-	u8 flags[8];
+	u8 coreversion[4];
+	u8 reserved0[2];
+	u8 flag;
+	u8 priority;
 	u8 resourcelimitdescriptor[0x10][2];
 	exheader_storageinfo storageinfo;
 	u8 serviceaccesscontrol[0x20][8];

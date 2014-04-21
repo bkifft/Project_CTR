@@ -24,13 +24,17 @@ enum flags
 	ShowKeysFlag = (1<<6)
 };
 
-
-
 enum validstate
 {
 	Unchecked = 0,
 	Good = 1,
 	Fail = 2,
+};
+
+enum sizeunits
+{
+	sizeKB = 0x400,
+	sizeMB = 0x100000,
 };
 
 #endif

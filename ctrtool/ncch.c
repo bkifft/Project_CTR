@@ -368,7 +368,8 @@ void ncch_process(ncch_context* ctx, u32 actions)
 
 	if (result && ncch_get_exefs_size(ctx))
 	{
-		exefs_set_compressedflag(&ctx->exefs, exheader_get_compressedflag(&ctx->exheader));
+		if(ncch_get_exheader_size(ctx))
+			exefs_set_compressedflag(&ctx->exefs, exheader_get_compressedflag(&ctx->exheader));
 		exefs_process(&ctx->exefs, actions);
 	}
 }
@@ -545,20 +546,14 @@ static const char* contenttypetostring(unsigned char flags)
 
 void ncch_print(ncch_context* ctx)
 {
-	char magic[5];
-	char productcode[0x11];
 	ctr_ncchheader *header = &ctx->header;
 	u32 offset = ctx->offset;
 	u32 mediaunitsize = ncch_get_mediaunit_size(ctx);
 
 
 	fprintf(stdout, "\nNCCH:\n");
-	memcpy(magic, header->magic, 4);
-	magic[4] = 0;
-	memcpy(productcode, header->productcode, 0x10);
-	productcode[0x10] = 0;
 
-	fprintf(stdout, "Header:                 %s\n", magic);
+	fprintf(stdout, "Header:                 %.4s\n", header->magic);
 	if (ctx->headersigcheck == Unchecked)
 		memdump(stdout, "Signature:              ", header->signature, 0x100);
 	else if (ctx->headersigcheck == Good)
@@ -576,7 +571,7 @@ void ncch_print(ncch_context* ctx)
 		memdump(stdout, "Logo hash (GOOD):       ", header->logohash, 0x20);
 	else
 		memdump(stdout, "Logo hash (FAIL):       ", header->logohash, 0x20);
-	fprintf(stdout, "Product code:           %s\n", productcode);
+	fprintf(stdout, "Product code:           %.16s\n", header->productcode);
 	fprintf(stdout, "Exheader size:          %08x\n", getle32(header->extendedheadersize));
 	if (ctx->exheaderhashcheck == Unchecked)
 		memdump(stdout, "Exheader hash:          ", header->extendedheaderhash, 0x20);
