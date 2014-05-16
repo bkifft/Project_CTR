@@ -3,7 +3,7 @@ POLAR_OBJS = polarssl/aes.o polarssl/bignum.o polarssl/rsa.o polarssl/sha2.o
 TINYXML_OBJS = tinyxml/tinystr.o tinyxml/tinyxml.o tinyxml/tinyxmlerror.o tinyxml/tinyxmlparser.o
 LIBS = -lstdc++
 CXXFLAGS = -I. 
-CFLAGS = -Wall -I.
+CFLAGS = -Wall -Wno-unused-variable -Wno-unused-but-set-variable -I.
 OUTPUT = ctrtool
 CC = gcc
 

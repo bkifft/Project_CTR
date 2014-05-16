@@ -7,7 +7,7 @@
 
 #include <assert.h>
 #include <limits.h>
-
+#include <string.h>
 
 #define YAML_titleVersion_STRING "0.1.4"
 #define YAML_titleVersion_MAJOR 0

@@ -15,7 +15,7 @@ YAML_OBJS = libyaml/api.o libyaml/dumper.o libyaml/emitter.o libyaml/loader.o li
 # Compiler Settings
 LIBS = -static-libgcc -static-libstdc++
 CXXFLAGS = -I.
-CFLAGS = --std=c99 -Wall -I. -DMAKEROM_VER_MAJOR=$(VER_MAJOR) -DMAKEROM_VER_MINOR=$(VER_MINOR) $(MAKEROM_BUILD_FLAGS) -m64
+CFLAGS = --std=c99 -Wall -Wno-unused-but-set-variable -Wno-unused-value -I. -DMAKEROM_VER_MAJOR=$(VER_MAJOR) -DMAKEROM_VER_MINOR=$(VER_MINOR) $(MAKEROM_BUILD_FLAGS) -m64
 CC = gcc
  
 # MAKEROM Build Settings

@@ -114,27 +114,27 @@ int accessdesc_GetSignFromRsf(exheader_settings *exhdrset, ncch_settings *ncchse
 	u32 out;
 
 	out = 0x100;
-	result = base64_decode(exhdrset->keys->rsa.cxiHdrPub,&out,(const u8*)exhdrset->rsf->CommonHeaderKey.Modulus,strlen(exhdrset->rsf->CommonHeaderKey.Modulus));
+	result = base64_decode(exhdrset->keys->rsa.cxiHdrPub,(size_t *)&out,(const u8*)exhdrset->rsf->CommonHeaderKey.Modulus,strlen(exhdrset->rsf->CommonHeaderKey.Modulus));
 	if(out != 0x100)
 		result = POLARSSL_ERR_BASE64_BUFFER_TOO_SMALL;
 	if(result) goto finish;
 
 	out = 0x100;
-	result = base64_decode(exhdrset->keys->rsa.cxiHdrPvt,&out,(const u8*)exhdrset->rsf->CommonHeaderKey.D,strlen(exhdrset->rsf->CommonHeaderKey.D));
+	result = base64_decode(exhdrset->keys->rsa.cxiHdrPvt,(size_t *)&out,(const u8*)exhdrset->rsf->CommonHeaderKey.D,strlen(exhdrset->rsf->CommonHeaderKey.D));
 	if(out != 0x100)
 		result = POLARSSL_ERR_BASE64_BUFFER_TOO_SMALL;
 	if(result) goto finish;
 
 	/* Set AccessDesc */
 	out = 0x100;
-	result = base64_decode(exhdrset->exHdr->accessDescriptor.signature,&out,(const u8*)exhdrset->rsf->CommonHeaderKey.AccCtlDescSign, strlen( exhdrset->rsf->CommonHeaderKey.AccCtlDescSign));
+	result = base64_decode(exhdrset->exHdr->accessDescriptor.signature,(size_t *)&out,(const u8*)exhdrset->rsf->CommonHeaderKey.AccCtlDescSign, strlen( exhdrset->rsf->CommonHeaderKey.AccCtlDescSign));
 	if(out != 0x100)
 		result = POLARSSL_ERR_BASE64_BUFFER_TOO_SMALL;
 	if(result) goto finish;
 	memcpy(exhdrset->exHdr->accessDescriptor.ncchRsaPubKey,exhdrset->keys->rsa.cxiHdrPub,0x100);
 
 	out = 0x200;
-	result = base64_decode((u8*)&exhdrset->exHdr->accessDescriptor.arm11SystemLocalCapabilities,&out,(const u8*)exhdrset->rsf->CommonHeaderKey.AccCtlDescBin,strlen(exhdrset->rsf->CommonHeaderKey.AccCtlDescBin));
+	result = base64_decode((u8*)&exhdrset->exHdr->accessDescriptor.arm11SystemLocalCapabilities,(size_t *)&out,(const u8*)exhdrset->rsf->CommonHeaderKey.AccCtlDescBin,strlen(exhdrset->rsf->CommonHeaderKey.AccCtlDescBin));
 	if(out != 0x200)
 		result = POLARSSL_ERR_BASE64_BUFFER_TOO_SMALL;
 	if(result) goto finish;

@@ -538,12 +538,12 @@ int GetWriteableAddress(cci_settings *cciset, user_settings *usrset)
 	if(cciset->cardinfo.writableAddress == -1){ // If not set manually or is max size
 		if ((cciset->header.mediaSize / 2) < cciset->option.savedataSize){ // If SaveData size is greater than half the MediaSize
 			u64 SavedataSize = cciset->option.savedataSize / KB;
-			fprintf(stderr,"[CCI ERROR] Too large SavedataSize %llK\n",SavedataSize);
+			fprintf(stderr,"[CCI ERROR] Too large SavedataSize %lldK\n",SavedataSize);
 			return SAVE_DATA_TOO_LARGE;
 		}
 		if (cciset->option.savedataSize > (u64)(2047*MB)){ // Limit set by Nintendo
 			u64 SavedataSize = cciset->option.savedataSize / KB;
-			fprintf(stderr,"[CCI ERROR] Too large SavedataSize %llK\n",SavedataSize);
+			fprintf(stderr,"[CCI ERROR] Too large SavedataSize %lldK\n",SavedataSize);
 			return SAVE_DATA_TOO_LARGE;
 		}
 		if(usrset->cci.closeAlignWritableRegion)

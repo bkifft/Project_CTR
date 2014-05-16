@@ -35,6 +35,7 @@
 #include "polarssl/cipher_wrap.h"
 
 #include <stdlib.h>
+#include <strings.h>
 
 #if defined _MSC_VER && !defined strcasecmp
 #define strcasecmp _stricmp
