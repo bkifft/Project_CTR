@@ -581,11 +581,11 @@ void exheader_print(exheader_context* ctx)
 			fprintf(stdout, "Dependency:             %016llX\n", getle64(ctx->header.deplist.programid[i]));
 	}
 	if(savedatasize < sizeKB)
-		fprintf(stdout, "Savedata size:          0x%X\n", savedatasize);
+		fprintf(stdout, "Savedata size:          0x%llX\n", savedatasize);
 	else if(savedatasize < sizeMB)
-		fprintf(stdout, "Savedata size:          %dK\n", savedatasize/sizeKB);
+		fprintf(stdout, "Savedata size:          %lluK\n", savedatasize/sizeKB);
 	else
-		fprintf(stdout, "Savedata size:          %dM\n", savedatasize/sizeMB);
+		fprintf(stdout, "Savedata size:          %lluM\n", savedatasize/sizeMB);
 	fprintf(stdout, "Jump id:                %016llX\n", getle64(ctx->header.systeminfo.jumpid));
 
 	fprintf(stdout, "Program id:             %016llX %s\n", getle64(ctx->header.arm11systemlocalcaps.programid), exheader_getvalidstring(ctx->validprogramid));

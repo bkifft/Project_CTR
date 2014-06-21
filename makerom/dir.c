@@ -277,7 +277,7 @@ void fs_PrintDir(fs_dir *dir, u32 depth) // This is just for simple debugging, p
 			name = (char*)dir->file[i].name;
 			for(u32 j = 0; j < dir->file[i].name_len; j+=2)
 				putchar(name[j]);
-			printf(" (0x%lx)\n",dir->file[i].size);
+			printf(" (0x%llx)\n",dir->file[i].size);
 #endif
 		}
 	}

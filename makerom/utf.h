@@ -134,8 +134,6 @@ ConversionResult ConvertUTF32toUTF8 (
         const UTF32** sourceStart, const UTF32* sourceEnd, 
         UTF8** targetStart, UTF8* targetEnd, ConversionFlags flags);
 		
-static Boolean isLegalUTF8(const UTF8 *source, int length);
-
 Boolean isLegalUTF8Sequence(const UTF8 *source, const UTF8 *sourceEnd);
 
 unsigned getNumBytesForUTF8(UTF8 first);

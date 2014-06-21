@@ -171,7 +171,7 @@ int str_utf8_to_u16(u16 **dst, u32 *dst_len, u8 *src, u32 src_len)
 	UTF8 *src_start = (UTF8*)src;
 	UTF8 *src_end = (UTF8*)(src+src_len*sizeof(u8));
 	
-	return ConvertUTF8toUTF16 (&src_start, src_end, &target_start, target_end, strictConversion);
+	return ConvertUTF8toUTF16 ((const UTF8 **)&src_start, src_end, &target_start, target_end, strictConversion);
 }
 #endif
 
@@ -293,7 +293,7 @@ u8* ImportFile(char *file, u64 size)
 	u64 fsize = GetFileSize_u64(file);
 	if(size > 0){
 		if(size != fsize){
-			fprintf(stderr,"[!] %s has an invalid size (0x%llx)\n",fsize);
+			fprintf(stderr,"[!] %s has an invalid size (0x%llx)\n",file, fsize);
 			return NULL;
 		}
 	}
