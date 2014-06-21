@@ -210,6 +210,14 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 		set->common.keys.dumpkeys = true;
 		return 1;
 	}
+	else if(strcmp(argv[i],"-fsign") == 0){
+		if(ParamNum){
+			PrintNoNeedParam("-fsign");
+			return USR_BAD_ARG;
+		}
+		set->common.keys.rsa.isFalseSign = true;
+		return 1;
+	}
 
 	// Ncch Options
 	else if(strcmp(argv[i],"-elf") == 0){
@@ -448,14 +456,6 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 		}
 		set->cia.titleVersion[0] = (tmp >> 6) & 63;
 		set->cia.titleVersion[1] = tmp & 63;
-		return 2;
-	}
-	else if(strcmp(argv[i],"-savesize") == 0){
-		if(ParamNum != 1){
-			PrintArgReqParam("-savesize",1);
-			return USR_ARG_REQ_PARAM;
-		}
-		set->cia.overideSaveDataSize = argv[i+1];
 		return 2;
 	}
 	else if(strcmp(argv[i],"-rand") == 0){
@@ -983,6 +983,7 @@ void DisplayHelp(char *app_name)
 	printf("                                    'c' Custom Keys & Certs\n");
 	printf(" -ckeyID        <u8 value>          Override the automatic commonKey selection\n");
 	printf(" -showkeys                          Display the loaded keychain\n");
+	printf(" -fsign                             Ignore invalid signatures\n");
 	printf("NCCH OPTIONS:\n");
 	printf(" -elf           <file>              ELF File\n");
 	printf(" -icon          <file>              Icon File\n");
@@ -1016,7 +1017,6 @@ void DisplayHelp(char *app_name)
 	printf(" -minor         <minor version>     Specify Minor Version\n");
 	printf(" -micro         <micro version>     Specify Micro Version\n");
 	printf(" -dver          <datatitle ver>     Specify Data Title Version\n");
-	printf(" -savesize      <size>              Savedata size\n");
 	printf(" -rand                              Use a random title key\n");
 	printf(" -cci           <cci path>          Convert CCI to CIA\n");
 	printf(" -srl           <srl path>          Use TWL SRL as Content0\n");

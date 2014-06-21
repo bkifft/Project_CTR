@@ -275,7 +275,6 @@ typedef struct
 	} cci; // CCI Settings
 	
 	struct{
-		char *overideSaveDataSize;
 		bool randomTitleKey;
 		bool encryptCia;
 		bool DlcContent;
