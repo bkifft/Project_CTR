@@ -186,14 +186,16 @@ typedef struct
 	exhdr_ARM11KernelCapabilities arm11KernelCapabilities;
 	exhdr_ARM9AccessControlInfo arm9AccessControlInfo;
 	// }
-	struct {
-		u8 signature[0x100];
-		u8 ncchRsaPubKey[0x100];
-		exhdr_ARM11SystemLocalCapabilities arm11SystemLocalCapabilities;
-		exhdr_ARM11KernelCapabilities arm11KernelCapabilities;
-		exhdr_ARM9AccessControlInfo arm9AccessControlInfo;
-	} accessDescriptor;
 } extended_hdr;
+
+typedef struct 
+{
+	u8 signature[0x100];
+	u8 ncchRsaPubKey[0x100];
+	exhdr_ARM11SystemLocalCapabilities arm11SystemLocalCapabilities;
+	exhdr_ARM11KernelCapabilities arm11KernelCapabilities;
+	exhdr_ARM9AccessControlInfo arm9AccessControlInfo;
+} access_descriptor;
 
 typedef struct
 {
@@ -203,12 +205,13 @@ typedef struct
 
 	/* Output */
 	extended_hdr *exHdr; // is the exheader output buffer ptr(in ncchset) cast as exheader struct ptr;
+	access_descriptor *acexDesc;
 } exheader_settings;
 
 
 /* ExHeader Signature Functions */
-int SignAccessDesc(extended_hdr *ExHdr, keys_struct *keys);
-int CheckaccessDescSignature(extended_hdr *ExHdr, keys_struct *keys);
+int SignAccessDesc(access_descriptor *acexDesc, keys_struct *keys);
+int CheckAccessDescSignature(access_descriptor *acexDesc, keys_struct *keys);
 
 /* ExHeader Build Functions */
 int BuildExHeader(ncch_settings *ncchset);
@@ -217,9 +220,8 @@ int BuildExHeader(ncch_settings *ncchset);
 void exhdr_Print_ServiceAccessControl(extended_hdr *hdr);
 
 /* ExHeader Binary Read Functions */
-u8* GetAccessDescSig_frm_exhdr(extended_hdr *hdr);
-u8* GetNcchHdrPubKey_frm_exhdr(extended_hdr *hdr);
-u8* GetAccessDesc_frm_exhdr(extended_hdr *hdr);
+u8* GetAcexRsaSig(access_descriptor *acexDesc);
+u8* GetAcexNcchPubKey(access_descriptor *acexDesc);
 u16 GetRemasterVersion_frm_exhdr(extended_hdr *hdr);
 u64 GetSaveDataSize_frm_exhdr(extended_hdr *hdr);
 int GetDependencyList_frm_exhdr(u8 *Dest,extended_hdr *hdr);

@@ -65,7 +65,7 @@ typedef struct
 	{
 		bool isFalseSign;
 		// CIA RSA
-		u8 *cpPvt; //cpPvt
+		u8 *cpPvt;
 		u8 *cpPub;
 		u8 *xsPvt;
 		u8 *xsPub;

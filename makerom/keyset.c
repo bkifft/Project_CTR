@@ -26,6 +26,7 @@ int SetTikCert(keys_struct *keys, u8 *Cert);
 int SetTmdCert(keys_struct *keys, u8 *Cert);
 
 int LoadKeysFromResources(keys_struct *keys);
+void SetDummyRsaData(keys_struct *keys);
 int LoadKeysFromKeyfile(keys_struct *keys);
 void CheckAccessDescKey(keys_struct *keys);
 void DumpKeyset(keys_struct *keys);
@@ -56,6 +57,9 @@ int SetKeys(keys_struct *keys)
 		result = LoadKeysFromKeyfile(keys);
 		if(result) return KEYSET_ERROR;
 	}
+	
+	if(keys->rsa.isFalseSign)
+		SetDummyRsaData(keys);
 
 	CheckAccessDescKey(keys);
 	
@@ -82,19 +86,7 @@ int LoadKeysFromResources(keys_struct *keys)
 		//SetSystemFixedKey(keys,(u8*)zeros_aesKey);
 
 		/* RSA Keys */
-		keys->rsa.isFalseSign = true;
-		// CIA
-		SetTIK_RsaKey(keys,(u8*)tpki_rsa_privExp,(u8*)tpki_rsa_pubMod);
-		SetTMD_RsaKey(keys,(u8*)tpki_rsa_privExp,(u8*)tpki_rsa_pubMod);
-		// CCI/CFA
-		Set_CCI_CFA_RsaKey(keys,(u8*)tpki_rsa_privExp,(u8*)tpki_rsa_pubMod);
-		// CXI
-		SetAccessDesc_RsaKey(keys,(u8*)tpki_rsa_privExp,(u8*)tpki_rsa_pubMod);
-	
-		/* Certs */
-		SetCaCert(keys,(u8*)ca3_tpki_cert);
-		SetTikCert(keys,(u8*)xsC_tpki_cert);
-		SetTmdCert(keys,(u8*)cpB_tpki_cert);
+		keys->rsa.isFalseSign = true;		
 	}
 	#ifndef PUBLIC_BUILD
 	else if(keys->keyset == pki_DEVELOPMENT){
@@ -166,11 +158,32 @@ int LoadKeysFromResources(keys_struct *keys)
 	return 0;
 }
 
+void SetDummyRsaData(keys_struct *keys)
+{
+	if(!keys->rsa.xsPvt || !keys->rsa.xsPub)
+		SetTIK_RsaKey(keys,(u8*)tpki_rsa_privExp,(u8*)tpki_rsa_pubMod);
+	if(!keys->rsa.cpPvt || !keys->rsa.cpPub)
+		SetTMD_RsaKey(keys,(u8*)tpki_rsa_privExp,(u8*)tpki_rsa_pubMod);
+		
+	if(!keys->rsa.cciCfaPvt || !keys->rsa.cciCfaPub)
+		Set_CCI_CFA_RsaKey(keys,(u8*)tpki_rsa_privExp,(u8*)tpki_rsa_pubMod);
+	
+	if(!keys->rsa.acexPvt || !keys->rsa.acexPub)
+		SetAccessDesc_RsaKey(keys,(u8*)tpki_rsa_privExp,(u8*)tpki_rsa_pubMod);
+
+	/* Certs */
+	if(!keys->certs.caCert)
+		SetCaCert(keys,(u8*)ca3_tpki_cert);
+	if(!keys->certs.xsCert)
+		SetTikCert(keys,(u8*)xsC_tpki_cert);
+	if(!keys->certs.cpCert)
+		SetTmdCert(keys,(u8*)cpB_tpki_cert);
+}
+
 int LoadKeysFromKeyfile(keys_struct *keys)
 {
-	//else
-		printf("[KEYSET ERROR] Target not supported\n");
-	return 0;
+	printf("[KEYSET ERROR] Custom keys not supported\n");
+	return -1;
 }
 
 void CheckAccessDescKey(keys_struct *keys)

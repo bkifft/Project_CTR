@@ -366,20 +366,28 @@ int ImportLogo(ncch_settings *ncchset)
 int SetupNcch(ncch_settings *ncchset, romfs_buildctx *romfs)
 {
 	u64 ncchSize = 0;
-	u64 exhdrSize,logoSize,plnRgnSize,exefsSize,romfsSize;
-	u64 exhdrOffset,logoOffset,plnRgnOffset,exefsOffset,romfsOffset;
+	u64 exhdrSize,acexSize,logoSize,plnRgnSize,exefsSize,romfsSize;
+	u64 exhdrOffset,acexOffset,logoOffset,plnRgnOffset,exefsOffset,romfsOffset;
 	u32 exefsHashSize,romfsHashSize;
 
 	ncchSize += 0x200; // Sig+Hdr
 
 	// Sizes for NCCH hdr
 	if(ncchset->sections.exhdr.size){
-		exhdrSize = 0x400;
+		exhdrSize = ncchset->sections.exhdr.size;
 		exhdrOffset = ncchSize;
-		ncchSize += ncchset->sections.exhdr.size;
+		ncchSize += exhdrSize;
 	}
 	else
 		exhdrSize = 0;
+		
+	if(ncchset->sections.acexDesc.size){
+		acexSize = ncchset->sections.acexDesc.size;
+		acexOffset = ncchSize;
+		ncchSize += acexSize;
+	}
+	else
+		acexSize = 0;
 
 	if(ncchset->sections.logo.size){
 		logoSize = ncchset->sections.logo.size;
@@ -443,6 +451,11 @@ int SetupNcch(ncch_settings *ncchset, romfs_buildctx *romfs)
 		ncchset->sections.exhdr.buffer = NULL;
 		u32_to_u8(hdr->exhdrSize,exhdrSize,LE);
 	}
+	if(acexSize){
+		memcpy((u8*)(ncch+acexOffset),ncchset->sections.acexDesc.buffer,ncchset->sections.acexDesc.size);
+		free(ncchset->sections.acexDesc.buffer);
+		ncchset->sections.acexDesc.buffer = NULL;
+	}
 
 	if(logoSize){
 		memcpy((u8*)(ncch+logoOffset),ncchset->sections.logo.buffer,ncchset->sections.logo.size);
@@ -496,13 +509,14 @@ int FinaliseNcch(ncch_settings *ncchset)
 
 	ncch_hdr *hdr = (ncch_hdr*)(ncch + 0x100);
 	u8 *exhdr = (u8*)(ncch + ncchset->cryptoDetails.exhdrOffset);
+	u8 *acexDesc = (u8*)(ncch + ncchset->cryptoDetails.acexOffset);
 	u8 *logo = (u8*)(ncch + ncchset->cryptoDetails.logoOffset);
 	u8 *exefs = (u8*)(ncch + ncchset->cryptoDetails.exefsOffset);
 	u8 *romfs = (u8*)(ncch + ncchset->cryptoDetails.romfsOffset);
 
 	// Taking Hashes\n");
 	if(ncchset->cryptoDetails.exhdrSize)
-		ctr_sha(exhdr,0x400,hdr->exhdrHash,CTR_SHA_256);
+		ctr_sha(exhdr,ncchset->cryptoDetails.exhdrSize,hdr->exhdrHash,CTR_SHA_256);
 	if(ncchset->cryptoDetails.logoSize)
 		ctr_sha(logo,ncchset->cryptoDetails.logoSize,hdr->logoHash,CTR_SHA_256);
 	if(ncchset->cryptoDetails.exefsHashDataSize)
@@ -527,10 +541,8 @@ int FinaliseNcch(ncch_settings *ncchset)
 		SetNcchUnfixedKeys(ncchset->keys, ncch);
 
 		// Getting AES Keys
-		u8 *key0 = GetNCCHKey(keyType, ncchset->keys);
-		u8 *key1 = GetNCCHKey(keyType, ncchset->keys);
-		if(keyType == KeyIsUnFixed2)
-			key0 = GetNCCHKey(KeyIsUnFixed, ncchset->keys);
+		u8 *key0 = GetNCCHKey0(keyType, ncchset->keys);
+		u8 *key1 = GetNCCHKey1(keyType, ncchset->keys);
 
 		if(key0 == NULL || key1 == NULL){
 			fprintf(stderr,"[NCCH ERROR] Failed to load ncch aes key\n");
@@ -543,9 +555,11 @@ int FinaliseNcch(ncch_settings *ncchset)
 		memdump(stdout,"key1: ",key1,16);
 		*/
 
-		// Crypting Exheader
-		if(ncchset->cryptoDetails.exhdrSize)
+		// Crypting Exheader/AcexDesc
+		if(ncchset->cryptoDetails.exhdrSize){
 			CryptNCCHSection(exhdr,ncchset->cryptoDetails.exhdrSize,0x0,&ncchset->cryptoDetails,key0,ncch_exhdr);
+			CryptNCCHSection(acexDesc,ncchset->cryptoDetails.acexSize,ncchset->cryptoDetails.exhdrSize,&ncchset->cryptoDetails,key0,ncch_exhdr);
+		}			
 
 		// Crypting ExeFs Files
 		if(ncchset->cryptoDetails.exefsSize){
@@ -618,12 +632,12 @@ int SetCommonHeaderBasicData(ncch_settings *ncchset, ncch_hdr *hdr)
 		hdr->flags[OtherFlag] = (NoCrypto|FixedCryptoKey);
 	else if(ncchset->keys->aes.ncchKeyX0){
 		hdr->flags[OtherFlag] = UnFixedCryptoKey;
-		if(ncchset->keys->aes.ncchKeyX1)
+		if(ncchset->keys->aes.ncchKeyX1 && !ncchset->options.IsCfa)
 			hdr->flags[SecureCrypto2] = 1;
 	}
 	else{
 		hdr->flags[OtherFlag] = FixedCryptoKey;	
-		u8 *key = GetNCCHKey(GetNCCHKeyType(hdr),ncchset->keys);
+		u8 *key = GetNCCHKey0(GetNCCHKeyType(hdr),ncchset->keys);
 		if(!key){ // for detecting absense of fixed aes keys
 			hdr->flags[OtherFlag] = (NoCrypto|FixedCryptoKey);
 			fprintf(stderr,"[NCCH WARNING] NCCH AES Key could not be loaded, NCCH will not be encrypted\n");
@@ -702,15 +716,13 @@ int VerifyNCCH(u8 *ncch, keys_struct *keys, bool CheckHash, bool SuppressOutput)
 	if(keyType != NoKey){
 		//memdump(stdout,"ncch: ",ncch,0x200);
 		SetNcchUnfixedKeys(keys,ncch);
-		if(GetNCCHKey(keyType,keys) == NULL){
+		if(GetNCCHKey0(keyType,keys) == NULL){
 			if(!SuppressOutput) 
 				fprintf(stderr,"[NCCH ERROR] Failed to load ncch aes key.\n");
 			return UNABLE_TO_LOAD_NCCH_KEY;
 		}
-		key0 = GetNCCHKey(keyType,keys);
-		key1 = GetNCCHKey(keyType,keys);
-		if(keyType == KeyIsUnFixed2)
-			key0 = GetNCCHKey(KeyIsUnFixed,keys);
+		key0 = GetNCCHKey0(keyType,keys);
+		key1 = GetNCCHKey1(keyType,keys);
 	}
 
 	//memdump(stdout,"key0: ",key0,16);
@@ -744,48 +756,60 @@ int VerifyNCCH(u8 *ncch, keys_struct *keys, bool CheckHash, bool SuppressOutput)
 			free(ncch_ctx);
 			return NO_EXEFS_IN_CXI;
 		}
-		// Get ExHeader
-		extended_hdr *ExHeader = malloc(ncch_ctx->exhdrSize);
-		if(!ExHeader){ 
+		// Get ExHeader/AcexDesc
+		extended_hdr *exHdr = malloc(ncch_ctx->exhdrSize);
+		if(!exHdr){ 
 			fprintf(stderr,"[NCCH ERROR] Not enough memory\n"); 
 			free(ncch_ctx);
 			return MEM_ERROR; 
 		}
-		memcpy(ExHeader,ncch+ncch_ctx->exhdrOffset,ncch_ctx->exhdrSize);
+		memcpy(exHdr,ncch+ncch_ctx->exhdrOffset,ncch_ctx->exhdrSize);
 		if(key0 != NULL)
-			CryptNCCHSection((u8*)ExHeader,ncch_ctx->exhdrSize,0,ncch_ctx,key0,ncch_exhdr);
+			CryptNCCHSection((u8*)exHdr,ncch_ctx->exhdrSize,0,ncch_ctx,key0,ncch_exhdr);
 
 		// Checking Exheader Hash to see if decryption was sucessful
-		ctr_sha(ExHeader,0x400,Hash,CTR_SHA_256);
+		ctr_sha(exHdr,0x400,Hash,CTR_SHA_256);
 		if(memcmp(Hash,hdr->exhdrHash,0x20) != 0){
 			//memdump(stdout,"Expected Hash: ",hdr->extended_header_sha_256_hash,0x20);
 			//memdump(stdout,"Actual Hash:   ",Hash,0x20);
-			//memdump(stdout,"Exheader:      ",(u8*)ExHeader,0x400);
+			//memdump(stdout,"Exheader:      ",(u8*)exHdr,0x400);
 			if(!SuppressOutput) {
 				fprintf(stderr,"[NCCH ERROR] ExHeader Hashcheck Failed\n");
 				fprintf(stderr,"[NCCH ERROR] CXI is corrupt\n");
 			}
 			free(ncch_ctx);
-			free(ExHeader);
+			free(exHdr);
 			return ExHeader_Hashfail;
 		}
-
+		free(exHdr);
+		
 		// Checking RSA Sigs
-		u8 *hdr_pubk = GetNcchHdrPubKey_frm_exhdr(ExHeader);
+		access_descriptor *acexDesc = malloc(ncch_ctx->acexSize);
+		if(!acexDesc){ 
+			fprintf(stderr,"[NCCH ERROR] Not enough memory\n"); 
+			free(ncch_ctx);
+			free(exHdr);
+			return MEM_ERROR; 
+		}
+		memcpy(acexDesc,ncch+ncch_ctx->acexOffset,ncch_ctx->acexSize);
+		if(key0 != NULL)
+			CryptNCCHSection((u8*)acexDesc,ncch_ctx->acexSize,ncch_ctx->exhdrOffset,ncch_ctx,key0,ncch_exhdr);
 
-		if(CheckaccessDescSignature(ExHeader,keys) != 0 && !keys->rsa.isFalseSign){
+		if(CheckAccessDescSignature(acexDesc,keys) != 0 && !keys->rsa.isFalseSign){
 			if(!SuppressOutput) fprintf(stderr,"[NCCH ERROR] AccessDesc Sigcheck Failed\n");
 			free(ncch_ctx);
-			free(ExHeader);
+			free(acexDesc);
 			return ACCESSDESC_SIG_BAD;
 		}
-		if(CheckCXISignature(hdr_sig,(u8*)hdr,hdr_pubk) != 0 /* && !keys->rsa.isFalseSign*/){ // This should always be correct
+		
+		u8 *hdr_pubk = GetAcexNcchPubKey(acexDesc);
+		
+		if(CheckCXISignature(hdr_sig,(u8*)hdr,hdr_pubk) != 0 && !keys->rsa.isFalseSign){
 			if(!SuppressOutput) fprintf(stderr,"[NCCH ERROR] CXI Header Sigcheck Failed\n");
-			free(ncch_ctx);
-			free(ExHeader);
+			free(ncch_ctx);			
+			free(acexDesc);
 			return NCCH_HDR_SIG_BAD;
 		}
-		free(ExHeader);
 	}
 
 	if(!CheckHash)
@@ -904,7 +928,7 @@ int ModifyNcchIds(u8 *ncch, u8 *titleId, u8 *programId, keys_struct *keys)
 		GetNCCHStruct(&ncch_struct,hdr);
 		romfs = (ncch+ncch_struct.romfsOffset);
 		SetNcchUnfixedKeys(keys, ncch); // For Secure Crypto
-		key = GetNCCHKey(keytype,keys);
+		key = GetNCCHKey1(keytype,keys);
 		if(key == NULL){
 			fprintf(stderr,"[NCCH ERROR] Failed to load ncch aes key\n");
 			//free(ncch);
@@ -928,7 +952,7 @@ int ModifyNcchIds(u8 *ncch, u8 *titleId, u8 *programId, keys_struct *keys)
 		GetNCCHStruct(&ncch_struct,hdr);
 		romfs = (ncch+ncch_struct.romfsOffset);
 		SetNcchUnfixedKeys(keys, ncch); // For Secure Crypto
-		key = GetNCCHKey(keytype,keys);
+		key = GetNCCHKey1(keytype,keys);
 		if(key == NULL){
 			fprintf(stderr,"[NCCH ERROR] Failed to load ncch aes key\n");
 			//free(ncch);
@@ -1013,7 +1037,25 @@ ncch_key_type GetNCCHKeyType(ncch_hdr* hdr)
 	return KeyIsUnFixed;
 }
 
-u8* GetNCCHKey(ncch_key_type keytype, keys_struct *keys)
+u8* GetNCCHKey0(ncch_key_type keytype, keys_struct *keys)
+{
+	switch(keytype){
+		case NoKey: return NULL;
+		case KeyIsNormalFixed:
+			return keys->aes.normalKey;
+		case KeyIsSystemFixed:
+			return keys->aes.systemFixedKey;
+		case KeyIsUnFixed:
+		case KeyIsUnFixed2:
+			if(keys->aes.ncchKeyX0)
+				return keys->aes.unFixedKey0;
+			else
+				return NULL;
+	}
+	return NULL;
+}
+
+u8* GetNCCHKey1(ncch_key_type keytype, keys_struct *keys)
 {
 	switch(keytype){
 		case NoKey: return NULL;
@@ -1035,65 +1077,6 @@ u8* GetNCCHKey(ncch_key_type keytype, keys_struct *keys)
 	return NULL;
 }
 
-int GetNCCHSection(u8 *dest, u64 dest_max_size, u64 src_pos, u8 *ncch, ncch_struct *ncch_ctx, keys_struct *keys, ncch_section section)
-{
-	if(!ncch) return MEM_ERROR;
-	u8 *key = NULL;
-	ncch_hdr* hdr = GetNCCH_CommonHDR(NULL,NULL,ncch);
-	ncch_key_type keytype = GetNCCHKeyType(hdr);
-
-	if(keytype != NoKey && (section == ncch_exhdr || section == ncch_exefs || section == ncch_romfs)){
-		key = GetNCCHKey(keytype,keys);
-		if(key == NULL){
-			//fprintf(stderr,"[NCCH ERROR] Failed to load ncch aes key.\n");
-			return UNABLE_TO_LOAD_NCCH_KEY;
-		}
-	}
-	//printf("detecting section type\n");
-	u64 offset = 0;
-	u64 size = 0;
-	switch(section){
-		case ncch_exhdr:
-			offset = ncch_ctx->exhdrOffset;
-			size = ncch_ctx->exhdrSize;
-			break;
-		case ncch_Logo:
-			offset = ncch_ctx->logoOffset;
-			size = ncch_ctx->logoSize;
-			break;
-		case ncch_PlainRegion:
-			offset = ncch_ctx->plainRegionOffset;
-			size = ncch_ctx->plainRegionSize;
-			break;
-		case ncch_exefs:
-			offset = ncch_ctx->exefsOffset;
-			size = ncch_ctx->exefsSize;
-			break;
-		case ncch_romfs:
-			offset = ncch_ctx->romfsOffset;
-			size = ncch_ctx->romfsSize;
-			break;
-	}
-	if(!offset || !size) return NCCH_SECTION_NOT_EXIST; 
-
-	if(src_pos > size) return DATA_POS_DNE;
-
-	size = min_u64(size-src_pos,dest_max_size);
-
-	//printf("Copying data\n");
-	u8 *section_pos = (ncch + offset + src_pos);
-	memcpy(dest,section_pos,size);
-
-	//printf("decrypting if needed\n");
-	if(keytype != NoKey && (section == ncch_exhdr || section == ncch_exefs || section == ncch_romfs)){ // Decrypt
-		//memdump(stdout,"Key: ",key,16);
-		CryptNCCHSection(dest,size,src_pos,ncch_ctx,key,section);
-		//printf("no cigar\n");
-	}
-	//printf("Got thing okay\n");
-	return 0;
-}
-
 int GetNCCHStruct(ncch_struct *ctx, ncch_hdr *header)
 {
 	memcpy(ctx->titleId,header->titleId,8);
@@ -1105,7 +1088,9 @@ int GetNCCHStruct(ncch_struct *ctx, ncch_hdr *header)
 	ctx->formatVersion = u8_to_u16(header->formatVersion,LE);
 	if(!IsCfa(header)){
 		ctx->exhdrOffset = 0x200;
-		ctx->exhdrSize = u8_to_u32(header->exhdrSize,LE) + 0x400;
+		ctx->exhdrSize = u8_to_u32(header->exhdrSize,LE);
+		ctx->acexOffset = (ctx->exhdrOffset + ctx->exhdrSize);
+		ctx->acexSize = sizeof(access_descriptor);
 		ctx->plainRegionOffset = (u64)(u8_to_u32(header->plainRegionOffset,LE)*media_unit);
 		ctx->plainRegionSize = (u64)(u8_to_u32(header->plainRegionSize,LE)*media_unit);
 	}

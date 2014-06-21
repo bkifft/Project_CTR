@@ -6,10 +6,9 @@
 
 
 /* Prototypes */
-void init_ExHeaderSettings(exheader_settings *exhdrset);
 void free_ExHeaderSettings(exheader_settings *exhdrset);
 int get_ExHeaderSettingsFromNcchset(exheader_settings *exhdrset, ncch_settings *ncchset);
-int get_ExHeaderSettingsFromYaml(exheader_settings *exhdrset);
+int get_ExHeaderSettingsFromRsf(exheader_settings *exhdrset);
 
 int get_ExHeaderCodeSetInfo(exhdr_CodeSetInfo *CodeSetInfo, rsf_settings *rsf);
 int get_ExHeaderDependencyList(u8 *DependencyList, rsf_settings *rsf);
@@ -52,17 +51,17 @@ u32 GetDescPrefixBits(int numPrefixBits, u32 PrefixVal);
 int get_ExHeaderARM9AccessControlInfo(exhdr_ARM9AccessControlInfo *arm9, rsf_settings *rsf);
 
 /* ExHeader Signature Functions */
-int SignAccessDesc(extended_hdr *exHdr, keys_struct *keys)
+int SignAccessDesc(access_descriptor *acexDesc, keys_struct *keys)
 {
-	u8 *AccessDesc = (u8*) &exHdr->accessDescriptor.ncchRsaPubKey;
-	u8 *Signature = (u8*) &exHdr->accessDescriptor.signature;
+	u8 *AccessDesc = (u8*) &acexDesc->ncchRsaPubKey;
+	u8 *Signature = (u8*) &acexDesc->signature;
 	return ctr_sig(AccessDesc,0x300,Signature,keys->rsa.acexPub,keys->rsa.acexPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
 }
 
-int CheckaccessDescSignature(extended_hdr *exHdr, keys_struct *keys)
+int CheckAccessDescSignature(access_descriptor *acexDesc, keys_struct *keys)
 {
-	u8 *AccessDesc = (u8*) &exHdr->accessDescriptor.ncchRsaPubKey;
-	u8 *Signature = (u8*) &exHdr->accessDescriptor.signature;
+	u8 *AccessDesc = (u8*) &acexDesc->ncchRsaPubKey;
+	u8 *Signature = (u8*) &acexDesc->signature;
 	return ctr_sig(AccessDesc,0x300,Signature,keys->rsa.acexPub,NULL,RSA_2048_SHA256,CTR_RSA_VERIFY);
 }
 
@@ -74,33 +73,26 @@ int BuildExHeader(ncch_settings *ncchset)
 	if(ncchset->options.IsCfa)
 		return 0;
 
-	exheader_settings *exhdrset = malloc(sizeof(exheader_settings));
+	exheader_settings *exhdrset = calloc(1,sizeof(exheader_settings));
 	if(!exhdrset) {
 		fprintf(stderr,"[EXHEADER ERROR] Not enough memory\n"); 
 		return MEM_ERROR;
 	}
-	init_ExHeaderSettings(exhdrset);
 
 	// Get Settings
 	result = get_ExHeaderSettingsFromNcchset(exhdrset,ncchset);
 	if(result) goto finish;
 
-	result = get_ExHeaderSettingsFromYaml(exhdrset);
+	result = get_ExHeaderSettingsFromRsf(exhdrset);
 	if(result) goto finish;
 
-	result = set_AccessDesc(exhdrset,ncchset);
+	result = set_AccessDesc(exhdrset);
 	if(result) goto finish;
 
 finish:
 	if(result) fprintf(stderr,"[EXHEADER ERROR] Failed to create ExHeader\n");
 	free_ExHeaderSettings(exhdrset);
 	return result;
-}
-
-
-void init_ExHeaderSettings(exheader_settings *exhdrset)
-{
-	memset(exhdrset,0,sizeof(exheader_settings));
 }
 
 void free_ExHeaderSettings(exheader_settings *exhdrset)
@@ -116,13 +108,19 @@ int get_ExHeaderSettingsFromNcchset(exheader_settings *exhdrset, ncch_settings *
 	exhdrset->useAccessDescPreset = ncchset->keys->accessDescSign.presetType != desc_preset_NONE;
 
 	/* Creating Output Buffer */
-	ncchset->sections.exhdr.size = 0x800;
-	ncchset->sections.exhdr.buffer = malloc(ncchset->sections.exhdr.size);
+	ncchset->sections.exhdr.size = sizeof(extended_hdr);
+	ncchset->sections.exhdr.buffer = calloc(1,ncchset->sections.exhdr.size);
 	if(!ncchset->sections.exhdr.buffer) {
 		fprintf(stderr,"[EXHEADER ERROR] Not enough memory\n"); 
 		return MEM_ERROR;
 	}
-	memset(ncchset->sections.exhdr.buffer,0,ncchset->sections.exhdr.size);
+	
+	ncchset->sections.acexDesc.size = sizeof(access_descriptor);
+	ncchset->sections.acexDesc.buffer = calloc(1,ncchset->sections.acexDesc.size);
+	if(!ncchset->sections.acexDesc.buffer) {
+		fprintf(stderr,"[EXHEADER ERROR] Not enough memory\n"); 
+		return MEM_ERROR;
+	}
 	
 	/* Import ExHeader Code Section template */
 	if(ncchset->componentFilePtrs.exhdrSize){ 
@@ -137,6 +135,7 @@ int get_ExHeaderSettingsFromNcchset(exheader_settings *exhdrset, ncch_settings *
 
 	/* Create ExHeader Struct for output */
 	exhdrset->exHdr = (extended_hdr*)ncchset->sections.exhdr.buffer;
+	exhdrset->acexDesc = (access_descriptor*)ncchset->sections.acexDesc.buffer;
 
 	/* Set Code Info if Code Section was built not imported */
 	if(ncchset->options.IsBuildingCodeSection){
@@ -167,7 +166,7 @@ int get_ExHeaderSettingsFromNcchset(exheader_settings *exhdrset, ncch_settings *
 	return 0;
 }
 
-int get_ExHeaderSettingsFromYaml(exheader_settings *exhdrset)
+int get_ExHeaderSettingsFromRsf(exheader_settings *exhdrset)
 {
 	int result = 0;
 	result = get_ExHeaderCodeSetInfo(&exhdrset->exHdr->codeSetInfo, exhdrset->rsf);
@@ -1171,22 +1170,14 @@ void exhdr_Print_ServiceAccessControl(extended_hdr *hdr)
 }
 
 /* ExHeader Binary Read Functions */
-u8* GetAccessDescSig_frm_exhdr(extended_hdr *hdr)
+u8* GetAcexRsaSig(access_descriptor *acexDesc)
 {
-	if(!hdr) return NULL;
-	return hdr->accessDescriptor.signature ;
+	return acexDesc->signature ;
 }
 
-u8* GetNcchHdrPubKey_frm_exhdr(extended_hdr *hdr)
+u8* GetAcexNcchPubKey(access_descriptor *acexDesc)
 {
-	if(!hdr) return NULL;
-	return hdr->accessDescriptor.ncchRsaPubKey;
-}
-
-u8* GetAccessDesc_frm_exhdr(extended_hdr *hdr)
-{
-	if(!hdr) return NULL;
-	return hdr->accessDescriptor.ncchRsaPubKey;
+	return acexDesc->ncchRsaPubKey;
 }
 
 u16 GetRemasterVersion_frm_exhdr(extended_hdr *hdr)

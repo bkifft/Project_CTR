@@ -40,6 +40,7 @@ typedef struct
 
 	FILE *out;
 
+	rsf_settings *rsf;
 	keys_struct *keys;
 
 	struct{
@@ -83,7 +84,6 @@ typedef struct
 		bool IsCfa;
 		bool IsDlc;
 		bool encryptCia;
-		char *overrideSaveDataSize;
 
 		bool keyNotFound;
 

@@ -160,6 +160,7 @@ int GetSettingsFromUsrset(cia_settings *ciaset, user_settings *usrset)
 {
 	// General Stuff
 	ciaset->keys = &usrset->common.keys;
+	ciaset->rsf = &usrset->common.rsfSet;
 	ciaset->ciaSections.content.buffer = usrset->common.workingFile.buffer;
 	ciaset->ciaSections.content.size = usrset->common.workingFile.size;
 	usrset->common.workingFile.buffer = NULL;
@@ -179,8 +180,6 @@ int GetSettingsFromUsrset(cia_settings *ciaset, user_settings *usrset)
 	for(int i = 0; i < 3; i++){
 		ciaset->common.titleVersion[i] = usrset->cia.titleVersion[i];
 	}
-
-	ciaset->content.overrideSaveDataSize = usrset->cia.overideSaveDataSize;
 
 	// Ticket Data
 	u64_to_u8(ciaset->tik.ticketId,u64GetRand(),BE);
@@ -264,9 +263,7 @@ int GetSettingsFromNcch0(cia_settings *ciaset, u32 ncch0_offset)
 	u8 *ncchkey = NULL;
 	if(!ciaset->content.keyNotFound){
 		SetNcchUnfixedKeys(ciaset->keys,ncch0);
-		ncchkey = GetNCCHKey(keyType,ciaset->keys);
-		if(keyType == KeyIsUnFixed2)
-			ncchkey = GetNCCHKey(KeyIsUnFixed,ciaset->keys);
+		ncchkey = GetNCCHKey0(keyType,ciaset->keys);
 	}
 
 	/* Get TMD Data from ncch */
@@ -289,11 +286,14 @@ int GetCIADataFromNcch(cia_settings *ciaset, u8 *ncch, ncch_struct *ncch_ctx, u8
 		CryptNCCHSection((u8*)exhdr,0x400,0,ncch_ctx,key,ncch_exhdr);
 
 	u16 Category = u8_to_u16((ciaset->common.titleId+2),BE);
-	if(IsPatch(Category)||ciaset->content.IsCfa||ciaset->content.keyNotFound) u32_to_u8(ciaset->tmd.savedataSize,0,LE);
-	else u32_to_u8(ciaset->tmd.savedataSize,(u32)GetSaveDataSize_frm_exhdr(exhdr),LE);
-	if(ciaset->content.overrideSaveDataSize){
+	if(IsPatch(Category)||ciaset->content.IsCfa||ciaset->content.keyNotFound) 
+		u32_to_u8(ciaset->tmd.savedataSize,0,LE);
+	else 
+		u32_to_u8(ciaset->tmd.savedataSize,(u32)GetSaveDataSize_frm_exhdr(exhdr),LE);
+		
+	if(ciaset->rsf->SystemControlInfo.SaveDataSize && !ciaset->content.IsCfa && ciaset->content.keyNotFound){
 		u64 size = 0;
-		GetSaveDataSizeFromString(&size,ciaset->content.overrideSaveDataSize,"CIA");
+		GetSaveDataSizeFromString(&size,ciaset->rsf->SystemControlInfo.SaveDataSize,"CIA");
 		u32_to_u8(ciaset->tmd.savedataSize,(u32)size,LE);
 	}
 	
@@ -524,14 +524,9 @@ int GetSettingsFromCci(cia_settings *ciaset)
 	
 	u64 cciContentOffsets[CCI_MAX_CONTENT];
 	cciContentOffsets[0] = ncch0_offset;
-	ncch_hdr *hdr;
 	for(int i = 1; i < 8; i++){
 		if(GetPartitionSize(ciaset->ciaSections.content.buffer,i)){
 			cciContentOffsets[j] = GetPartitionOffset(ciaset->ciaSections.content.buffer,i);
-
-			// Get Data from ncch HDR
-			GetNCCH_CommonHDR(hdr,NULL,GetPartition(ciaset->ciaSections.content.buffer,i));
-			hdr = (ncch_hdr*)(ciaset->ciaSections.content.buffer + cciContentOffsets[j] + 0x100);
 			
 			// Get Size
 			ciaset->content.size[j] =  GetPartitionSize(ciaset->ciaSections.content.buffer,i);
@@ -540,9 +535,7 @@ int GetSettingsFromCci(cia_settings *ciaset)
 			ciaset->content.totalSize += ciaset->content.size[j];
 			
 			// Get ID
-			u8 hash[0x20];
-			ctr_sha((u8*)hdr,0x200,hash,CTR_SHA_256);
-			ciaset->content.id[j] = u8_to_u32(hash,BE);
+			ciaset->content.id[j] = u32GetRand();
 
 			// Get Index
 			ciaset->content.index[j] = i;

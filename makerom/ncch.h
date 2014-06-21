@@ -74,6 +74,8 @@ typedef struct
 	u16 formatVersion;
 	u32 exhdrOffset;
 	u32 exhdrSize;
+	u32 acexOffset;
+	u32 acexSize;
 	u64 logoOffset;
 	u64 logoSize;
 	u64 plainRegionOffset;
@@ -126,7 +128,6 @@ typedef struct
 	buffer_struct *out;
 	keys_struct *keys;
 	rsf_settings *rsfSet;
-	
 
 	struct
 	{
@@ -192,6 +193,7 @@ typedef struct
 	struct
 	{
 		buffer_struct exhdr;
+		buffer_struct acexDesc;
 		buffer_struct logo;
 		buffer_struct plainRegion;
 		buffer_struct exeFs;
@@ -220,8 +222,8 @@ u32 GetNCCH_MediaUnitSize(ncch_hdr* hdr);
 u32 GetNCCH_MediaSize(ncch_hdr* hdr);
 ncch_key_type GetNCCHKeyType(ncch_hdr* hdr);
 
-int GetNCCHSection(u8 *dest, u64 dest_max_size, u64 src_pos, u8 *ncch, ncch_struct *ncch_ctx, keys_struct *keys, ncch_section section);
-u8* GetNCCHKey(ncch_key_type keytype, keys_struct *keys);
+u8* GetNCCHKey0(ncch_key_type keytype, keys_struct *keys);
+u8* GetNCCHKey1(ncch_key_type keytype, keys_struct *keys);
 
 int GetNCCHStruct(ncch_struct *ctx, ncch_hdr *header);
 void ncch_get_counter(ncch_struct *ctx, u8 counter[16], u8 type);
