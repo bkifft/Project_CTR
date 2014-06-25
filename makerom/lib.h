@@ -29,8 +29,8 @@
 #include "crypto.h"
 
 #include "keyset.h"
-#include "usersettings.h"
+#include "user_settings.h"
 #include "libyaml/yaml.h"
-#include "yaml_ctr.h"
+#include "yaml_parser.h"
 
 

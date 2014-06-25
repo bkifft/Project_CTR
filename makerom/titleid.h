@@ -2,10 +2,10 @@
 
 typedef enum
 {
-	PID_BAD_YAML_SET = -1,
-	PID_INVALID_CATEGORY = 0x10000,
-	PID_INVALID_UNIQUE_ID = 0x1000000,
-	PID_INVALID_VARIATION = 0x100,
+	PID_BAD_RSF_SET = -1,
+	PID_INVALID_CATEGORY = -2,
+	PID_INVALID_UNIQUE_ID = -3,
+	PID_INVALID_VARIATION = -4,
 } Pid_Errors;
 
 typedef enum
@@ -85,8 +85,8 @@ typedef enum
 
 u64 ConvertTwlIdToCtrId(u64 pgid);
 
-int GetProgramID(u64 *dest, rsf_settings *yaml, bool IsForExheader);
-int GetUniqueID(u32 *dest, rsf_settings *yaml);
+int GetProgramID(u64 *dest, rsf_settings *rsf, bool IsForExheader);
+int GetUniqueID(u32 *dest, rsf_settings *rsf);
 
 bool IsDemo(u16 Category);
 bool IsSystem(u16 Category);

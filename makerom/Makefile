@@ -3,8 +3,8 @@ UTILS_OBJS = utils.o dir.o utf.o keyset.o titleid.o
 CIA_OBJS = cia.o cia_read.o certs.o tik.o tmd.o tmd_read.o
 NCCH_OBJS = ncch.o exheader.o accessdesc.o exefs.o elf.o romfs.o romfs_import.o romfs_binary.o  
 NCSD_OBJS = ncsd.o  
-SETTINGS_OBJS = usersettings.o yamlsettings.o
-LIB_API_OBJS = crypto.o yaml_ctr.o blz.o
+SETTINGS_OBJS = user_settings.o rsf_settings.o
+LIB_API_OBJS = crypto.o yaml_parser.o blz.o
 
 OBJS = makerom.o $(UTILS_OBJS) $(LIB_API_OBJS) $(SETTINGS_OBJS) $(NCSD_OBJS) $(NCCH_OBJS) $(CIA_OBJS)
 

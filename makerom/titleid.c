@@ -2,141 +2,153 @@
 #include "ncch.h"
 #include "titleid.h"
 
-u32 SetPIDCategoryFromName(char *Category);
-u32 SetPIDCategoryFromFlags(char **CategoryFlags, u32 FlagNum);
-u32 SetPIDCategoryFromFlag(u32 Category, u32 Flag, char *FlagName);
+void SetPIDType(u16 *type);
+int SetPIDCategoryFromName(u16 *cat, char *CategoryStr);
+int SetPIDCategoryFromFlags(u16 *cat, char **CategoryFlags, u32 FlagNum);
+int SetPIDCategoryFromFlag(u16 *cat, u16 flag, char *flagName);
 u32 SetPIDUniqueId(char *UniqueIdStr);
-u16 SetTitleVariation(u16 Category, rsf_settings *yaml_set);
+int SetTitleVariation(u8 *var, u16 cat, rsf_settings *rsf);
 
 u64 ConvertTwlIdToCtrId(u64 pgid)
 {
 	return 0x0004800000000000 | (pgid & 0x00007FFFFFFFFFFF);
 }
 
-int GetProgramID(u64 *dest, rsf_settings *yaml, bool IsForExheader)
+int GetProgramID(u64 *dest, rsf_settings *rsf, bool IsForExheader)
 {
-	if(yaml->TitleInfo.Category && yaml->TitleInfo.CategoryFlags){
-		fprintf(stderr,"[ID ERROR] Can not set \"Cateory\" and \"CategoryFlags\" at the same time.\n");
-		return PID_BAD_YAML_SET;
-	}
-	u16 Type = 0x0004;
-	u32 m_Category = 0;
-	u32 UniqueId = 0;
-	u16 m_Variation = 0;
+	int ret;
+	u32 uniqueId;
+	u16 type,category;
+	u8 variation;
 
+	if(rsf->TitleInfo.Category && rsf->TitleInfo.CategoryFlags){
+		fprintf(stderr,"[ID ERROR] Can not set \"Cateory\" and \"CategoryFlags\" at the same time.\n");
+		return PID_BAD_RSF_SET;
+	}
+
+	// Getting Type
+	SetPIDType(&type);
+	
 	// Getting Category
-	if(yaml->TitleInfo.Category) 
-		m_Category = SetPIDCategoryFromName(yaml->TitleInfo.Category);
-	else if(yaml->TitleInfo.CategoryFlags) 
-		m_Category = SetPIDCategoryFromFlags(yaml->TitleInfo.CategoryFlags,yaml->TitleInfo.CategoryFlagsNum);
-	if(IsForExheader && yaml->TitleInfo.TargetCategory)
-		m_Category = SetPIDCategoryFromName(yaml->TitleInfo.TargetCategory);
-	if(m_Category == PID_INVALID_CATEGORY) // Error occured
-		return PID_BAD_YAML_SET;
+	if(rsf->TitleInfo.Category) 
+		ret = SetPIDCategoryFromName(&category,rsf->TitleInfo.Category);
+	else if(rsf->TitleInfo.CategoryFlags) 
+		ret = SetPIDCategoryFromFlags(&category,rsf->TitleInfo.CategoryFlags,rsf->TitleInfo.CategoryFlagsNum);
+	if(IsForExheader && rsf->TitleInfo.TargetCategory)
+		ret = SetPIDCategoryFromName(&category,rsf->TitleInfo.TargetCategory);
+	if(ret == PID_INVALID_CATEGORY) // Error occured
+		return PID_BAD_RSF_SET;
 
 	// Getting UniqueId
-	if(yaml->TitleInfo.UniqueId) UniqueId = SetPIDUniqueId(yaml->TitleInfo.UniqueId);
+	if(rsf->TitleInfo.UniqueId) 
+		GetUniqueID(&uniqueId,rsf);
 	else{
 		fprintf(stderr,"[ID ERROR] ParameterNotFound: \"TitleInfo/UniqueId\"\n");
-		return PID_BAD_YAML_SET;
+		return PID_BAD_RSF_SET;
 	}
 
-	m_Variation = SetTitleVariation(m_Category,yaml);
-	if(m_Variation == PID_INVALID_VARIATION) // Error occured
-		return PID_BAD_YAML_SET;
+	// Getting Variation
+	if(SetTitleVariation(&variation,category,rsf) == PID_INVALID_VARIATION)
+		return PID_BAD_RSF_SET;
 
-	u16 Category = (u16)m_Category;
-	u8 Variation = (u8)m_Variation;
+	u64 programId = 0;
+	programId |= (u64)variation<<0;
+	programId |= (u64)uniqueId<<8;
+	programId |= (u64)category<<32;
+	programId |= (u64)type<<48;
 
-	u64 ProgramID = 0;
-	ProgramID |= (u64)Variation<<0;
-	ProgramID |= (u64)UniqueId<<8;
-	ProgramID |= (u64)Category<<32;
-	ProgramID |= (u64)Type<<48;
-
-	*dest = ProgramID;
+	*dest = programId;
 
 	return 0;
 }
 
-int GetUniqueID(u32 *dest, rsf_settings *yaml)
+void SetPIDType(u16 *type)
 {
-	if(yaml->TitleInfo.UniqueId) *dest = 0xffffff & SetPIDUniqueId(yaml->TitleInfo.UniqueId);
+	*type = 0x0004;
+}
+
+int GetUniqueID(u32 *uid, rsf_settings *rsf)
+{
+	if(rsf->TitleInfo.UniqueId) *uid = 0xffffff & SetPIDUniqueId(rsf->TitleInfo.UniqueId);
 	else{
 		fprintf(stderr,"[ID ERROR] ParameterNotFound: \"TitleInfo/UniqueId\"\n");
-		return PID_BAD_YAML_SET;
+		return PID_BAD_RSF_SET;
 	}
 	return 0;
 }
 
-u32 SetPIDCategoryFromName(char *Category)
+int SetPIDCategoryFromName(u16 *cat, char *CategoryStr)
 {
-	if(strcmp(Category,"Application") == 0) return PROGRAM_ID_CATEGORY_APPLICATION;
-	else if(strcmp(Category,"SystemApplication") == 0) return PROGRAM_ID_CATEGORY_SYSTEM_APPLICATION;
-	else if(strcmp(Category,"Applet") == 0) return PROGRAM_ID_CATEGORY_APPLET;
-	else if(strcmp(Category,"Firmware") == 0) return PROGRAM_ID_CATEGORY_FIRMWARE;
-	else if(strcmp(Category,"Base") == 0) return PROGRAM_ID_CATEGORY_BASE;
-	else if(strcmp(Category,"DlpChild") == 0) return PROGRAM_ID_CATEGORY_DLP_CHILD;
-	else if(strcmp(Category,"Demo") == 0) return PROGRAM_ID_CATEGORY_DEMO;
-	else if(strcmp(Category,"Contents") == 0) return PROGRAM_ID_CATEGORY_CONTENTS;
-	else if(strcmp(Category,"SystemContents") == 0) return PROGRAM_ID_CATEGORY_SYSTEM_CONTENT;
-	else if(strcmp(Category,"SharedContents") == 0) return PROGRAM_ID_CATEGORY_SHARED_CONTENT;
-	else if(strcmp(Category,"AddOnContents") == 0) return PROGRAM_ID_CATEGORY_ADD_ON_CONTENTS;
-	else if(strcmp(Category,"Patch") == 0) return PROGRAM_ID_CATEGORY_PATCH;
-	else if(strcmp(Category,"AutoUpdateContents") == 0) return PROGRAM_ID_CATEGORY_AUTO_UPDATE_CONTENT;
+	if(strcmp(CategoryStr,"Application") == 0) *cat = PROGRAM_ID_CATEGORY_APPLICATION;
+	else if(strcmp(CategoryStr,"SystemApplication") == 0) *cat = PROGRAM_ID_CATEGORY_SYSTEM_APPLICATION;
+	else if(strcmp(CategoryStr,"Applet") == 0) *cat = PROGRAM_ID_CATEGORY_APPLET;
+	else if(strcmp(CategoryStr,"Firmware") == 0) *cat = PROGRAM_ID_CATEGORY_FIRMWARE;
+	else if(strcmp(CategoryStr,"Base") == 0) *cat = PROGRAM_ID_CATEGORY_BASE;
+	else if(strcmp(CategoryStr,"DlpChild") == 0) *cat = PROGRAM_ID_CATEGORY_DLP_CHILD;
+	else if(strcmp(CategoryStr,"Demo") == 0) *cat = PROGRAM_ID_CATEGORY_DEMO;
+	else if(strcmp(CategoryStr,"Contents") == 0) *cat = PROGRAM_ID_CATEGORY_CONTENTS;
+	else if(strcmp(CategoryStr,"SystemContents") == 0) *cat = PROGRAM_ID_CATEGORY_SYSTEM_CONTENT;
+	else if(strcmp(CategoryStr,"SharedContents") == 0) *cat = PROGRAM_ID_CATEGORY_SHARED_CONTENT;
+	else if(strcmp(CategoryStr,"AddOnContents") == 0) *cat = PROGRAM_ID_CATEGORY_ADD_ON_CONTENTS;
+	else if(strcmp(CategoryStr,"Patch") == 0) *cat = PROGRAM_ID_CATEGORY_PATCH;
+	else if(strcmp(CategoryStr,"AutoUpdateContents") == 0) *cat = PROGRAM_ID_CATEGORY_AUTO_UPDATE_CONTENT;
 	else {
-		fprintf(stderr,"[ID ERROR] Invalid Category: \"%s\"\n",Category);
+		fprintf(stderr,"[ID ERROR] Invalid Category: \"%s\"\n",CategoryStr);
 		return PID_INVALID_CATEGORY;
 	}
+	
+	return 0;
 }
 
-u32 SetPIDCategoryFromFlags(char **CategoryFlags, u32 FlagNum)
+int SetPIDCategoryFromFlags(u16 *cat, char **CategoryFlags, u32 FlagNum)
 {
-	u32 Category = 0;
+	int ret = 0;
 	for(u32 i = 0; i < FlagNum; i++){
 		if(strcmp(CategoryFlags[i],"Normal") == 0)
-			Category = SetPIDCategoryFromFlag(Category,PROGRAM_ID_CATEGORY_FLAG_NORMAL,"Normal");
+			ret = SetPIDCategoryFromFlag(cat,PROGRAM_ID_CATEGORY_FLAG_NORMAL,"Normal");
 		else if(strcmp(CategoryFlags[i],"DlpChild") == 0)
-			Category = SetPIDCategoryFromFlag(Category,PROGRAM_ID_CATEGORY_FLAG_DLP_CHILD,"DlpChild");
+			ret = SetPIDCategoryFromFlag(cat,PROGRAM_ID_CATEGORY_FLAG_DLP_CHILD,"DlpChild");
 		else if(strcmp(CategoryFlags[i],"Demo") == 0)
-			Category = SetPIDCategoryFromFlag(Category,PROGRAM_ID_CATEGORY_FLAG_DEMO,"Demo");
+			ret = SetPIDCategoryFromFlag(cat,PROGRAM_ID_CATEGORY_FLAG_DEMO,"Demo");
 		else if(strcmp(CategoryFlags[i],"Contents") == 0)
-			Category = SetPIDCategoryFromFlag(Category,PROGRAM_ID_CATEGORY_FLAG_CONTENTS,"Contents");
+			ret = SetPIDCategoryFromFlag(cat,PROGRAM_ID_CATEGORY_FLAG_CONTENTS,"Contents");
 		else if(strcmp(CategoryFlags[i],"AddOnContents") == 0)
-			Category = SetPIDCategoryFromFlag(Category,PROGRAM_ID_CATEGORY_FLAG_ADD_ON_CONTENTS,"AddOnContents");
+			ret = SetPIDCategoryFromFlag(cat,PROGRAM_ID_CATEGORY_FLAG_ADD_ON_CONTENTS,"AddOnContents");
 		else if(strcmp(CategoryFlags[i],"Patch") == 0)
-			Category = SetPIDCategoryFromFlag(Category,PROGRAM_ID_CATEGORY_FLAG_PATCH,"Patch");
+			ret = SetPIDCategoryFromFlag(cat,PROGRAM_ID_CATEGORY_FLAG_PATCH,"Patch");
 		else if(strcmp(CategoryFlags[i],"CannotExecution") == 0)
-			Category = SetPIDCategoryFromFlag(Category,PROGRAM_ID_CATEGORY_FLAG_CANNOT_EXECUTION,"CannotExecution");
+			ret = SetPIDCategoryFromFlag(cat,PROGRAM_ID_CATEGORY_FLAG_CANNOT_EXECUTION,"CannotExecution");
 		else if(strcmp(CategoryFlags[i],"System") == 0)
-			Category = SetPIDCategoryFromFlag(Category,PROGRAM_ID_CATEGORY_FLAG_SYSTEM,"System");
+			ret = SetPIDCategoryFromFlag(cat,PROGRAM_ID_CATEGORY_FLAG_SYSTEM,"System");
 		else if(strcmp(CategoryFlags[i],"RequireBatchUpdate") == 0)
-			Category = SetPIDCategoryFromFlag(Category,PROGRAM_ID_CATEGORY_FLAG_REQUIRE_BATCH_UPDATE,"RequireBatchUpdate");
+			ret = SetPIDCategoryFromFlag(cat,PROGRAM_ID_CATEGORY_FLAG_REQUIRE_BATCH_UPDATE,"RequireBatchUpdate");
 		else if(strcmp(CategoryFlags[i],"NotRequireUserApproval") == 0)
-			Category = SetPIDCategoryFromFlag(Category,PROGRAM_ID_CATEGORY_FLAG_NOT_REQUIRE_USER_APPROVAL,"NotRequireUserApproval");
+			ret = SetPIDCategoryFromFlag(cat,PROGRAM_ID_CATEGORY_FLAG_NOT_REQUIRE_USER_APPROVAL,"NotRequireUserApproval");
 		else if(strcmp(CategoryFlags[i],"NotRequireRightForMount") == 0)
-			Category = SetPIDCategoryFromFlag(Category,PROGRAM_ID_CATEGORY_FLAG_NOT_REQUIRE_RIGHT_FOR_MOUNT,"NotRequireRightForMount");
+			ret = SetPIDCategoryFromFlag(cat,PROGRAM_ID_CATEGORY_FLAG_NOT_REQUIRE_RIGHT_FOR_MOUNT,"NotRequireRightForMount");
 		else if(strcmp(CategoryFlags[i],"CanSkipConvertJumpId") == 0)
-			Category = SetPIDCategoryFromFlag(Category,PROGRAM_ID_CATEGORY_FLAG_CAN_SKIP_CONVERT_JUMP_ID,"CanSkipConvertJumpId");
+			ret = SetPIDCategoryFromFlag(cat,PROGRAM_ID_CATEGORY_FLAG_CAN_SKIP_CONVERT_JUMP_ID,"CanSkipConvertJumpId");
+		
+		if(ret == PID_INVALID_CATEGORY) break;
 		
 		else {
 			fprintf(stderr,"[ID ERROR] Invalid CategoryFlag: \"%s\"\n",CategoryFlags[i]);
 			return PID_INVALID_CATEGORY;
 		}
-
-		if(Category == PID_INVALID_CATEGORY) return PID_INVALID_CATEGORY;
 	}
-	return Category;
+	return ret;
 }
 
-u32 SetPIDCategoryFromFlag(u32 Category, u32 Flag, char *FlagName)
+int SetPIDCategoryFromFlag(u16 *cat, u16 flag, char *flagName)
 {
-	if(!Flag) return Category;
-	if((Category & Flag) == Flag){
-		fprintf(stderr,"[ID ERROR] Failed to set \"%s\" for category. CategoryFlag was already set.\n",FlagName);
+	if(!flag) return 0;
+	if((*cat & flag) == flag){
+		fprintf(stderr,"[ID ERROR] Failed to set \"%s\" for category. CategoryFlag was already set.\n",flagName);
 		return PID_INVALID_CATEGORY;
 	}
-	return Category |= Flag;
+	*cat |= flag;
+	
+	return 0;
 }
 
 u32 SetPIDUniqueId(char *UniqueIdStr)
@@ -144,16 +156,16 @@ u32 SetPIDUniqueId(char *UniqueIdStr)
 	return 0xffffff & strtoull(UniqueIdStr,NULL,0);
 }
 
-u16 SetTitleVariation(u16 Category, rsf_settings *yaml_set)
+int SetTitleVariation(u8 *var, u16 cat, rsf_settings *rsf)
 {
-	if(IsDemo(Category)){
-		if(yaml_set->TitleInfo.DemoIndex){
-			u16 DemoIndex = strtol(yaml_set->TitleInfo.DemoIndex,NULL,10);
-			if(DemoIndex > 255 || DemoIndex == 0){
+	if(IsDemo(cat)){
+		if(rsf->TitleInfo.DemoIndex){
+			u8 DemoIndex = 0xff & strtol(rsf->TitleInfo.DemoIndex,NULL,10);
+			if(DemoIndex == 0){
 				fprintf(stderr,"[ID ERROR] Invalid demo index \"%d\"\n",DemoIndex);
 				return PID_INVALID_VARIATION;
 			}
-			return DemoIndex;
+			*var = DemoIndex;
 		}
 		else{
 			fprintf(stderr,"[ID ERROR] ParameterNotFound: \"TitleInfo/DemoIndex\"\n");
@@ -161,55 +173,31 @@ u16 SetTitleVariation(u16 Category, rsf_settings *yaml_set)
 		}
 	}
 	
-	else if(IsDlpChild(Category)){
-		if(yaml_set->TitleInfo.ChildIndex){
-			u16 ChildIndex = strtol(yaml_set->TitleInfo.ChildIndex,NULL,10);
-			if(ChildIndex > 255){
-				fprintf(stderr,"[ID ERROR] Invalid child index \"%d\"\n",ChildIndex);
-				return PID_INVALID_VARIATION;
-			}
-			return ChildIndex;
-		}
+	else if(IsDlpChild(cat)){
+		if(rsf->TitleInfo.ChildIndex)
+			*var = 0xff & strtol(rsf->TitleInfo.ChildIndex,NULL,10);
 		else
-			return 0;
+			*var = 0;
 	}
-	else if(IsAddOnContent(Category)){
-		if(yaml_set->TitleInfo.Variation){ // Might Rename to DataTitleIndex
-			u16 DataTitleIndex = strtol(yaml_set->TitleInfo.Variation,NULL,10);
-			if(DataTitleIndex > 255){
-				fprintf(stderr,"[ID ERROR] Invalid variation \"%d\"\n",DataTitleIndex);
-				return PID_INVALID_VARIATION;
-			}
-			return DataTitleIndex;
-		}
+	else if(IsAddOnContent(cat)){
+		if(rsf->TitleInfo.Variation) // Might Rename to DataTitleIndex
+			*var = 0xff & strtol(rsf->TitleInfo.Variation,NULL,10);
 		else
-			return 0;
+			*var = 0;
 	}
-	else if(IsContents(Category)){
-		if(yaml_set->TitleInfo.ContentsIndex){
-			u16 ContentsIndex = strtol(yaml_set->TitleInfo.ContentsIndex,NULL,10);
-			if(ContentsIndex > 255){
-				fprintf(stderr,"[ID ERROR] Invalid content index \"%d\"\n",ContentsIndex);
-				return PID_INVALID_VARIATION;
-			}
-			return ContentsIndex;
-		}
+	else if(IsContents(cat)){
+		if(rsf->TitleInfo.ContentsIndex)
+			*var = 0xff & strtol(rsf->TitleInfo.ContentsIndex,NULL,10);
 		else
-			return 0;
+			*var = 0;
 	}
 	else{
-		if(yaml_set->TitleInfo.Version){
-			u16 Version = strtol(yaml_set->TitleInfo.Version,NULL,10);
-			if(Version > 255){
-				fprintf(stderr,"[ID ERROR] Invalid Version \"%d\"\n",Version);
-				return PID_INVALID_VARIATION;
-			}
-			return Version;
-		}
+		if(rsf->TitleInfo.Version)
+			*var = 0xff & strtol(rsf->TitleInfo.Version,NULL,10);
 		else
-			return 0;
+			*var = 0;
 	}
-	return PID_INVALID_VARIATION;
+	return 0;
 }
 
 bool IsDemo(u16 Category)

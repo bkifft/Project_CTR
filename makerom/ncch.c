@@ -9,6 +9,8 @@
 
 #include "logo_data.h" // Contains Logos
 
+const u32 MEDIA_UNIT = 0x200;
+
 // Private Prototypes
 int SignCFA(u8 *Signature, u8 *CFA_HDR, keys_struct *keys);
 int CheckCFASignature(u8 *Signature, u8 *CFA_HDR, keys_struct *keys);
@@ -173,27 +175,14 @@ int SetBasicOptions(ncch_settings *ncchset, user_settings *usrset)
 	int result = 0;
 
 	/* Options */
-	ncchset->options.mediaSize = 0x200;
-
+	ncchset->options.mediaSize = MEDIA_UNIT;
 	ncchset->options.IncludeExeFsLogo = usrset->ncch.includeExefsLogo;
-	
-	if(usrset->common.rsfSet.Option.EnableCompress != -1) ncchset->options.CompressCode = usrset->common.rsfSet.Option.EnableCompress;
-	else ncchset->options.CompressCode = true;
-
-	if(usrset->common.rsfSet.Option.UseOnSD != -1) ncchset->options.UseOnSD = usrset->common.rsfSet.Option.UseOnSD;
-	else ncchset->options.UseOnSD = false;
-	usrset->common.rsfSet.Option.UseOnSD = ncchset->options.UseOnSD;
-
-	if(usrset->common.rsfSet.Option.EnableCrypt != -1) ncchset->options.Encrypt = usrset->common.rsfSet.Option.EnableCrypt;
-	else ncchset->options.Encrypt = true;
-
-	if(usrset->common.rsfSet.Option.FreeProductCode != -1) ncchset->options.FreeProductCode = usrset->common.rsfSet.Option.FreeProductCode;
-	else ncchset->options.FreeProductCode = false;
-
+	ncchset->options.CompressCode = usrset->common.rsfSet.Option.EnableCompress;
+	ncchset->options.UseOnSD = usrset->common.rsfSet.Option.UseOnSD;
+	ncchset->options.Encrypt = usrset->common.rsfSet.Option.EnableCrypt;
+	ncchset->options.FreeProductCode = usrset->common.rsfSet.Option.FreeProductCode;
 	ncchset->options.IsCfa = (usrset->ncch.ncchType == CFA);
-	
 	ncchset->options.IsBuildingCodeSection = (usrset->ncch.elfPath != NULL);
-
 	ncchset->options.UseRomFS = ((ncchset->rsfSet->Rom.HostRoot && strlen(ncchset->rsfSet->Rom.HostRoot) > 0) || usrset->ncch.romfsPath);
 	
 	if(ncchset->options.IsCfa && !ncchset->options.UseRomFS){

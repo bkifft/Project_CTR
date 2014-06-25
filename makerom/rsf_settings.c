@@ -1,5 +1,5 @@
 #include "lib.h"
-#include "yamlsettings.h"
+#include "rsf_settings.h"
 
 void EvaluateRSF(rsf_settings *rsf, ctr_yaml_context *ctx)
 {
@@ -52,13 +52,13 @@ void GET_Option(ctr_yaml_context *ctx, rsf_settings *rsf)
 	while(ctx->Level == InitLevel){
 		if(ctx->error || ctx->done) return;
 		// Handle childs
-		if(cmpYamlValue("AllowUnalignedSection",ctx)) rsf->Option.AllowUnalignedSection = SetBoolYAMLValue("AllowUnalignedSection",ctx);
-		if(cmpYamlValue("MediaFootPadding",ctx)) rsf->Option.MediaFootPadding = SetBoolYAMLValue("MediaFootPadding",ctx);
-		//else if(cmpYamlValue("NoPadding",ctx)) rsf->Option.NoPadding = SetBoolYAMLValue("NoPadding",ctx);
-		else if(cmpYamlValue("EnableCrypt",ctx)) rsf->Option.EnableCrypt = SetBoolYAMLValue("EnableCrypt",ctx);
-		else if(cmpYamlValue("EnableCompress",ctx)) rsf->Option.EnableCompress = SetBoolYAMLValue("EnableCompress",ctx);
-		else if(cmpYamlValue("FreeProductCode",ctx)) rsf->Option.FreeProductCode = SetBoolYAMLValue("FreeProductCode",ctx);
-		else if(cmpYamlValue("UseOnSD",ctx)) rsf->Option.UseOnSD = SetBoolYAMLValue("UseOnSD",ctx);
+		if(cmpYamlValue("AllowUnalignedSection",ctx)) SetBoolYAMLValue(&rsf->Option.AllowUnalignedSection,"AllowUnalignedSection",ctx);
+		else if(cmpYamlValue("MediaFootPadding",ctx)) SetBoolYAMLValue(&rsf->Option.MediaFootPadding,"MediaFootPadding",ctx);
+		//else if(cmpYamlValue("NoPadding",ctx)) SetBoolYAMLValue(&rsf->Option.NoPadding,"NoPadding",ctx);
+		else if(cmpYamlValue("EnableCrypt",ctx)) SetBoolYAMLValue(&rsf->Option.EnableCrypt,"EnableCrypt",ctx);
+		else if(cmpYamlValue("EnableCompress",ctx)) SetBoolYAMLValue(&rsf->Option.EnableCompress,"EnableCompress",ctx);
+		else if(cmpYamlValue("FreeProductCode",ctx)) SetBoolYAMLValue(&rsf->Option.EnableCompress,"FreeProductCode",ctx);
+		else if(cmpYamlValue("UseOnSD",ctx)) SetBoolYAMLValue(&rsf->Option.UseOnSD,"UseOnSD",ctx);
 		else if(cmpYamlValue("PageSize",ctx)) SetSimpleYAMLValue(&rsf->Option.PageSize,"PageSize",ctx,0);
 		//else if(cmpYamlValue("AppendSystemCall",ctx)) rsf->Option.AppendSystemCallNum = SetYAMLSequence(&rsf->Option.AppendSystemCall,"AppendSystemCall",ctx);
 		else{
@@ -84,18 +84,18 @@ void GET_AccessControlInfo(ctr_yaml_context *ctx, rsf_settings *rsf)
 	while(ctx->Level == InitLevel){
 		if(ctx->error || ctx->done) return;
 		// Handle childs
-		if(cmpYamlValue("DisableDebug",ctx)) rsf->AccessControlInfo.DisableDebug = SetBoolYAMLValue("DisableDebug",ctx);
-		else if(cmpYamlValue("EnableForceDebug",ctx)) rsf->AccessControlInfo.EnableForceDebug = SetBoolYAMLValue("EnableForceDebug",ctx);
-		else if(cmpYamlValue("CanWriteSharedPage",ctx)) rsf->AccessControlInfo.CanWriteSharedPage = SetBoolYAMLValue("CanWriteSharedPage",ctx);
-		else if(cmpYamlValue("CanUsePrivilegedPriority",ctx)) rsf->AccessControlInfo.CanUsePrivilegedPriority = SetBoolYAMLValue("CanUsePrivilegedPriority",ctx);
-		else if(cmpYamlValue("CanUseNonAlphabetAndNumber",ctx)) rsf->AccessControlInfo.CanUseNonAlphabetAndNumber = SetBoolYAMLValue("CanUseNonAlphabetAndNumber",ctx);
-		else if(cmpYamlValue("PermitMainFunctionArgument",ctx)) rsf->AccessControlInfo.PermitMainFunctionArgument = SetBoolYAMLValue("PermitMainFunctionArgument",ctx);
-		else if(cmpYamlValue("CanShareDeviceMemory",ctx)) rsf->AccessControlInfo.CanShareDeviceMemory = SetBoolYAMLValue("CanShareDeviceMemory",ctx);
-		else if(cmpYamlValue("UseOtherVariationSaveData",ctx)) rsf->AccessControlInfo.UseOtherVariationSaveData = SetBoolYAMLValue("UseOtherVariationSaveData",ctx);
-		else if(cmpYamlValue("UseExtSaveData",ctx)) rsf->AccessControlInfo.UseExtSaveData = SetBoolYAMLValue("UseExtSaveData",ctx);
-		else if(cmpYamlValue("UseExtendedSaveDataAccessControl",ctx)) rsf->AccessControlInfo.UseExtendedSaveDataAccessControl = SetBoolYAMLValue("UseExtendedSaveDataAccessControl",ctx);
-		else if(cmpYamlValue("RunnableOnSleep",ctx)) rsf->AccessControlInfo.RunnableOnSleep = SetBoolYAMLValue("RunnableOnSleep",ctx);
-		else if(cmpYamlValue("SpecialMemoryArrange",ctx)) rsf->AccessControlInfo.SpecialMemoryArrange = SetBoolYAMLValue("SpecialMemoryArrange",ctx);
+		if(cmpYamlValue("DisableDebug",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.DisableDebug,"DisableDebug",ctx);
+		else if(cmpYamlValue("EnableForceDebug",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.EnableForceDebug,"EnableForceDebug",ctx);
+		else if(cmpYamlValue("CanWriteSharedPage",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.CanWriteSharedPage,"CanWriteSharedPage",ctx);
+		else if(cmpYamlValue("CanUsePrivilegedPriority",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.CanUsePrivilegedPriority,"CanUsePrivilegedPriority",ctx);
+		else if(cmpYamlValue("CanUseNonAlphabetAndNumber",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.CanUseNonAlphabetAndNumber,"CanUseNonAlphabetAndNumber",ctx);
+		else if(cmpYamlValue("PermitMainFunctionArgument",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.PermitMainFunctionArgument,"PermitMainFunctionArgument",ctx);
+		else if(cmpYamlValue("CanShareDeviceMemory",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.CanShareDeviceMemory,"CanShareDeviceMemory",ctx);
+		else if(cmpYamlValue("UseOtherVariationSaveData",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.UseOtherVariationSaveData,"UseOtherVariationSaveData",ctx);
+		else if(cmpYamlValue("UseExtSaveData",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.UseExtSaveData,"UseExtSaveData",ctx);
+		else if(cmpYamlValue("UseExtendedSaveDataAccessControl",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.UseExtendedSaveDataAccessControl,"UseExtendedSaveDataAccessControl",ctx);
+		else if(cmpYamlValue("RunnableOnSleep",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.RunnableOnSleep,"RunnableOnSleep",ctx);
+		else if(cmpYamlValue("SpecialMemoryArrange",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.SpecialMemoryArrange,"SpecialMemoryArrange",ctx);
 		
 		
 		//else if(cmpYamlValue("ProgramId",ctx)) SetSimpleYAMLValue(&rsf->AccessControlInfo.ProgramId,"ProgramId",ctx,0); 

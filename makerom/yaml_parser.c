@@ -1,5 +1,5 @@
 #include "lib.h"
-#include "yamlsettings.h"
+#include "rsf_settings.h"
 
 // Private Prototypes
 void InitYamlContext(ctr_yaml_context *ctx);
@@ -410,10 +410,10 @@ void SetSimpleYAMLValue(char **dest, char *key, ctr_yaml_context *ctx, u32 size_
 	
 }
 
-bool SetBoolYAMLValue(char *key, ctr_yaml_context *ctx)
+void SetBoolYAMLValue(bool *dest, char *key, ctr_yaml_context *ctx)
 {
 	GetEvent(ctx);
-	if(ctx->error || ctx->done) return false;
+	if(ctx->error || ctx->done) return;
 	if(!EventIsScalar(ctx)){
 		fprintf(stderr,"[RSF ERROR] '%s' requires a value\n",key);
 		ctx->error = YAML_BAD_FORMATTING;
@@ -425,12 +425,16 @@ bool SetBoolYAMLValue(char *key, ctr_yaml_context *ctx)
 		return false;
 	}
 	
-	if(casecmpYamlValue("true",ctx)) return true;
-	if(casecmpYamlValue("false",ctx)) return false;
+	if(casecmpYamlValue("true",ctx))
+		*dest = true;
+	else if(casecmpYamlValue("false",ctx))
+		*dest = false;
+	else{
+		fprintf(stderr,"[RSF ERROR] Invalid '%s'\n",key);
+		ctx->error = YAML_BAD_FORMATTING;
+	}
 	
-	fprintf(stderr,"[RSF ERROR] Invalid '%s'\n",key);
-	ctx->error = YAML_BAD_FORMATTING;
-	return false;
+	return;
 	
 }
 

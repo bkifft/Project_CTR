@@ -54,7 +54,7 @@ bool CheckSequenceEvent(ctr_yaml_context *ctx); // With extra implement, use if 
 
 // Functions which store values
 void SetSimpleYAMLValue(char **dest, char *key, ctr_yaml_context *ctx, u32 size_limit);
-bool SetBoolYAMLValue(char *key, ctr_yaml_context *ctx);
+void SetBoolYAMLValue(bool *dest, char *key, ctr_yaml_context *ctx);
 u32 SetYAMLSequence(char ***dest, char *key, ctr_yaml_context *ctx);
 u32 SetYAMLSequenceFromMapping(char ***dest, char *key, ctr_yaml_context *ctx, bool StoreKey);
 //void SkipYAMLGroup(ctr_yaml_context *ctx);

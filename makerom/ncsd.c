@@ -222,20 +222,30 @@ int ImportNcchPartitions(cci_settings *cciset)
 	return 0;
 }
 
+void WriteCCIDummyData(cci_settings *cciset)
+{
+	// Creating Buffer of Dummy Bytes
+	u64 len = NCCH0_OFFSET - 0x1200;
+	u8 *dummy_bytes = malloc(len);
+	memset(dummy_bytes,0xff,len);
+	WriteBuffer(dummy_bytes,len,0x1200,cciset->out);	
+}
+
+void WriteDevCardInfoData(cci_settings *cciset)
+{
+	WriteBuffer((u8*)&ctx.devcardinfo,sizeof(devcardinfo_hdr),0x1200,cciset->out);	
+}
+
 int WriteHeaderToFile(cci_settings *cciset)
 {
 	WriteBuffer(ctx.signature,0x100,0,cciset->out);
 	WriteBuffer((u8*)&ctx.cciHdr,sizeof(cci_hdr),0x100,cciset->out);
 	WriteBuffer((u8*)&ctx.cardinfo,sizeof(cardinfo_hdr),0x200,cciset->out);
-	if(!cciset->option.useDevCardInfo){
-		// Creating Buffer of Dummy Bytes
-		u64 len = NCCH0_OFFSET - 0x1200;
-		u8 *dummy_bytes = malloc(len);
-		memset(dummy_bytes,0xff,len);
-		WriteBuffer(dummy_bytes,len,0x1200,cciset->out);
-	}
+	if(cciset->option.useDevCardInfo)
+		WriteDevCardInfoData(cciset);
 	else
-		WriteBuffer((u8*)&ctx.devcardinfo,sizeof(devcardinfo_hdr),0x1200,cciset->out);
+		WriteCCIDummyData(cciset);
+		
 	return 0;
 }
 
