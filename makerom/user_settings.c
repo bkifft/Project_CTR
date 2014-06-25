@@ -181,8 +181,8 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			set->common.keys.keyset = pki_DEVELOPMENT;
 		else if(strcasecmp(argv[i+1],"retail") == 0 || strcasecmp(argv[i+1],"production") == 0 || strcasecmp(argv[i+1],"p") == 0)
 			set->common.keys.keyset = pki_PRODUCTION;
-		else if(strcasecmp(argv[i+1],"custom") == 0 || strcasecmp(argv[i+1],"c") == 0)
-			set->common.keys.keyset = pki_CUSTOM;
+		//else if(strcasecmp(argv[i+1],"custom") == 0 || strcasecmp(argv[i+1],"c") == 0)
+		//	set->common.keys.keyset = pki_CUSTOM;
 		else{
 			fprintf(stderr,"[SETTING ERROR] Unrecognised target '%s'\n",argv[i+1]);
 			return USR_BAD_ARG;
@@ -980,7 +980,7 @@ void DisplayHelp(char *app_name)
 	printf("                                    't' Test(false) Keys & prod Certs\n");
 	printf("                                    'd' Development Keys & Certs\n");
 	printf("                                    'p' Production Keys & Certs\n");
-	printf("                                    'c' Custom Keys & Certs\n");
+	//printf("                                    'c' Custom Keys & Certs\n");
 	printf(" -ckeyID        <u8 value>          Override the automatic commonKey selection\n");
 	printf(" -showkeys                          Display the loaded keychain\n");
 	printf(" -fsign                             Ignore invalid signatures\n");
