@@ -58,7 +58,7 @@ int PrepareBuildRomFsBinary(ncch_settings *ncchset, romfs_buildctx *ctx)
 	FilterRomFS(fs_raw,ctx->fs,filter_criteria);
 	
 	// free unfiltered FS
-	fs_PrintDir(fs_raw,0);
+	//fs_PrintDir(fs_raw,0);
 	//printf("free discarded file ptrs\n");
 	fs_FreeFiles(fs_raw); // All important FPs have been moved with FilterRomFS, so only un-wanted FPs are closed here
 	//printf("free structs in fs_raw\n");
@@ -75,7 +75,7 @@ int PrepareBuildRomFsBinary(ncch_settings *ncchset, romfs_buildctx *ctx)
 	
 	// Print Filtered FS
 	//printf("print filtered FS\n");
-	fs_PrintDir(ctx->fs,0);
+	//fs_PrintDir(ctx->fs,0);
 	
 	//printf("predict romfs size\n");
 	CalcRomfsSize(ctx);
@@ -470,41 +470,3 @@ void GenIvfcHashTree(romfs_buildctx *ctx)
 	
 	return;
 }
-
-/*
-int main(int argc, char **argv)
-{
-	if(argc!=3){
-		if(argc == 2) 
-			return old_main(argc,argv);
-		printf("usage: %s <dir> <out file>\n",argv[0]);
-		return -1;
-	}
-	
-	romfs_buildctx *ctx = calloc(1,sizeof(romfs_buildctx));
-	//memset(&ctx,0,sizeof(romfs_buildctx));
-	PrepareRomfsBuild(NULL, ctx, argv[1]);
-	
-	if(ctx->romfsSize){
-		ctx->output = calloc(1,ctx->romfsSize);
-		
-		int ret = RomfsBuild(ctx);
-		if(ret!=0) return -1;
-		
-		FILE *romfs = fopen(argv[2],"wb");
-		fwrite(ctx->output,ctx->romfsSize,1,romfs);
-		fclose(romfs);
-		
-		//printf("free output ptr\n");
-		free(ctx->output);
-	}
-	
-	//printf("free output\n");
-	FreeRomfsCtx(ctx);
-	//printf("free ctx\n");
-	free(ctx);
-	
-	//printf("return\n");
-	return 0;
-}
-*/
