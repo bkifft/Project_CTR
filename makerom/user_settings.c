@@ -953,8 +953,8 @@ void PrintNoNeedParam(char *arg)
 
 void DisplayHelp(char *app_name)
 {
-	printf("CTR MAKEROM %d.%d",MAKEROM_VER_MAJOR,MAKEROM_VER_MINOR);
-	printf("\n(C) 3DSGuy 2014\n");
+	printf("CTR MAKEROM %d.%d\n",MAKEROM_VER_MAJOR,MAKEROM_VER_MINOR);
+	printf("(C) 3DSGuy 2014\n");
 	printf("Usage: %s [options... ]\n",app_name);
 	printf("Option          Parameter           Explanation\n");
 	printf("GLOBAL OPTIONS:\n");
