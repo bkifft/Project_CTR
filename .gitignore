@@ -215,3 +215,13 @@ pip-log.txt
 .mr.developer.cfg
 
 *.o
+
+#CTR
+*.cxi
+*.cfa
+*.cci
+*.3ds
+*.cia
+
+#exec
+*.exe
