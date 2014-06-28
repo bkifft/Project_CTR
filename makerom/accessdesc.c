@@ -6,10 +6,8 @@
 #include "polarssl/base64.h"
 
 #include "desc_presets.h"
-#ifndef PUBLIC_BUILD
 #include "desc_dev_sigdata.h"
 #include "desc_prod_sigdata.h"
-#endif
 
 const int RSF_RSA_DATA_LEN = 344;
 const int RSF_DESC_DATA_LEN = 684;
@@ -19,9 +17,7 @@ int accessdesc_SignWithKey(exheader_settings *exhdrset);
 int accessdesc_GetSignFromRsf(exheader_settings *exhdrset);
 int accessdesc_GetSignFromPreset(exheader_settings *exhdrset);
 void accessdesc_GetPresetData(u8 **desc, u8 **accessDesc, u8 **depList, keys_struct *keys);
-#ifndef PUBLIC_BUILD
 void accessdesc_GetPresetSigData(u8 **accessDescSig, u8 **cxiPubk, u8 **cxiPvtk, keys_struct *keys);
-#endif
 
 bool IsValidB64Char(char chr);
 u32 b64_strlen(char *str);
@@ -153,9 +149,7 @@ int accessdesc_GetSignFromPreset(exheader_settings *exhdrset)
 	u8 *cxiPvtk = NULL;
 
 	accessdesc_GetPresetData(&desc,&accessDesc,&depList,exhdrset->keys);
-#ifndef PUBLIC_BUILD
 	accessdesc_GetPresetSigData(&accessDescSig,&cxiPubk,&cxiPvtk,exhdrset->keys);
-#endif
 
 	// Error Checking
 	if(!desc || !depList){
@@ -307,7 +301,6 @@ void accessdesc_GetPresetData(u8 **desc, u8 **accessDesc, u8 **depList, keys_str
 	}
 }
 
-#ifndef PUBLIC_BUILD
 void accessdesc_GetPresetSigData(u8 **accessDescSig, u8 **cxiPubk, u8 **cxiPvtk, keys_struct *keys)
 {
 	if(keys->accessDescSign.presetType == desc_preset_APP){
@@ -459,7 +452,6 @@ void accessdesc_GetPresetSigData(u8 **accessDescSig, u8 **cxiPubk, u8 **cxiPvtk,
 		}
 	}
 }
-#endif
 
 bool IsValidB64Char(char chr)
 {

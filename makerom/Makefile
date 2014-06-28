@@ -19,9 +19,9 @@ CFLAGS = --std=c99 -Wall -Wno-unused-but-set-variable -Wno-unused-value -I. -DMA
 CC = gcc
  
 # MAKEROM Build Settings
-MAKEROM_BUILD_FLAGS = #-DPUBLIC_BUILD #-DDEBUG
+MAKEROM_BUILD_FLAGS = #-DDEBUG
 VER_MAJOR = 0
-VER_MINOR = 8
+VER_MINOR = 9
 OUTPUT = makerom
 
 main: build

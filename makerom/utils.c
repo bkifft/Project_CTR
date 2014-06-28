@@ -44,6 +44,18 @@ int CopyData(u8 **dest, u8 *source, u64 size)
 	return 0;
 }
 
+void rndset(void *ptr, u64 num)
+{
+	u8 *tmp = (u8*)ptr;
+	for(u64 i = 0; i < num ; i++)
+		tmp[i] = u8GetRand();
+}
+
+void clrmem(void *ptr, u64 num)
+{
+	memset(ptr,0,num);
+}
+
 // Misc
 u64 align(u64 value, u64 alignment)
 {

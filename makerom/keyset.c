@@ -2,10 +2,8 @@
 
 // KeyData
 #include "tpki.h" // Test PKI
-#ifndef PUBLIC_BUILD
 #include "ppki.h" // Production PKI
 #include "dpki.h" // Development PKI
-#endif
 
 // Private Prototypes
 int SetRsaKeySet(u8 **PrivDest, u8 *PrivSource, u8 **PubDest, u8 *PubSource);
@@ -88,7 +86,6 @@ int LoadKeysFromResources(keys_struct *keys)
 		/* RSA Keys */
 		keys->rsa.isFalseSign = true;		
 	}
-	#ifndef PUBLIC_BUILD
 	else if(keys->keyset == pki_DEVELOPMENT){
 		keys->keysetLoaded = true;
 		/* AES Keys */
@@ -154,7 +151,6 @@ int LoadKeysFromResources(keys_struct *keys)
 		SetTikCert(keys,(u8*)xsC_ppki_cert);
 		SetTmdCert(keys,(u8*)cpB_ppki_cert);
 	}
-#endif
 	return 0;
 }
 

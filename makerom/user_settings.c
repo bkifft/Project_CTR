@@ -29,12 +29,11 @@ int ParseArgs(int argc, char *argv[], user_settings *usr_settings)
 	}
 	
 	// Allocating Memory for Content Path Ptrs
-	usr_settings->common.contentPath = malloc(CIA_MAX_CONTENT*sizeof(char*));
+	usr_settings->common.contentPath = calloc(CIA_MAX_CONTENT,sizeof(char*));
 	if(usr_settings->common.contentPath == NULL){
 		fprintf(stderr,"[SETTING ERROR] Not Enough Memory\n");
 		return USR_MEM_ERROR;
 	}
-	memset(usr_settings->common.contentPath,0,CIA_MAX_CONTENT*sizeof(char*));
 	
 	// Initialise Keys
 	InitKeys(&usr_settings->common.keys);
@@ -81,7 +80,7 @@ int ParseArgs(int argc, char *argv[], user_settings *usr_settings)
 		else if(usr_settings->common.workingFileType == infile_ncsd || usr_settings->common.workingFileType == infile_srl) source_path = usr_settings->common.workingFilePath;
 		else source_path = usr_settings->common.contentPath[0];
 		u16 outfile_len = strlen(source_path) + 3;
-		usr_settings->common.outFileName = malloc(outfile_len);
+		usr_settings->common.outFileName = calloc(outfile_len,sizeof(char));
 		if(!usr_settings->common.outFileName){
 			fprintf(stderr,"[SETTING ERROR] Not Enough Memory\n");
 			return USR_MEM_ERROR;
@@ -270,8 +269,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 		}
 
 		u32 app_type_len = (u32)(tmp2-tmp);
-		char *app_type = malloc(app_type_len+1);
-		memset(app_type,0,app_type_len+1);
+		char *app_type = calloc(app_type_len+1,sizeof(char));
 		memcpy(app_type,tmp,app_type_len);
 
 		if(strcasecmp(app_type,"App") == 0 || strcasecmp(app_type,"SDApp") == 0) set->common.keys.accessDescSign.presetType = desc_preset_APP;
@@ -366,7 +364,6 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 		return 2;
 	}
 	// Cci Options
-#ifndef PUBLIC_BUILD
 	else if(strcmp(argv[i],"-devcardcci") == 0){
 		if(ParamNum){
 			PrintNoNeedParam("-devcardcci");
@@ -375,7 +372,6 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 		set->cci.useSDKStockData = true;
 		return 1;
 	}
-#endif
 	else if(strcmp(argv[i],"-nomodtid") == 0){
 		if(ParamNum){
 			PrintNoNeedParam("-nomodtid");
@@ -958,15 +954,12 @@ void PrintNoNeedParam(char *arg)
 void DisplayHelp(char *app_name)
 {
 	printf("CTR MAKEROM %d.%d",MAKEROM_VER_MAJOR,MAKEROM_VER_MINOR);
-#ifndef PUBLIC_BUILD
-	printf(" PRIVATE BUILD");
-#endif
 	printf("\n(C) 3DSGuy 2014\n");
 	printf("Usage: %s [options... ]\n",app_name);
 	printf("Option          Parameter           Explanation\n");
 	printf("GLOBAL OPTIONS:\n");
 	printf(" -help                              Display this text\n");
-	printf(" -rsf           <file>              RSF File\n");
+	printf(" -rsf           <file>              Rom Specification File (*.rsf)\n");
 	printf(" -f             <cxi|cfa|cci|cia>   Output Format, defaults to 'cxi'\n");
 	//printf("                                    'cxi' CTR Executable Image\n");
 	//printf("                                    'cfa' CTR File Archive\n");
@@ -976,7 +969,8 @@ void DisplayHelp(char *app_name)
 	//printf(" -v                                 Verbose\n");
 	printf(" -DNAME=VALUE                       Substitute values in Spec files\n");
 	printf("KEY OPTIONS:\n");
-	printf(" -target        <t|d|p|c>           Target for crypto, defaults to 't'\n");
+	//printf(" -target        <t|d|p|c>           Target for crypto, defaults to 't'\n");
+	printf(" -target        <t|d|p>             Target for crypto, defaults to 't'\n");
 	printf("                                    't' Test(false) Keys & prod Certs\n");
 	printf("                                    'd' Development Keys & Certs\n");
 	printf("                                    'p' Production Keys & Certs\n");
@@ -1005,9 +999,7 @@ void DisplayHelp(char *app_name)
 	printf(" -romfs         <romfs path>        RomFS File\n");	
 	printf("CCI OPTIONS:\n");
 	printf(" -content       <filepath>:<index>  Specify content files\n");
-#ifndef PUBLIC_BUILD
 	printf(" -devcardcci                        Use SDK CardInfo Method\n");
-#endif
 	printf(" -nomodtid                          Don't Modify Content TitleIDs\n");
 	printf(" -alignwr                           Align Writeable Region to the end of last NCCH\n");
 	printf(" -genupdatenote <cver cia path>     Create Update Partition Notes\n");

@@ -48,7 +48,7 @@ int SetupTMDBuffer(buffer_struct *tmd)
 
 int SetupTMDHeader(tmd_hdr *hdr, tmd_content_info_record *info_record, cia_settings *ciaset)
 {
-	memset(hdr,0,sizeof(tmd_hdr));
+	clrmem(hdr,sizeof(tmd_hdr));
 
 	memcpy(hdr->issuer,ciaset->tmd.issuer,0x40);
 	hdr->formatVersion = ciaset->tmd.formatVersion;
@@ -67,14 +67,14 @@ int SetupTMDHeader(tmd_hdr *hdr, tmd_content_info_record *info_record, cia_setti
 
 int SignTMDHeader(tmd_hdr *hdr, tmd_signature *sig, keys_struct *keys)
 {
-	memset(sig,0,sizeof(tmd_signature));
+	clrmem(sig,sizeof(tmd_signature));
 	u32_to_u8(sig->sigType,RSA_2048_SHA256,BE);
 	return ctr_sig((u8*)hdr,sizeof(tmd_hdr),sig->data,keys->rsa.cpPub,keys->rsa.cpPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
 }
 
 int SetupTMDInfoRecord(tmd_content_info_record *info_record, u8 *content_record, u16 ContentCount)
 {
-	memset(info_record,0x0,sizeof(tmd_content_info_record)*0x40);
+	clrmem(info_record,sizeof(tmd_content_info_record)*0x40);
 	u16_to_u8(info_record->contentIndexOffset,0x0,BE);
 	u16_to_u8(info_record->contentCommandCount,ContentCount,BE);
 	ctr_sha(content_record,sizeof(tmd_content_chunk)*ContentCount,info_record->contentChunkHash,CTR_SHA_256);

@@ -367,34 +367,16 @@ int GetDataFromContent0(cci_settings *cciset, user_settings *usrset)
 	
 	memcpy(cciset->header.mediaId,hdr->titleId,8);
 	memcpy(&cciset->content.titleId[0],hdr->titleId,8);
-#ifndef PUBLIC_BUILD
 	if(usrset->cci.useSDKStockData){
 		memcpy(cciset->cardinfo.initialData,stock_initial_data,0x30);
 		memcpy(cciset->cardinfo.titleKey,stock_title_key,0x10);
 		cciset->option.useDevCardInfo = true;
 	}
 	else{
-		for(int i = 0; i < 0x2c/sizeof(u32); i++)
-		{
-			u32 val = u32GetRand();
-			memcpy((cciset->cardinfo.initialData+i*sizeof(u32)),&val,4);
-		}
-		/*
-		for(int i = 0; i < 2; i++)
-		{
-			u64 val = u64GetRand();
-			memcpy((cciset->cardinfo.titleKey+i*8),&val,8);
-		}
-		cciset->option.useDevCardInfo = true;
-		*/
+		rndset(cciset->cardinfo.initialData,0x2c);
+		//rndset(cciset->cardinfo.titleKey,0x10);
+		//cciset->option.useDevCardInfo = true;
 	}
-#else
-	for(int i = 0; i < 0x2c/sizeof(u32); i++)
-	{
-		u32 val = u32GetRand();
-		memcpy((cciset->cardinfo.initialData+i*sizeof(u32)),&val,4);
-	}
-#endif
 	
 	cciset->header.flags[MediaUnitSize] = hdr->flags[ContentUnitSize];
 	cciset->option.mediaUnit = GetNCCH_MediaUnitSize(hdr);

@@ -39,7 +39,7 @@ int SetupTicketBuffer(buffer_struct *tik)
 
 int SetupTicketHeader(tik_hdr *hdr, cia_settings *ciaset)
 {
-	memset(hdr,0,sizeof(tik_hdr));
+	clrmem(hdr,sizeof(tik_hdr));
 
 	memcpy(hdr->issuer,ciaset->tik.issuer,0x40);
 	hdr->formatVersion = ciaset->tik.formatVersion;
@@ -47,10 +47,8 @@ int SetupTicketHeader(tik_hdr *hdr, cia_settings *ciaset)
 	hdr->signerCrlVersion = ciaset->cert.signerCrlVersion;
 	if(ciaset->content.encryptCia)
 		CryptTitleKey(hdr->encryptedTitleKey, ciaset->common.titleKey,ciaset->common.titleId,ciaset->keys,ENC);
-	else{
-		u64_to_u8(hdr->encryptedTitleKey,u64GetRand(),BE);
-		u64_to_u8((hdr->encryptedTitleKey+8),u64GetRand(),BE);
-	}
+	else
+		rndset(hdr->encryptedTitleKey,16);
 	memcpy(hdr->ticketId,ciaset->tik.ticketId,8);
 	memcpy(hdr->deviceId,ciaset->tik.deviceId,8);
 	memcpy(hdr->titleId,ciaset->common.titleId,8);
@@ -66,7 +64,7 @@ int SetupTicketHeader(tik_hdr *hdr, cia_settings *ciaset)
 
 int SignTicketHeader(tik_hdr *hdr, tik_signature *sig, keys_struct *keys)
 {
-	memset(sig,0,sizeof(tik_signature));
+	clrmem(sig,sizeof(tik_signature));
 	u32_to_u8(sig->sigType,RSA_2048_SHA256,BE);
 	return ctr_sig((u8*)hdr,sizeof(tik_hdr),sig->data,keys->rsa.xsPub,keys->rsa.xsPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
 }
@@ -80,7 +78,7 @@ int CryptTitleKey(u8 *EncTitleKey, u8 *DecTitleKey, u8 *TitleID, keys_struct *ke
 	
 	//Setting up Aes Context
 	ctr_aes_context ctx;
-	memset(&ctx,0x0,sizeof(ctr_aes_context));
+	clrmem(&ctx,sizeof(ctr_aes_context));
 	
 	//Crypting TitleKey
 	ctr_init_aes_cbc(&ctx,keys->aes.commonKey[keys->aes.currentCommonKey],iv,mode);
@@ -91,12 +89,12 @@ int CryptTitleKey(u8 *EncTitleKey, u8 *DecTitleKey, u8 *TitleID, keys_struct *ke
 	return 0;
 }
 
-void SetLimits(tik_hdr *hdr, cia_settings *ciaset)
+void SetLimits(tik_hdr *hdr, cia_settings *ciaset) // TODO?
 {
 	memset(hdr->limits,0,0x40);
 }
 
-void SetContentIndexData(tik_hdr *hdr, cia_settings *ciaset)
+void SetContentIndexData(tik_hdr *hdr, cia_settings *ciaset) // TODO?
 {
 	memset(hdr->contentIndex,0,0xAC);
 	memcpy(hdr->contentIndex,default_contentIndex,0x30);

@@ -182,14 +182,11 @@ int GetSettingsFromUsrset(cia_settings *ciaset, user_settings *usrset)
 	}
 
 	// Ticket Data
-	u64_to_u8(ciaset->tik.ticketId,u64GetRand(),BE);
+	rndset(ciaset->tik.ticketId,16);
 	if(usrset->cia.randomTitleKey)
-	{
-		u64_to_u8(ciaset->common.titleKey,u64GetRand(),BE);
-		u64_to_u8((ciaset->common.titleKey+8),u64GetRand(),BE);
-	}
+		rndset(ciaset->common.titleKey,16);
 	else
-		memset(ciaset->common.titleKey,0,16);
+		clrmem(ciaset->common.titleKey,16);
 
 	ciaset->tik.formatVersion = 1;
 

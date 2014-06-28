@@ -64,7 +64,7 @@ int build_NCCH(user_settings *usrset)
 	int result;
 
 	// Init Settings\n");
-	ncch_settings *ncchset = malloc(sizeof(ncch_settings));
+	ncch_settings *ncchset = calloc(1,sizeof(ncch_settings));
 	if(!ncchset) {
 		fprintf(stderr,"[NCCH ERROR] Not enough memory\n"); 
 		return MEM_ERROR;

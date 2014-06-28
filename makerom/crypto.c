@@ -15,13 +15,11 @@ u8* AesKeyScrambler(u8 *Key, u8 *KeyX, u8 *KeyY)
 	for(int i = 0; i < 16; i++)
 		Key[i] = KeyX[i] ^ ((KeyY[i] >> 2) | ((KeyY[i < 15 ? i+1 : 0] & 3) << 6));
 
-#ifndef PUBLIC_BUILD
 	const u8 SCRAMBLE_SECRET[16] = {0x51, 0xD7, 0x5D, 0xBE, 0xFD, 0x07, 0x57, 0x6A, 0x1C, 0xFC, 0x2A, 0xF0, 0x94, 0x4B, 0xD5, 0x6C};
 
 	// Apply Secret to get final normal key
 	for(int i = 0; i < 16; i++)
 		Key[i] = Key[i] ^ SCRAMBLE_SECRET[i];
-#endif
 
 	return Key;
 }

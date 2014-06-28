@@ -10,6 +10,8 @@ typedef struct
 void char_to_u8_array(unsigned char destination[], char source[], int size, int endianness, int base);
 void endian_memcpy(u8 *destination, u8 *source, u32 size, int endianness);
 int CopyData(u8 **dest, u8 *source, u64 size);
+void rndset(void *ptr, u64 num);
+void clrmem(void *ptr, u64 num);
 
 // MISC
 u64 align(u64 value, u64 alignment);
