@@ -417,12 +417,12 @@ void SetBoolYAMLValue(bool *dest, char *key, ctr_yaml_context *ctx)
 	if(!EventIsScalar(ctx)){
 		fprintf(stderr,"[RSF ERROR] '%s' requires a value\n",key);
 		ctx->error = YAML_BAD_FORMATTING;
-		return false;
+		return;
 	}
 	if(!GetYamlStringSize(ctx)){
 		fprintf(stderr,"[RSF ERROR] '%s' requires a value\n",key);
 		ctx->error = YAML_BAD_FORMATTING;
-		return false;
+		return;
 	}
 	
 	if(casecmpYamlValue("true",ctx))
