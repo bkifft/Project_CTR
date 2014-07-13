@@ -182,7 +182,12 @@ int GetSettingsFromUsrset(cia_settings *ciaset, user_settings *usrset)
 	}
 
 	// Ticket Data
-	rndset(ciaset->tik.ticketId,16);
+	rndset(ciaset->tik.ticketId,8);
+	clrmem(ciaset->tik.deviceId,4);
+	clrmem(ciaset->tik.eshopAccId,4);
+	ciaset->tik.licenceType = 0;
+	ciaset->tik.audit = 0;
+	
 	if(usrset->cia.randomTitleKey)
 		rndset(ciaset->common.titleKey,16);
 	else

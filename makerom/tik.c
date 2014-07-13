@@ -50,7 +50,7 @@ int SetupTicketHeader(tik_hdr *hdr, cia_settings *ciaset)
 	else
 		rndset(hdr->encryptedTitleKey,16);
 	memcpy(hdr->ticketId,ciaset->tik.ticketId,8);
-	memcpy(hdr->deviceId,ciaset->tik.deviceId,8);
+	memcpy(hdr->deviceId,ciaset->tik.deviceId,4);
 	memcpy(hdr->titleId,ciaset->common.titleId,8);
 	u16_to_u8(hdr->ticketVersion,ciaset->tik.version,BE);
 	hdr->licenceType = ciaset->tik.licenceType;

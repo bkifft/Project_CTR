@@ -62,7 +62,7 @@ typedef struct
 		u16 version;
 
 		u8 ticketId[8];
-		u8 deviceId[8];
+		u8 deviceId[4];
 		u8 licenceType;
 		u8 audit;
 		u8 eshopAccId[4];
