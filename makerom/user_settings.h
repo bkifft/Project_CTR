@@ -49,20 +49,6 @@ typedef enum
 	NCCH
 } output_format;
 
-typedef struct
-{
-	char *name;
-	char *value;
-} dname_item;
-
-
-typedef struct
-{ 
-	dname_item *items;
-	u32 m_items;
-	u32 u_items;
-} dname_struct; 
-
 static const char output_extention[4][5] = {".cxi",".cfa",".cci",".cia"};
 
 /* This does not follow style, so the rsf string names match the variables where they're stored */
@@ -246,6 +232,19 @@ typedef struct
 
 typedef struct
 {
+	char *name;
+	char *value;
+} dname_item;
+
+typedef struct
+{ 
+	dname_item *items;
+	u32 m_items;
+	u32 u_items;
+} dname_struct; 
+
+typedef struct
+{
 	struct{
 		char *rsfPath;
 		bool outFileName_mallocd;
@@ -302,9 +301,7 @@ typedef struct
 		u16 titleVersion[3];
 
 		u64 contentId[CIA_MAX_CONTENT]; // For CIA
-	} cia; // CIA Settings
-	
-	
+	} cia; // CIA Settings	
 } user_settings;
 
 // Prototypes
@@ -312,6 +309,3 @@ typedef struct
 void init_UserSettings(user_settings *usr_settings);
 void free_UserSettings(user_settings *usr_settings);
 int ParseArgs(int argc, char *argv[], user_settings *usr_settings);
-void ReadYAMLtest(char *filepath);
-
-void free_RsfSettings(rsf_settings *set);

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "libyaml/yaml.h"
+
 typedef enum
 {
 	YAML_API_ERROR = -1,

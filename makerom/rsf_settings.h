@@ -1,6 +1,5 @@
 #pragma once
 
-int MergeSpecData(rsf_settings *out, rsf_settings *desc, rsf_settings *rsf);
 void EvaluateRSF(rsf_settings *rsf, ctr_yaml_context *ctx);
 
 void GET_Option(ctr_yaml_context *ctx, rsf_settings *rsf);
@@ -13,3 +12,5 @@ void GET_PlainRegion(ctr_yaml_context *ctx, rsf_settings *rsf);
 void GET_TitleInfo(ctr_yaml_context *ctx, rsf_settings *rsf);
 void GET_CardInfo(ctr_yaml_context *ctx, rsf_settings *rsf);
 void GET_CommonHeaderKey(ctr_yaml_context *ctx, rsf_settings *rsf);
+
+void free_RsfSettings(rsf_settings *set);

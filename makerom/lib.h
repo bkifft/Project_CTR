@@ -30,7 +30,8 @@
 
 #include "keyset.h"
 #include "user_settings.h"
-#include "libyaml/yaml.h"
 #include "yaml_parser.h"
+#include "rsf_settings.h"
+
 
 

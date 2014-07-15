@@ -1,5 +1,4 @@
 #include "lib.h"
-#include "rsf_settings.h"
 
 void EvaluateRSF(rsf_settings *rsf, ctr_yaml_context *ctx)
 {
@@ -372,4 +371,190 @@ void GET_CommonHeaderKey(ctr_yaml_context *ctx, rsf_settings *rsf)
 		GetEvent(ctx);
 	}
 	FinishEvent(ctx);
+}
+
+void free_RsfSettings(rsf_settings *set)
+{
+	//Option
+	free(set->Option.PageSize);
+	/*
+	for(u32 i = 0; i < set->Option.AppendSystemCallNum; i++){
+		free(set->Option.AppendSystemCall[i]);
+	}
+	free(set->Option.AppendSystemCall);
+	*/
+
+	//AccessControlInfo
+	//free(set->AccessControlInfo.ProgramId);
+	free(set->AccessControlInfo.IdealProcessor);
+	free(set->AccessControlInfo.Priority);
+	free(set->AccessControlInfo.MemoryType);
+	free(set->AccessControlInfo.SystemMode);
+	free(set->AccessControlInfo.CoreVersion);
+	free(set->AccessControlInfo.HandleTableSize);
+	free(set->AccessControlInfo.SystemSaveDataId1);
+	free(set->AccessControlInfo.SystemSaveDataId2);
+	free(set->AccessControlInfo.OtherUserSaveDataId1);
+	free(set->AccessControlInfo.OtherUserSaveDataId2);
+	free(set->AccessControlInfo.OtherUserSaveDataId3);
+	free(set->AccessControlInfo.ExtSaveDataId);
+	free(set->AccessControlInfo.SystemMode);	
+	free(set->AccessControlInfo.AffinityMask);
+	free(set->AccessControlInfo.DescVersion);
+	//free(set->AccessControlInfo.CryptoKey);
+	free(set->AccessControlInfo.ResourceLimitCategory);
+	free(set->AccessControlInfo.ReleaseKernelMajor);
+	free(set->AccessControlInfo.ReleaseKernelMinor);
+	free(set->AccessControlInfo.MaxCpu);
+
+	for(u32 i = 0; i < set->AccessControlInfo.MemoryMappingNum; i++){
+		free(set->AccessControlInfo.MemoryMapping[i]);
+	}
+	free(set->AccessControlInfo.MemoryMapping);
+	
+	for(u32 i = 0; i < set->AccessControlInfo.IORegisterMappingNum; i++){
+		free(set->AccessControlInfo.IORegisterMapping[i]);
+	}
+	free(set->AccessControlInfo.IORegisterMapping);
+	
+	for(u32 i = 0; i < set->AccessControlInfo.FileSystemAccessNum; i++){
+		free(set->AccessControlInfo.FileSystemAccess[i]);
+	}
+	free(set->AccessControlInfo.FileSystemAccess);
+	
+	for(u32 i = 0; i < set->AccessControlInfo.IoAccessControlNum; i++){
+		free(set->AccessControlInfo.IoAccessControl[i]);
+	}
+	free(set->AccessControlInfo.IoAccessControl);
+	
+	for(u32 i = 0; i < set->AccessControlInfo.InterruptNumbersNum; i++){
+		free(set->AccessControlInfo.InterruptNumbers[i]);
+	}
+	free(set->AccessControlInfo.InterruptNumbers);
+	
+	for(u32 i = 0; i < set->AccessControlInfo.SystemCallAccessNum; i++){
+		free(set->AccessControlInfo.SystemCallAccess[i]);
+	}
+	free(set->AccessControlInfo.SystemCallAccess);
+	
+	for(u32 i = 0; i < set->AccessControlInfo.ServiceAccessControlNum; i++){
+		free(set->AccessControlInfo.ServiceAccessControl[i]);
+	}
+	free(set->AccessControlInfo.ServiceAccessControl);
+	
+	for(u32 i = 0; i < set->AccessControlInfo.StorageIdNum; i++){
+		free(set->AccessControlInfo.StorageId[i]);
+	}
+	free(set->AccessControlInfo.StorageId);
+
+	for(u32 i = 0; i < set->AccessControlInfo.AccessibleSaveDataIdsNum; i++){
+		free(set->AccessControlInfo.AccessibleSaveDataIds[i]);
+	}
+	free(set->AccessControlInfo.AccessibleSaveDataIds);
+	
+	//SystemControlInfo
+	free(set->SystemControlInfo.AppType);
+	free(set->SystemControlInfo.StackSize);
+	free(set->SystemControlInfo.RemasterVersion);
+	free(set->SystemControlInfo.SaveDataSize);
+	free(set->SystemControlInfo.JumpId);
+	
+	for(u32 i = 0; i < set->SystemControlInfo.DependencyNum; i++){
+		free(set->SystemControlInfo.Dependency[i]);
+	}
+	free(set->SystemControlInfo.Dependency);
+	
+	//BasicInfo
+	free(set->BasicInfo.Title);
+	free(set->BasicInfo.CompanyCode);
+	free(set->BasicInfo.ProductCode);
+	free(set->BasicInfo.ContentType);
+	free(set->BasicInfo.Logo);
+	//free(set->BasicInfo.BackupMemoryType);
+	//free(set->BasicInfo.InitialCode);
+	
+	//Rom
+	free(set->Rom.HostRoot);
+	//free(set->Rom.Padding);
+	
+	for(u32 i = 0; i < set->Rom.DefaultRejectNum; i++){
+		free(set->Rom.DefaultReject[i]);
+	}
+	free(set->Rom.DefaultReject);
+	
+	for(u32 i = 0; i < set->Rom.RejectNum; i++){
+		free(set->Rom.Reject[i]);
+	}
+	free(set->Rom.Reject);
+	
+	for(u32 i = 0; i < set->Rom.IncludeNum; i++){
+		free(set->Rom.Include[i]);
+	}
+	free(set->Rom.Include);
+	
+	for(u32 i = 0; i < set->Rom.FileNum; i++){
+		free(set->Rom.File[i]);
+	}
+	free(set->Rom.File);
+	
+	//ExeFs
+	for(u32 i = 0; i < set->ExeFs.TextNum; i++){
+		free(set->ExeFs.Text[i]);
+	}
+	free(set->ExeFs.Text);
+	
+	for(u32 i = 0; i < set->ExeFs.ReadOnlyNum; i++){
+		free(set->ExeFs.ReadOnly[i]);
+	}
+	free(set->ExeFs.ReadOnly);
+	
+	for(u32 i = 0; i < set->ExeFs.ReadWriteNum; i++){
+		free(set->ExeFs.ReadWrite[i]);
+	}
+	free(set->ExeFs.ReadWrite);
+	
+	//PlainRegion
+	for(u32 i = 0; i < set->PlainRegionNum; i++){
+		free(set->PlainRegion[i]);
+	}
+	free(set->PlainRegion);
+	
+	//TitleInfo
+	//free(set->TitleInfo.Platform);
+	free(set->TitleInfo.Category);
+	free(set->TitleInfo.UniqueId);
+	free(set->TitleInfo.Version);
+	free(set->TitleInfo.ContentsIndex);
+	free(set->TitleInfo.Variation);
+	//free(set->TitleInfo.Use);
+	free(set->TitleInfo.ChildIndex);
+	free(set->TitleInfo.DemoIndex);
+	free(set->TitleInfo.TargetCategory);
+	
+	for(u32 i = 0; i < set->TitleInfo.CategoryFlagsNum; i++){
+		free(set->TitleInfo.CategoryFlags[i]);
+	}
+	free(set->TitleInfo.CategoryFlags);
+	
+	//CardInfo
+	free(set->CardInfo.WritableAddress);
+	free(set->CardInfo.CardType);
+	free(set->CardInfo.CryptoType);
+	free(set->CardInfo.CardDevice);
+	free(set->CardInfo.MediaType);
+	free(set->CardInfo.MediaSize);
+	free(set->CardInfo.BackupWriteWaitTime);
+	free(set->CardInfo.SaveCrypto);
+
+	//CommonHeaderKey
+	free(set->CommonHeaderKey.D);
+	free(set->CommonHeaderKey.P);
+	free(set->CommonHeaderKey.Q);
+	free(set->CommonHeaderKey.DP);
+	free(set->CommonHeaderKey.DQ);
+	free(set->CommonHeaderKey.InverseQ);
+	free(set->CommonHeaderKey.Modulus);
+	free(set->CommonHeaderKey.Exponent);
+	free(set->CommonHeaderKey.AccCtlDescSign);
+	free(set->CommonHeaderKey.AccCtlDescBin);
 }
