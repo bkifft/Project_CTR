@@ -45,7 +45,8 @@ typedef enum
 	CXI,
 	CFA,
 	CCI,
-	CIA
+	CIA,
+	NCCH
 } output_format;
 
 typedef struct

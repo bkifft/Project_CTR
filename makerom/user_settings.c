@@ -101,12 +101,12 @@ void SetDefaults(user_settings *set)
 	set->common.keys.accessDescSign.presetType = desc_preset_NONE;
 
 	// Build NCCH Info
-	set->ncch.buildNcch0 = true;
+	set->ncch.buildNcch0 = false;
 	set->ncch.includeExefsLogo = false;
-	set->common.outFormat = CXI;
+	set->common.outFormat = NCCH;
 	set->ncch.ncchType = format_not_set;
 
-	// Yaml Settings
+	// RSF Settings
 	set->common.rsfSet.Option.EnableCompress = true;
 	set->common.rsfSet.Option.EnableCrypt = true;
 	set->common.rsfSet.Option.UseOnSD = false;
@@ -131,12 +131,8 @@ void SetDefaults(user_settings *set)
 int SetArgument(int argc, int i, char *argv[], user_settings *set)
 {
 	u16 ParamNum = 0;
-	for(int j = i+1; j < argc; j++)
-	{
-		if(argv[j][0] == '-')
-			break;
+	for(int j = i+1; j < argc && argv[j][0] != '-'; j++)
 		ParamNum++;
-	}
 
 	// Global Settings
 	if(strcmp(argv[i],"-rsf") == 0){
@@ -152,10 +148,12 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			PrintArgReqParam("-f",1);
 			return USR_ARG_REQ_PARAM;
 		}
-		if(strcasecmp(argv[i+1],"cxi") == 0 || strcasecmp(argv[i+1],"exec") == 0 ) set->common.outFormat = CXI;
-		else if(strcasecmp(argv[i+1],"cfa") == 0 || strcasecmp(argv[i+1],"data") == 0 ) set->common.outFormat = CFA;
-		else if(strcasecmp(argv[i+1],"cci") == 0 || strcasecmp(argv[i+1],"card") == 0 ) set->common.outFormat = CCI;
-		else if(strcasecmp(argv[i+1],"cia") == 0) set->common.outFormat = CIA;
+		if(strcasecmp(argv[i+1],"ncch") == 0) 
+			set->common.outFormat = NCCH;
+		else if(strcasecmp(argv[i+1],"cci") == 0)
+			set->common.outFormat = CCI;
+		else if(strcasecmp(argv[i+1],"cia") == 0)
+			set->common.outFormat = CIA;
 		else {
 			fprintf(stderr,"[SETTING ERROR] Invalid output format '%s'\n",argv[i+1]);
 			return USR_BAD_ARG;
@@ -228,6 +226,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			return USR_ARG_REQ_PARAM;
 		}
 		set->ncch.elfPath = argv[i+1];
+		set->ncch.ncchType |= CXI;
 		return 2;
 	}
 	
@@ -237,6 +236,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			return USR_ARG_REQ_PARAM;
 		}
 		set->ncch.iconPath = argv[i+1];
+		set->ncch.ncchType |= CFA;
 		return 2;
 	}
 	else if(strcmp(argv[i],"-banner") == 0){
@@ -245,6 +245,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			return USR_ARG_REQ_PARAM;
 		}
 		set->ncch.bannerPath = argv[i+1];
+		set->ncch.ncchType |= CFA;
 		return 2;
 	}
 	else if(strcmp(argv[i],"-logo") == 0){
@@ -253,6 +254,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			return USR_ARG_REQ_PARAM;
 		}
 		set->ncch.logoPath = argv[i+1];
+		set->ncch.ncchType |= CFA;
 		return 2;
 	}
 	else if(strcmp(argv[i],"-desc") == 0){
@@ -313,7 +315,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			default:
 				break;
 		}
-
+		set->ncch.ncchType |= CXI;
 		return 2;
 	}
 	else if(strcmp(argv[i],"-exefslogo") == 0){
@@ -322,14 +324,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			return USR_BAD_ARG;
 		}
 		set->ncch.includeExefsLogo = true;
-		return 1;
-	}
-	else if(strcmp(argv[i],"-data") == 0){
-		if(ParamNum){
-			PrintNoNeedParam("-data");
-			return USR_ARG_REQ_PARAM;
-		}
-		set->ncch.ncchType = CFA;
+		set->ncch.ncchType |= CFA;
 		return 1;
 	}
 
@@ -340,6 +335,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			return USR_ARG_REQ_PARAM;
 		}
 		set->ncch.codePath = argv[i+1];
+		set->ncch.ncchType |= CXI;
 		return 2;
 	}
 	else if(strcmp(argv[i],"-exheader") == 0){
@@ -348,6 +344,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			return USR_ARG_REQ_PARAM;
 		}
 		set->ncch.exheaderPath = argv[i+1];
+		set->ncch.ncchType |= CXI;
 		return 2;
 	}
 	else if(strcmp(argv[i],"-plain-region") == 0){
@@ -356,6 +353,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			return USR_ARG_REQ_PARAM;
 		}
 		set->ncch.plainRegionPath = argv[i+1];
+		set->ncch.ncchType |= CXI;
 		return 2;
 	}
 	else if(strcmp(argv[i],"-romfs") == 0){
@@ -364,6 +362,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			return USR_ARG_REQ_PARAM;
 		}
 		set->ncch.romfsPath = argv[i+1];
+		set->ncch.ncchType |= CFA;
 		return 2;
 	}
 	// Cci Options
@@ -618,6 +617,23 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 
 int CheckArgumentCombination(user_settings *set)
 {
+	if(set->ncch.ncchType & (CXI|CFA)){
+		set->ncch.buildNcch0 = true;
+		if(set->ncch.ncchType & CXI)
+			set->ncch.ncchType = CXI;
+		else
+			set->ncch.ncchType = CFA;			
+	}		
+	
+	if(set->common.outFormat == NCCH){
+		if(set->ncch.ncchType)
+			set->common.outFormat = set->ncch.ncchType;
+		else{
+			set->ncch.ncchType = CXI;
+			set->common.outFormat = CXI;
+		}
+	}
+
 	for(int i = 0; i < CIA_MAX_CONTENT; i++){
 		if( i > CCI_MAX_CONTENT-1 && set->common.contentPath[i] && set->common.outFormat == CCI){
 			fprintf(stderr,"[SETTING ERROR] Content indexes > %d are invalid for CCI\n",CCI_MAX_CONTENT-1);
@@ -628,12 +644,9 @@ int CheckArgumentCombination(user_settings *set)
 			return USR_BAD_ARG;
 		}
 	}
-	if((set->common.outFormat == CXI || set->common.outFormat == CFA) && set->ncch.ncchType != format_not_set){
-		fprintf(stderr,"[SETTING ERROR] Arguments \"-f cxi|cfa\" and \"-data\" cannot be used together\n");
-		return USR_BAD_ARG;
-	}
-	if(set->ncch.ncchType != format_not_set && !set->ncch.buildNcch0){
-		fprintf(stderr,"[SETTING ERROR] Arguments \"-content %s:0\" and \"-data\" cannot be used together\n",set->common.contentPath[0]);
+	
+	if(set->common.contentPath[0] && set->ncch.buildNcch0){
+		fprintf(stderr,"[SETTING ERROR] You cannot both import and build content 0\n");
 		return USR_BAD_ARG;
 	}
 
@@ -650,12 +663,6 @@ int CheckArgumentCombination(user_settings *set)
 	if(set->ncch.elfPath && set->ncch.codePath){
 		fprintf(stderr,"[SETTING ERROR] Arguments \"-elf\" and \"-code\" cannot be used together\n");
 		return USR_BAD_ARG;
-	}
-
-	// Setting set->build_ncch_type if it isn't already set
-	if(set->ncch.buildNcch0 && set->ncch.ncchType == format_not_set){
-		if(set->common.outFormat == CCI || set->common.outFormat  == CIA) set->ncch.ncchType = CXI;
-		else set->ncch.ncchType = set->common.outFormat;
 	}
 
 	bool buildCXI = set->ncch.ncchType == CXI;
@@ -944,7 +951,7 @@ void PrintArgInvalid(char *arg)
 void PrintArgReqParam(char *arg, u32 paramNum)
 {
 	if(paramNum == 1)
-		fprintf(stderr,"[SETTING ERROR] \"%s\" requires a parameter\n",arg);
+		fprintf(stderr,"[SETTING ERROR] \"%s\" takes one parameter\n",arg);
 	else
 		fprintf(stderr,"[SETTING ERROR] \"%s\" requires %d parameters\n",arg,paramNum);
 }
@@ -963,14 +970,10 @@ void DisplayHelp(char *app_name)
 	printf("GLOBAL OPTIONS:\n");
 	printf(" -help                              Display this text\n");
 	printf(" -rsf           <file>              Rom Specification File (*.rsf)\n");
-	printf(" -f             <cxi|cfa|cci|cia>   Output Format, defaults to 'cxi'\n");
-	//printf("                                    'cxi' CTR Executable Image\n");
-	//printf("                                    'cfa' CTR File Archive\n");
-	//printf("                                    'cci' CTR Card Image\n");
-	//printf("                                    'cia' CTR Importable Archive\n");
+	printf(" -f             <ncch|cci|cia>      Output Format, defaults to 'ncch'\n");
 	printf(" -o             <file>              Output File\n");
 	//printf(" -v                                 Verbose\n");
-	printf(" -DNAME=VALUE                       Substitute values in Spec files\n");
+	printf(" -DNAME=VALUE                       Substitute values in Spec file\n");
 	printf("KEY OPTIONS:\n");
 	//printf(" -target        <t|d|p|c>           Target for crypto, defaults to 't'\n");
 	printf(" -target        <t|d|p>             Target for crypto, defaults to 't'\n");
@@ -994,7 +997,6 @@ void DisplayHelp(char *app_name)
 	//printf("                                    'Dlp'   NAND DLP Child Application\n");
 	//printf("                                    'FIRM'  FIRM CXI\n");
 	printf(" -exefslogo                         Include Logo in ExeFs (Required for usage on <5.X Systems)\n");
-	printf(" -data                              Specify if building a Data Archive when \"-f cia\"\n");
 	printf("NCCH REBUILD OPTIONS:\n");
 	printf(" -code          <code path>         Specify ExeFs code File\n");
 	printf(" -exheader      <exhdr path>        ExHeader Template File\n");
