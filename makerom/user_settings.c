@@ -120,7 +120,7 @@ void SetDefaults(user_settings *set)
 
 	// CIA Info
 	set->cia.useDataTitleVer = false;
-	set->cia.titleVersion[VER_MAJOR] = MAX_U16 // invalid so changes can be detected
+	set->cia.titleVersion[VER_MAJOR] = MAX_U16; // invalid so changes can be detected
 	set->cia.randomTitleKey = false;
 	set->common.keys.aes.currentCommonKey = MAX_U8 + 1; // invalid so changes can be detected
 	for(int i = 0; i < CIA_MAX_CONTENT; i++){
