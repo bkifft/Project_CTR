@@ -33,8 +33,3 @@ build: $(OBJS) $(POLAR_OBJS) $(YAML_OBJS)
 
 clean:
 	rm -rf $(OUTPUT) $(OBJS) $(POLAR_OBJS) $(YAML_OBJS) *.cci *.cia *.cxi *.cfa
-	
-# Windows compatibility
-rebuildwin: cleanwin build
-cleanwin:
-	del /Q objs $(OUTPUT).exe *.o polarssl\*.o libyaml\*.o *.cci *.cia *.cxi *.cfa
