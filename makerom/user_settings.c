@@ -626,11 +626,12 @@ int CheckArgumentCombination(user_settings *set)
 	}		
 	
 	if(set->common.outFormat == NCCH){
+		set->ncch.buildNcch0 = true;
 		if(set->ncch.ncchType)
 			set->common.outFormat = set->ncch.ncchType;
 		else{
-			set->ncch.ncchType = CXI;
-			set->common.outFormat = CXI;
+			set->ncch.ncchType = CFA;
+			set->common.outFormat = CFA;
 		}
 	}
 
