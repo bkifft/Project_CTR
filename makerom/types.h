@@ -28,6 +28,14 @@ typedef enum
 	GB = 1073741824
 } file_unit_size;
 
+typedef enum
+{
+	MAX_U8 = 0xff,
+	MAX_U16 = 0xffff,
+	MAX_U32 = 0xffffffff,
+	MAX_U64 = 0xffffffffffffffff,
+} data_type_max;
+
 typedef unsigned char   u8;
 typedef unsigned short  u16;
 typedef unsigned int    u32;

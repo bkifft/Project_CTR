@@ -1,6 +1,7 @@
 #pragma once
 
 static const int CIA_ALIGN_SIZE = 0x40;
+static const int CIA_CONTENT_ALIGN = 0x10;
 
 // Enums
 typedef enum

@@ -199,7 +199,7 @@ int GetSettingsFromUsrset(cia_settings *ciaset, user_settings *usrset)
 	if(result) return result;
 	
 	// Tmd Stuff
-	if(usrset->cia.contentId[0] > 0xffffffff)
+	if(usrset->cia.contentId[0] > MAX_U32)
 		ciaset->content.id[0] = u32GetRand();
 	else 
 		ciaset->content.id[0] = usrset->cia.contentId[0];
@@ -282,10 +282,10 @@ finish:
 
 int GetCIADataFromNcch(cia_settings *ciaset, u8 *ncch, ncch_struct *ncch_ctx, u8 *key)
 {
-	extended_hdr *exhdr = malloc(0x400);
-	memcpy(exhdr,ncch+ncch_ctx->exhdrOffset,0x400);
+	extended_hdr *exhdr = malloc(sizeof(extended_hdr));
+	memcpy(exhdr,ncch+ncch_ctx->exhdrOffset,sizeof(extended_hdr));
 	if(key != NULL)
-		CryptNCCHSection((u8*)exhdr,0x400,0,ncch_ctx,key,ncch_exhdr);
+		CryptNCCHSection((u8*)exhdr,sizeof(extended_hdr),0,ncch_ctx,key,ncch_exhdr);
 
 	u16 Category = u8_to_u16((ciaset->common.titleId+2),BE);
 	if(IsPatch(Category)||ciaset->content.IsCfa||ciaset->content.keyNotFound) 
@@ -300,25 +300,25 @@ int GetCIADataFromNcch(cia_settings *ciaset, u8 *ncch, ncch_struct *ncch_ctx, u8
 	}
 	
 	if(ciaset->content.IsCfa||ciaset->content.keyNotFound){
-		if(ciaset->common.titleVersion[0] == 0xffff){ // '-major' wasn't set
+		if(ciaset->common.titleVersion[VER_MAJOR] == MAX_U16){ // '-major' wasn't set
 			if(ciaset->content.IsCfa){ // Is a CFA and can be decrypted
 				fprintf(stderr,"[CIA ERROR] Invalid major version. Use \"-major\" option.\n");
 				return CIA_BAD_VERSION;
 			}
 			else // CXI which cannot be decrypted
-				ciaset->common.titleVersion[0] = 0;
+				ciaset->common.titleVersion[VER_MAJOR] = 0;
 		}
 	}
 	else{ // Is a CXI and can be decrypted
-		if(ciaset->common.titleVersion[0] != 0xffff){ // '-major' was set
+		if(ciaset->common.titleVersion[VER_MAJOR] != MAX_U16){ // '-major' was set
 			fprintf(stderr,"[CIA ERROR] Option \"-major\" cannot be applied for cxi.\n");
 			return CIA_BAD_VERSION;
 		}
 		// Setting remaster ver
-		ciaset->common.titleVersion[0] = GetRemasterVersion_frm_exhdr(exhdr);
+		ciaset->common.titleVersion[VER_MAJOR] = GetRemasterVersion_frm_exhdr(exhdr);
 	}
 
-	u16 version = SetupVersion(ciaset->common.titleVersion[0],ciaset->common.titleVersion[1],ciaset->common.titleVersion[2]);
+	u16 version = SetupVersion(ciaset->common.titleVersion[VER_MAJOR],ciaset->common.titleVersion[VER_MINOR],ciaset->common.titleVersion[VER_MICRO]);
 	ciaset->tik.version = version;
 	ciaset->tmd.version = version;
 
@@ -331,10 +331,10 @@ int GetMetaRegion(cia_settings *ciaset, u8 *ncch, ncch_struct *ncch_ctx, u8 *key
 	if(ciaset->content.IsCfa || ciaset->content.keyNotFound) 
 		return 0;
 
-	extended_hdr *exhdr = malloc(0x400);
-	memcpy(exhdr,ncch+ncch_ctx->exhdrOffset,0x400);
+	extended_hdr *exhdr = malloc(sizeof(extended_hdr));
+	memcpy(exhdr,ncch+ncch_ctx->exhdrOffset,sizeof(extended_hdr));
 	if(key != NULL)
-		CryptNCCHSection((u8*)exhdr,0x400,0,ncch_ctx,key,ncch_exhdr);
+		CryptNCCHSection((u8*)exhdr,sizeof(extended_hdr),0,ncch_ctx,key,ncch_exhdr);
 
 	exefs_hdr *exefsHdr = malloc(sizeof(exefs_hdr));
 	memcpy(exefsHdr,ncch+ncch_ctx->exefsOffset,sizeof(exefs_hdr));
@@ -346,7 +346,7 @@ int GetMetaRegion(cia_settings *ciaset, u8 *ncch, ncch_struct *ncch_ctx, u8 *key
 	for(int i = 0; i < MAX_EXEFS_SECTIONS; i++){
 		if(strncmp(exefsHdr->fileHdr[i].name,"icon",8) == 0){
 			icon_size = u8_to_u32(exefsHdr->fileHdr[i].size,LE);
-			icon_offset = u8_to_u32(exefsHdr->fileHdr[i].offset,LE) + 0x200;
+			icon_offset = u8_to_u32(exefsHdr->fileHdr[i].offset,LE) + sizeof(exefs_hdr);
 		}
 	}
 
@@ -392,7 +392,7 @@ int GetContentFilePtrs(cia_settings *ciaset, user_settings *usrset)
 			ciaset->content.fileSize[j] = GetFileSize_u64(usrset->common.contentPath[i]);
 			ciaset->content.filePtrs[j] = fopen(usrset->common.contentPath[i],"rb");
 			
-			if(usrset->cia.contentId[i] == 0x100000000)
+			if(usrset->cia.contentId[i] > MAX_U32)
 				ciaset->content.id[j] = u32GetRand(); 
 			else 
 				ciaset->content.id[j] = (u32)usrset->cia.contentId[i];
@@ -409,7 +409,7 @@ int GetContentFilePtrs(cia_settings *ciaset, user_settings *usrset)
 				return FAILED_TO_OPEN_FILE; 
 			}
 
-			ciaset->content.size[j] = align(calcSize,0x10);
+			ciaset->content.size[j] = align(calcSize,CIA_CONTENT_ALIGN);
 			ciaset->content.offset[j] = ciaset->content.totalSize;
 			
 			ciaset->content.totalSize += ciaset->content.size[j];

@@ -76,9 +76,12 @@ int ParseArgs(int argc, char *argv[], user_settings *usr_settings)
 
 	if(!usr_settings->common.outFileName){
 		char *source_path = NULL;
-		if(usr_settings->ncch.buildNcch0) source_path = usr_settings->common.rsfPath;
-		else if(usr_settings->common.workingFileType == infile_ncsd || usr_settings->common.workingFileType == infile_srl) source_path = usr_settings->common.workingFilePath;
-		else source_path = usr_settings->common.contentPath[0];
+		if(usr_settings->ncch.buildNcch0) 
+			source_path = usr_settings->common.rsfPath;
+		else if(usr_settings->common.workingFileType == infile_ncsd || usr_settings->common.workingFileType == infile_srl) 
+			source_path = usr_settings->common.workingFilePath;
+		else 
+			source_path = usr_settings->common.contentPath[0];
 		u16 outfile_len = strlen(source_path) + 3;
 		usr_settings->common.outFileName = calloc(outfile_len,sizeof(char));
 		if(!usr_settings->common.outFileName){
@@ -117,11 +120,11 @@ void SetDefaults(user_settings *set)
 
 	// CIA Info
 	set->cia.useDataTitleVer = false;
-	set->cia.titleVersion[0] = 0xffff; // invalid for detection
+	set->cia.titleVersion[VER_MAJOR] = MAX_U16 // invalid so changes can be detected
 	set->cia.randomTitleKey = false;
-	set->common.keys.aes.currentCommonKey = 0x100; // invalid for detection
+	set->common.keys.aes.currentCommonKey = MAX_U8 + 1; // invalid so changes can be detected
 	for(int i = 0; i < CIA_MAX_CONTENT; i++){
-		set->cia.contentId[i] = 0x100000000;
+		set->cia.contentId[i] = MAX_U32 + 1; // invalid so changes can be detected
 	}
 }
 
@@ -276,7 +279,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 		else if(strcasecmp(app_type,"ECApp") == 0) set->common.keys.accessDescSign.presetType = desc_preset_EC_APP;
 		else if(strcasecmp(app_type,"Demo") == 0) set->common.keys.accessDescSign.presetType = desc_preset_DEMO;
 		else if(strcasecmp(app_type,"DlpChild") == 0 || strcasecmp(app_type,"Dlp") == 0) set->common.keys.accessDescSign.presetType = desc_preset_DLP;
-		else if(strcasecmp(app_type,"FIRM") == 0) set->common.keys.accessDescSign.presetType = desc_preset_FIRM;
+		//else if(strcasecmp(app_type,"FIRM") == 0) set->common.keys.accessDescSign.presetType = desc_preset_FIRM;
 		else{
 			fprintf(stderr,"[SETTING ERROR] Accessdesc AppType preset '%s' not valid, please manually configure RSF\n",app_type);
 			return USR_BAD_ARG;
@@ -404,12 +407,12 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			return USR_ARG_REQ_PARAM;
 		}
 		set->cia.useNormTitleVer = true;
-		u32 tmp = strtoul(argv[i+1],NULL,10);
-		if(tmp > 63){
-			fprintf(stderr,"[SETTING ERROR] Major version: '%d' is too large, max: '63'\n",tmp);
+		u32 ver = strtoul(argv[i+1],NULL,10);
+		if(ver > VER_MAJOR_MAX){
+			fprintf(stderr,"[SETTING ERROR] Major version: '%d' is too large, max: '%d'\n",ver,VER_MAJOR_MAX);
 			return USR_BAD_ARG;
 		}
-		set->cia.titleVersion[0] = tmp;
+		set->cia.titleVersion[VER_MAJOR] = ver;
 		return 2;
 	}
 	else if(strcmp(argv[i],"-minor") == 0){
@@ -418,12 +421,12 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			return USR_ARG_REQ_PARAM;
 		}
 		set->cia.useNormTitleVer = true;
-		u32 tmp = strtoul(argv[i+1],NULL,10);
-		if(tmp > 63){
-			fprintf(stderr,"[SETTING ERROR] Minor version: '%d' is too large, max: '63'\n",tmp);
+		u32 ver = strtoul(argv[i+1],NULL,10);
+		if(ver > VER_MINOR_MAX){
+			fprintf(stderr,"[SETTING ERROR] Minor version: '%d' is too large, max: '%d'\n",ver,VER_MINOR_MAX);
 			return USR_BAD_ARG;
 		}
-		set->cia.titleVersion[1] = tmp;
+		set->cia.titleVersion[VER_MINOR] = ver;
 		return 2;
 	}
 	else if(strcmp(argv[i],"-micro") == 0){
@@ -431,12 +434,12 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			PrintArgReqParam("-micro",1);
 			return USR_ARG_REQ_PARAM;
 		}
-		u32 tmp = strtoul(argv[i+1],NULL,10);
-		if(tmp > 15){
-			fprintf(stderr,"[SETTING ERROR] Micro version: '%d' is too large, max: '15'\n",tmp);
+		u32 ver = strtoul(argv[i+1],NULL,10);
+		if(ver > VER_MICRO_MAX){
+			fprintf(stderr,"[SETTING ERROR] Micro version: '%d' is too large, max: '%d'\n",ver,VER_MICRO_MAX);
 			return USR_BAD_ARG;
 		}
-		set->cia.titleVersion[2] = tmp;
+		set->cia.titleVersion[VER_MICRO] = ver;
 		return 2;
 	}
 	else if(strcmp(argv[i],"-dver") == 0){
@@ -445,13 +448,13 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			return USR_ARG_REQ_PARAM;
 		}
 		set->cia.useDataTitleVer = true;
-		u32 tmp = strtoul(argv[i+1],NULL,10);
-		if(tmp > 4095){
-			fprintf(stderr,"[SETTING ERROR] Data version: '%d' is too large, max: '4095'\n",tmp);
+		u32 ver = strtoul(argv[i+1],NULL,10);
+		if(ver > VER_DVER_MAX){
+			fprintf(stderr,"[SETTING ERROR] Data version: '%d' is too large, max: '%d'\n",ver,VER_DVER_MAX);
 			return USR_BAD_ARG;
 		}
-		set->cia.titleVersion[0] = (tmp >> 6) & 63;
-		set->cia.titleVersion[1] = tmp & 63;
+		set->cia.titleVersion[VER_MAJOR] = (ver >> 6) & VER_MAJOR_MAX;
+		set->cia.titleVersion[VER_MINOR] = ver & VER_MAJOR_MAX;
 		return 2;
 	}
 	else if(strcmp(argv[i],"-rand") == 0){

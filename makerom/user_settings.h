@@ -1,8 +1,25 @@
 #pragma once
 
-#define CCI_MAX_CONTENT 8
-#define CIA_MAX_CONTENT 65536
+typedef enum
+{
+	CCI_MAX_CONTENT = 8,
+	CIA_MAX_CONTENT = MAX_U16,
+} content_limits;
 
+typedef enum
+{
+	VER_MAJOR,
+	VER_MINOR,
+	VER_MICRO
+} title_ver_index;
+
+typedef enum
+{
+	VER_MAJOR_MAX = 63,
+	VER_MINOR_MAX = 63,
+	VER_MICRO_MAX = 15,
+	VER_DVER_MAX = 4095,
+} title_ver_max;
 
 typedef enum
 {
