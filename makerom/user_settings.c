@@ -289,7 +289,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 
 
 		char *target_firmware = (tmp2+1);
-		set->common.keys.accessDescSign.targetFirmware = strtoul(target_firmware,NULL,10);
+		set->common.keys.accessDescSign.targetFirmware = strtoul(target_firmware,NULL,0);
 		switch(set->common.keys.accessDescSign.targetFirmware){
 			case 1: 
 				set->common.keys.accessDescSign.targetFirmware = 0x1B; // or 0x1C
@@ -310,11 +310,15 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 				set->common.keys.accessDescSign.targetFirmware = 0x25; // or 0x26
 				break;
 			case 7: 
-				set->common.keys.accessDescSign.targetFirmware = 0x27;
+				set->common.keys.accessDescSign.targetFirmware = 0x27; // or 0x28
+				break;
+			case 8: 
+				set->common.keys.accessDescSign.targetFirmware = 0x2C;
 				break;
 			default:
 				break;
 		}
+		
 		set->ncch.ncchType |= CXI;
 		return 2;
 	}
