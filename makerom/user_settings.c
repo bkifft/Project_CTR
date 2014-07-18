@@ -394,9 +394,9 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 		set->cci.closeAlignWritableRegion = true;
 		return 1;
 	}
-	else if(strcmp(argv[i],"-genupdatenote") == 0){
+	else if(strcmp(argv[i],"-cverinfo") == 0){
 		if(ParamNum != 1){
-			PrintArgReqParam("-genupdatenote",1);
+			PrintArgReqParam("-cverinfo",1);
 			return USR_BAD_ARG;
 		}
 		set->cci.cverCiaPath = argv[i+1];
@@ -656,7 +656,7 @@ int CheckArgumentCombination(user_settings *set)
 	}
 
 	if(set->common.outFormat == CIA && set->cci.cverCiaPath){
-		fprintf(stderr,"[SETTING ERROR] You cannot use argument \"-genupdatenote\" when generating a CIA\n");
+		fprintf(stderr,"[SETTING ERROR] You cannot use argument \"-cverinfo\" when generating a CIA\n");
 		return USR_BAD_ARG;
 	}
 
@@ -825,7 +825,7 @@ void DisplayHelp(char *app_name)
 	printf(" -devcardcci                        Use SDK CardInfo Method\n");
 	printf(" -nomodtid                          Don't Modify Content TitleIDs\n");
 	printf(" -alignwr                           Align Writeable Region to the end of last NCCH\n");
-	printf(" -genupdatenote <cver cia path>     Create Update Partition Notes\n");
+	printf(" -cverinfo      <cver cia path>     Include CVer title info\n");
 	printf("CIA OPTIONS:\n");
 	printf(" -content <filepath>:<index>:<id>   Specify content files\n");
 	printf(" -major         <major version>     Specify Major Version\n");
