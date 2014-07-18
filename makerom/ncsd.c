@@ -425,7 +425,8 @@ u64 GetUnusedSize(u64 MediaSize, u8 CardType)
 			case (u64)GB*2: return (u64)147324928;
 			case (u64)GB*4: return (u64)294649856;
 			case (u64)GB*8: return (u64)587202560;
-			default: return (u64)((MediaSize/MB)*0x11800); // Aprox
+			//default: return (u64)((MediaSize/MB)*0x11800); // Aprox
+			default: return 0;
 		}
 	}
 	else if(CardType == CARD2){
@@ -435,7 +436,8 @@ u64 GetUnusedSize(u64 MediaSize, u8 CardType)
 			case (u64)GB*2: return (u64)147324928;
 			case (u64)GB*4: return (u64)294649856;
 			case (u64)GB*8: return (u64)587202560;
-			default: return (u64)((MediaSize/MB)*0x11800); // Aprox
+			//default: return (u64)((MediaSize/MB)*0x11800); // Aprox
+			default: return 0;
 		}
 	}
 	return 0;
@@ -512,10 +514,10 @@ int GetNCSDFlags(cci_settings *cciset, rsf_settings *yaml)
 
 int GetWriteableAddress(cci_settings *cciset, user_settings *usrset)
 {
-	int result = GetSaveDataSizeFromString(&cciset->option.savedataSize,usrset->common.rsfSet.SystemControlInfo.SaveDataSize,"NCSD");
+	int result = GetSaveDataSizeFromString(&cciset->option.savedataSize,usrset->common.rsfSet.SystemControlInfo.SaveDataSize,"CCI");
 	if(result) return result;
 
-	char *WriteableAddressStr = usrset->common.rsfSet.CardInfo.WritableAddress;;
+	char *WriteableAddressStr = usrset->common.rsfSet.CardInfo.WritableAddress;
 	
 	cciset->cardinfo.writableAddress = -1;
 	if(cciset->header.flags[MediaTypeIndex] != CARD2) return 0; // Can only be set for Card2 Media
@@ -525,7 +527,7 @@ int GetWriteableAddress(cci_settings *cciset, user_settings *usrset)
 			fprintf(stderr,"[CCI ERROR] WritableAddress requires a Hexadecimal value\n");
 			return INVALID_YAML_OPT;
 		}	
-		cciset->cardinfo.writableAddress = strtoull((WriteableAddressStr+2),NULL,16);
+		cciset->cardinfo.writableAddress = strtoull(WriteableAddressStr,NULL,16);
 	}
 	if(cciset->cardinfo.writableAddress == -1){ // If not set manually or is max size
 		if ((cciset->header.mediaSize / 2) < cciset->option.savedataSize){ // If SaveData size is greater than half the MediaSize
@@ -539,10 +541,15 @@ int GetWriteableAddress(cci_settings *cciset, user_settings *usrset)
 			return SAVE_DATA_TOO_LARGE;
 		}
 		if(usrset->cci.closeAlignWritableRegion)
-			cciset->cardinfo.writableAddress = align(cciset->cardinfo.cciTotalSize, cciset->option.mediaUnit);
+			cciset->cardinfo.writableAddress = align(cciset->cardinfo.cciTotalSize, cciset->option.mediaUnit); // invalid for "real" chips
 		else{
-			u64 UnusedSize = GetUnusedSize(cciset->header.mediaSize,cciset->header.flags[MediaTypeIndex]); // Need to look into this
-			cciset->cardinfo.writableAddress = cciset->header.mediaSize - UnusedSize - cciset->option.savedataSize;
+			u64 UnusedSize = GetUnusedSize(cciset->header.mediaSize,cciset->header.flags[MediaTypeIndex]); // Some value related to the physical implementation of gamecards
+			if(UnusedSize > 0)
+				cciset->cardinfo.writableAddress = cciset->header.mediaSize - UnusedSize - cciset->option.savedataSize; // Nintendo's method for calculating writable region offset
+			else{
+				fprintf(stderr,"[CCI WARNING] Nintendo has no CARD2 writable region configurations for this media size, writable region will be aligned to last ncch partition\n");
+				cciset->cardinfo.writableAddress = align(cciset->cardinfo.cciTotalSize, cciset->option.mediaUnit); // invalid for "real" chips
+			}
 		}
 	}
 	return 0;
