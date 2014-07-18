@@ -13,6 +13,7 @@
 #include <math.h>
 #include <dirent.h>
 #include <wchar.h>
+#include <inttypes.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 

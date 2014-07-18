@@ -305,7 +305,7 @@ u8* ImportFile(char *file, u64 size)
 	u64 fsize = GetFileSize_u64(file);
 	if(size > 0){
 		if(size != fsize){
-			fprintf(stderr,"[!] %s has an invalid size (0x%llx)\n",file, fsize);
+			fprintf(stderr,"[!] %s has an invalid size (0x%"PRIx64")\n",file, fsize);
 			return NULL;
 		}
 	}
