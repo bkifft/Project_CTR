@@ -2,13 +2,6 @@
 
 typedef enum
 {
-	COMMON_HEADER_KEY_NOT_FOUND = -10,
-	EXHDR_BAD_YAML_OPT = -11,
-	CANNOT_SIGN_ACCESSDESC = -12
-} exheader_errors;
-
-typedef enum
-{
 	infoflag_COMPRESS_EXEFS_0 = 1,
 	infoflag_SD_APPLICATION = 2,
 } system_info_flags;
@@ -197,37 +190,11 @@ typedef struct
 	exhdr_ARM9AccessControlInfo arm9AccessControlInfo;
 } access_descriptor;
 
-typedef struct
-{
-	keys_struct *keys;
-	rsf_settings *rsf;
-	bool useAccessDescPreset;
-
-	/* Output */
-	extended_hdr *exHdr; // is the exheader output buffer ptr(in ncchset) cast as exheader struct ptr;
-	access_descriptor *acexDesc;
-} exheader_settings;
-
-
 /* ExHeader Signature Functions */
 int SignAccessDesc(access_descriptor *acexDesc, keys_struct *keys);
 int CheckAccessDescSignature(access_descriptor *acexDesc, keys_struct *keys);
 
-/* ExHeader Build Functions */
-int BuildExHeader(ncch_settings *ncchset);
-
-/* ExHeader Binary Print Functions */
-void exhdr_Print_ServiceAccessControl(extended_hdr *hdr);
-
-/* ExHeader Binary Read Functions */
-u8* GetAcexRsaSig(access_descriptor *acexDesc);
-u8* GetAcexNcchPubKey(access_descriptor *acexDesc);
-u16 GetRemasterVersion_frm_exhdr(extended_hdr *hdr);
-u64 GetSaveDataSize_frm_exhdr(extended_hdr *hdr);
-int GetDependencyList_frm_exhdr(u8 *Dest,extended_hdr *hdr);
-void GetCoreVersion_frm_exhdr(u8 *Dest, extended_hdr *hdr);
-
-/* ExHeader Settings Read from Yaml */
+/* ExHeader Settings Read from Rsf */
 int GetSaveDataSizeFromString(u64 *out, char *string, char *moduleName);
 int GetRemasterVersion_rsf(u16 *RemasterVersion, user_settings *usrset);
 

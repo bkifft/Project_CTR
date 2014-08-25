@@ -1,27 +1,19 @@
 #include "lib.h"
 #include "crypto.h"
 
+bool VerifySha256(void *data, u64 size, u8 hash[32])
+{
+	u8 calchash[32];
+	ctr_sha(data, size, calchash, CTR_SHA_256);
+	return memcmp(hash,calchash,32) == 0;
+}
+
 void ctr_sha(void *data, u64 size, u8 *hash, int mode)
 {
 	switch(mode){
 		case(CTR_SHA_1): sha1((u8*)data, size, hash); break;
 		case(CTR_SHA_256): sha2((u8*)data, size, hash, 0); break;
 	}
-}
-
-u8* AesKeyScrambler(u8 *Key, u8 *KeyX, u8 *KeyY)
-{
-	// Process KeyX/KeyY to get raw normal key
-	for(int i = 0; i < 16; i++)
-		Key[i] = KeyX[i] ^ ((KeyY[i] >> 2) | ((KeyY[i < 15 ? i+1 : 0] & 3) << 6));
-
-	const u8 SCRAMBLE_SECRET[16] = {0x51, 0xD7, 0x5D, 0xBE, 0xFD, 0x07, 0x57, 0x6A, 0x1C, 0xFC, 0x2A, 0xF0, 0x94, 0x4B, 0xD5, 0x6C};
-
-	// Apply Secret to get final normal key
-	for(int i = 0; i < 16; i++)
-		Key[i] = Key[i] ^ SCRAMBLE_SECRET[i];
-
-	return Key;
 }
 
 void ctr_add_counter(ctr_aes_context* ctx, u32 carry)

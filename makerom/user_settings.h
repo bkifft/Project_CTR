@@ -23,6 +23,12 @@ typedef enum
 
 typedef enum
 {
+	CVER_DTYPE_TMD,
+	CVER_DTYPE_CIA,
+} cver_data_type;
+
+typedef enum
+{
 	USR_PTR_PASS_FAIL = -1,
 	USR_HELP = -2,
 	USR_ARG_REQ_PARAM = -3,
@@ -37,6 +43,7 @@ typedef enum
 	infile_ncch,
 	infile_ncsd,
 	infile_srl,
+	infile_cia,
 } infile_type;
 
 typedef enum
@@ -49,7 +56,7 @@ typedef enum
 	NCCH
 } output_format;
 
-static const char output_extention[4][5] = {".cxi",".cfa",".cci",".cia"};
+static const char output_extention[5][5] = {".cxi",".cfa",".cci",".cia",".app"};
 
 /* This does not follow style, so the rsf string names match the variables where they're stored */
 typedef struct
@@ -246,6 +253,8 @@ typedef struct
 typedef struct
 {
 	struct{
+		bool verbose;
+	
 		char *rsfPath;
 		bool outFileName_mallocd;
 		char *outFileName;
@@ -259,9 +268,10 @@ typedef struct
 
 		// Content Details
 		char **contentPath;
+		u64 contentSize[CIA_MAX_CONTENT];
 
 		char *workingFilePath;
-		infile_type workingFileType; // Could Be ncch/ncsd/srl. This is mainly used for CIA gen
+		infile_type workingFileType; // Could Be ncch/ncsd/srl/cia.
 		buffer_struct workingFile;
 	} common;
 	
@@ -282,23 +292,32 @@ typedef struct
 		char *exheaderPath; // for .code details
 		char *plainRegionPath; // prebuilt Plain Region
 		char *romfsPath; // Prebuild _cleartext_ romfs binary
+		
+		bool useSecCrypto;
+		u8 keyXID;
 	} ncch; // Ncch0 Build
 	
 	struct{ 
 		bool useSDKStockData;  // incase we want to use the SDK stock data, for whatever reason.
 		bool dontModifyNcchTitleID;
 		bool closeAlignWritableRegion;
-		char *cverCiaPath;
+		
+		u8 cverDataType;
+		char *cverDataPath;
 	} cci; // CCI Settings
 	
 	struct{
 		bool randomTitleKey;
 		bool encryptCia;
 		bool DlcContent;
+		bool includeUpdateNcch;
 
 		bool useNormTitleVer;
 		bool useDataTitleVer;
 		u16 titleVersion[3];
+		
+		u32 deviceId;
+		u32 eshopAccId;
 
 		u64 contentId[CIA_MAX_CONTENT]; // For CIA
 	} cia; // CIA Settings	
@@ -306,6 +325,6 @@ typedef struct
 
 // Prototypes
 
-void init_UserSettings(user_settings *usr_settings);
-void free_UserSettings(user_settings *usr_settings);
+void init_UserSettings(user_settings *set);
+void free_UserSettings(user_settings *set);
 int ParseArgs(int argc, char *argv[], user_settings *usr_settings);

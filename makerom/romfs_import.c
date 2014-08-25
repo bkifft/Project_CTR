@@ -1,6 +1,6 @@
 #include "lib.h"
 #include "dir.h"
-#include "ncch.h"
+#include "ncch_build.h"
 #include "romfs.h"
 
 int PrepareImportRomFsBinaryFromFile(ncch_settings *ncchset, romfs_buildctx *ctx)
@@ -11,7 +11,7 @@ int PrepareImportRomFsBinaryFromFile(ncch_settings *ncchset, romfs_buildctx *ctx
 
 	ivfc_hdr *hdr = calloc(1,sizeof(ivfc_hdr));
 
-	ReadFile_64(hdr,sizeof(ivfc_hdr),0,ctx->romfsBinary);
+	ReadFile64(hdr,sizeof(ivfc_hdr),0,ctx->romfsBinary);
 	if(memcmp(hdr->magic,"IVFC",4) != 0){
 		fprintf(stderr,"[ROMFS ERROR] Invalid RomFS Binary.\n");
 		return INVALID_ROMFS_FILE;
@@ -24,7 +24,7 @@ int PrepareImportRomFsBinaryFromFile(ncch_settings *ncchset, romfs_buildctx *ctx
 
 int ImportRomFsBinaryFromFile(romfs_buildctx *ctx)
 {
-	ReadFile_64(ctx->output,ctx->romfsSize,0,ctx->romfsBinary);
+	ReadFile64(ctx->output,ctx->romfsSize,0,ctx->romfsBinary);
 	if(memcmp(ctx->output,"IVFC",4) != 0){
 		fprintf(stderr,"[ROMFS ERROR] Invalid RomFS Binary.\n");
 		return INVALID_ROMFS_FILE;

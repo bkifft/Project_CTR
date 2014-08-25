@@ -27,6 +27,7 @@
 
 #include "types.h"
 #include "utils.h"
+#include "ctr_utils.h"
 #include "crypto.h"
 
 #include "keyset.h"

@@ -1,5 +1,5 @@
 #include "lib.h"
-#include "ncch.h"
+#include "ncch_read.h"
 #include "titleid.h"
 
 void SetPIDType(u16 *type);
@@ -22,7 +22,7 @@ int GetProgramID(u64 *dest, rsf_settings *rsf, bool IsForExheader)
 	u8 variation;
 
 	if(rsf->TitleInfo.Category && rsf->TitleInfo.CategoryFlags){
-		fprintf(stderr,"[ID ERROR] Can not set \"Cateory\" and \"CategoryFlags\" at the same time.\n");
+		fprintf(stderr,"[ID ERROR] Can not set \"Category\" and \"CategoryFlags\" at the same time.\n");
 		return PID_BAD_RSF_SET;
 	}
 

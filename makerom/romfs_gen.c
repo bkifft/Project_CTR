@@ -1,6 +1,6 @@
 #include "lib.h"
 #include "dir.h"
-#include "ncch.h"
+#include "ncch_build.h"
 #include "romfs.h"
 
 const int ROMFS_BLOCK_SIZE = 0x1000;
@@ -75,7 +75,10 @@ int PrepareBuildRomFsBinary(ncch_settings *ncchset, romfs_buildctx *ctx)
 	
 	// Print Filtered FS
 	//printf("print filtered FS\n");
-	//fs_PrintDir(ctx->fs,0);
+	if(ncchset->options.verbose){
+		printf("[ROMFS] File System:\n");
+		fs_PrintDir(ctx->fs,0);
+	}
 	
 	//printf("predict romfs size\n");
 	CalcRomfsSize(ctx);
@@ -349,7 +352,7 @@ int AddFileToRomfs(romfs_buildctx *ctx, fs_file *file, u32 parent, u32 sibling)
 		u64_to_u8(entry->dataoffset,ctx->u_dataLen,LE);
 		u64_to_u8(entry->datasize,file->size,LE);
 		u8 *data_pos = (ctx->data + ctx->u_dataLen);
-		ReadFile_64(data_pos,file->size,0,file->fp);
+		ReadFile64(data_pos,file->size,0,file->fp);
 		ctx->u_dataLen += file->size; // adding file size
 	}
 	else

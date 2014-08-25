@@ -1,25 +1,9 @@
 #include "lib.h"
 #include "utf.h"
 
-// Memory
-void char_to_u8_array(unsigned char destination[], char source[], int size, int endianness, int base)
-{	
-	char tmp[size][2];
-    unsigned char *byte_array = malloc(size*sizeof(unsigned char));
-	memset(byte_array, 0, size);
-	memset(destination, 0, size);
-	memset(tmp, 0, size*2);
-    
-    for (int i = 0; i < size; i ++){
-		tmp[i][0] = source[(i*2)];
-        tmp[i][1] = source[((i*2)+1)];
-		tmp[i][2] = '\0';
-        byte_array[i] = (unsigned char)strtol(tmp[i], NULL, base);
-    }
-	endian_memcpy(destination,byte_array,size,endianness);
-	free(byte_array);
-}
+#include "polarssl/base64.h"
 
+// Memory
 void endian_memcpy(u8 *destination, u8 *source, u32 size, int endianness)
 { 
     for (u32 i = 0; i < size; i++){
@@ -65,13 +49,13 @@ u64 align(u64 value, u64 alignment)
 		return value;
 }
 
-u64 min_u64(u64 a, u64 b)
+u64 min64(u64 a, u64 b)
 {
 	if(a < b) return a;
 	return b;
 }
 
-u64 max_u64(u64 a, u64 b)
+u64 max64(u64 a, u64 b)
 {
 	if(a > b) return a;
 	return b;
@@ -187,6 +171,56 @@ int str_utf8_to_u16(u16 **dst, u32 *dst_len, u8 *src, u32 src_len)
 }
 #endif
 
+// Base64
+bool IsValidB64Char(char chr)
+{
+	return (isalnum(chr) || chr == '+' || chr == '/' || chr == '=');
+}
+
+u32 b64_strlen(char *str)
+{
+	u32 count = 0;
+	u32 i = 0;
+	while(str[i] != 0x0){
+		if(IsValidB64Char(str[i])) {
+			//printf("Is Valid: %c\n",str[i]);
+			count++;
+		}
+		i++;
+	}
+
+	return count;
+}
+
+void b64_strcpy(char *dst, char *src)
+{
+	u32 src_len = strlen(src);
+	u32 j = 0;
+	for(u32 i = 0; i < src_len; i++){
+		if(IsValidB64Char(src[i])){
+			dst[j] = src[i];
+			j++;
+		}
+	}
+	dst[j] = 0;
+
+	//memdump(stdout,"src: ",(u8*)src,src_len+1);
+	//memdump(stdout,"dst: ",(u8*)dst,j+1);
+}
+
+int b64_decode(u8 *dst, char *src, u32 dst_size)
+{
+	int ret;
+	u32 size = dst_size;
+	
+	ret = base64_decode(dst,(size_t*)&size,(const u8*)src,strlen(src));
+	
+	if(size != dst_size)
+		ret = POLARSSL_ERR_BASE64_BUFFER_TOO_SMALL;
+	
+	return ret;
+}
+
 // Pseudo-Random Number Generator
 void initRand(void)
 {
@@ -227,7 +261,7 @@ bool AssertFile(char *filename)
 #endif
 }
 
-u64 GetFileSize_u64(char *filename)
+u64 GetFileSize64(char *filename)
 {
 #ifdef _WIN32
 	struct _stat64 st;
@@ -262,7 +296,7 @@ char *getcwdir(char *buffer,int maxlen)
 #endif
 }
 
-int TruncateFile_u64(char *filename, u64 filelen)
+int TruncateFile64(char *filename, u64 filelen)
 {
 #ifdef _WIN32
 	HANDLE fh;
@@ -291,7 +325,7 @@ int TruncateFile_u64(char *filename, u64 filelen)
 
 // Wide Char IO
 #ifdef _WIN32
-u64 wGetFileSize_u64(u16 *filename)
+u64 wGetFileSize64(u16 *filename)
 {
 	struct _stat64 st;
 	_wstat64((wchar_t*)filename, &st);
@@ -302,12 +336,10 @@ u64 wGetFileSize_u64(u16 *filename)
 //IO Misc
 u8* ImportFile(char *file, u64 size)
 {
-	u64 fsize = GetFileSize_u64(file);
-	if(size > 0){
-		if(size != fsize){
-			fprintf(stderr,"[!] %s has an invalid size (0x%"PRIx64")\n",file, fsize);
-			return NULL;
-		}
+	u64 fsize = GetFileSize64(file);
+	if(size > 0 && size != fsize){
+		fprintf(stderr,"[!] %s has an invalid size (0x%"PRIx64")\n",file, fsize);
+		return NULL;
 	}
 
 	u8 *data = (u8*)calloc(1,fsize);
@@ -328,7 +360,7 @@ void WriteBuffer(void *buffer, u64 size, u64 offset, FILE *output)
 	fwrite(buffer,size,1,output);
 } 
 
-void ReadFile_64(void *outbuff, u64 size, u64 offset, FILE *file)
+void ReadFile64(void *outbuff, u64 size, u64 offset, FILE *file)
 {
 	fseek_64(file,offset);
 	fread(outbuff,size,1,file);
@@ -368,32 +400,32 @@ u32 u8_to_u32(u8 *value, u8 endianness)
 
 u64 u8_to_u64(u8 *value, u8 endianness)
 {
-	u64 u64_return = 0;
+	u64 ret = 0;
 	switch(endianness){
 		case(BE): 
-			u64_return |= (u64)value[7]<<0;
-			u64_return |= (u64)value[6]<<8;
-			u64_return |= (u64)value[5]<<16;
-			u64_return |= (u64)value[4]<<24;
-			u64_return |= (u64)value[3]<<32;
-			u64_return |= (u64)value[2]<<40;
-			u64_return |= (u64)value[1]<<48;
-			u64_return |= (u64)value[0]<<56;
+			ret |= (u64)value[7]<<0;
+			ret |= (u64)value[6]<<8;
+			ret |= (u64)value[5]<<16;
+			ret |= (u64)value[4]<<24;
+			ret |= (u64)value[3]<<32;
+			ret |= (u64)value[2]<<40;
+			ret |= (u64)value[1]<<48;
+			ret |= (u64)value[0]<<56;
 			break;
 			//return (value[7]<<0) | (value[6]<<8) | (value[5]<<16) | (value[4]<<24) | (value[3]<<32) | (value[2]<<40) | (value[1]<<48) | (value[0]<<56);
 		case(LE): 
-			u64_return |= (u64)value[0]<<0;
-			u64_return |= (u64)value[1]<<8;
-			u64_return |= (u64)value[2]<<16;
-			u64_return |= (u64)value[3]<<24;
-			u64_return |= (u64)value[4]<<32;
-			u64_return |= (u64)value[5]<<40;
-			u64_return |= (u64)value[6]<<48;
-			u64_return |= (u64)value[7]<<56;
+			ret |= (u64)value[0]<<0;
+			ret |= (u64)value[1]<<8;
+			ret |= (u64)value[2]<<16;
+			ret |= (u64)value[3]<<24;
+			ret |= (u64)value[4]<<32;
+			ret |= (u64)value[5]<<40;
+			ret |= (u64)value[6]<<48;
+			ret |= (u64)value[7]<<56;
 			break;
 			//return (value[0]<<0) | (value[1]<<8) | (value[2]<<16) | (value[3]<<24) | (value[4]<<32) | (value[5]<<40) | (value[6]<<48) | (value[7]<<56);
 	}
-	return u64_return;
+	return ret;
 }
 
 int u16_to_u8(u8 *out_value, u16 in_value, u8 endianness)

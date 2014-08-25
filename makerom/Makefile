@@ -1,8 +1,8 @@
 # Makerom Sources
-UTILS_OBJS = utils.o dir.o utf.o keyset.o titleid.o
-CIA_OBJS = cia.o cia_read.o certs.o tik.o tmd.o tmd_read.o
-NCCH_OBJS = ncch.o exheader.o accessdesc.o exefs.o elf.o romfs.o romfs_import.o romfs_binary.o  
-NCSD_OBJS = ncsd.o  
+UTILS_OBJS = utils.o ctr_utils.o dir.o utf.o keyset.o titleid.o
+CIA_OBJS = cia.o certs.o tik.o tmd.o
+NCCH_OBJS = ncch.o exheader.o accessdesc.o exefs.o elf.o romfs.o romfs_import.o romfs_gen.o  
+NCSD_OBJS = ncsd.o cardinfo.o
 SETTINGS_OBJS = user_settings.o rsf_settings.o
 LIB_API_OBJS = crypto.o yaml_parser.o blz.o
 
@@ -21,7 +21,7 @@ CC = gcc
 # MAKEROM Build Settings
 MAKEROM_BUILD_FLAGS = #-DDEBUG
 VER_MAJOR = 0
-VER_MINOR = 10
+VER_MINOR = 11
 OUTPUT = makerom
 
 main: build

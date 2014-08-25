@@ -1,7 +1,7 @@
 #pragma once
 
 #ifdef PKI_LEGACY
-#include "dpki_legacy.h"
+#include "pki/dev_legacy.h"
 #endif
 
 // AES KEYS

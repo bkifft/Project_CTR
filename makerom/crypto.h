@@ -71,9 +71,9 @@ typedef struct
 extern "C" {
 #endif
 // SHA
+bool VerifySha256(void *data, u64 size, u8 hash[32]);
 void ctr_sha(void *data, u64 size, u8 *hash, int mode);
 // AES
-u8* AesKeyScrambler(u8 *Key, u8 *KeyX, u8 *KeyY);
 void ctr_add_counter(ctr_aes_context* ctx, u32 carry);
 void ctr_init_counter(ctr_aes_context* ctx, u8 key[16],u8 ctr[16]);
 void ctr_crypt_counter_block(ctr_aes_context* ctx, u8 input[16], u8 output[16]);

@@ -1,8 +1,8 @@
 #include "lib.h"
 #include "dir.h"
-#include "ncch.h"
+#include "ncch_build.h"
 #include "romfs.h"
-#include "romfs_binary.h"
+#include "romfs_gen.h"
 #include "romfs_import.h"
 
 void FreeRomFsCtx(romfs_buildctx *ctx);

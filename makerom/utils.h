@@ -7,7 +7,6 @@ typedef struct
 } buffer_struct;
 
 // Memory
-void char_to_u8_array(unsigned char destination[], char source[], int size, int endianness, int base);
 void endian_memcpy(u8 *destination, u8 *source, u32 size, int endianness);
 int CopyData(u8 **dest, u8 *source, u64 size);
 void rndset(void *ptr, u64 num);
@@ -15,8 +14,8 @@ void clrmem(void *ptr, u64 num);
 
 // MISC
 u64 align(u64 value, u64 alignment);
-u64 min_u64(u64 a, u64 b);
-u64 max_u64(u64 a, u64 b);
+u64 min64(u64 a, u64 b);
+u64 max64(u64 a, u64 b);
 
 // Strings
 void memdump(FILE* fout, const char* prefix, const u8* data, u32 size);
@@ -28,6 +27,12 @@ int str_u32_to_u16(u16 **dst, u32 *dst_len, u32 *src, u32 src_len);
 int str_utf8_to_u16(u16 **dst, u32 *dst_len, u8 *src, u32 src_len);
 #endif
 
+// Base64
+bool IsValidB64Char(char chr);
+u32 b64_strlen(char *str);
+void b64_strcpy(char *dst, char *src);
+int b64_decode(u8 *dst, char *src, u32 dst_size);
+
 // Pseudo-Random Number Generator
 void initRand(void);
 u8 u8GetRand(void);
@@ -37,20 +42,20 @@ u64 u64GetRand(void);
 
 //Char IO
 bool AssertFile(char *filename);
-u64 GetFileSize_u64(char *filename);
+u64 GetFileSize64(char *filename);
 int makedir(const char* dir);
 char *getcwdir(char *buffer,int maxlen);
-int TruncateFile_u64(char *filename, u64 filelen);
+int TruncateFile64(char *filename, u64 filelen);
 
 //Wide Char IO
 #ifdef _WIN32
-u64 wGetFileSize_u64(u16 *filename);
+u64 wGetFileSize64(u16 *filename);
 #endif
 
 //IO Misc
 u8* ImportFile(char *file, u64 size);
 void WriteBuffer(void *buffer, u64 size, u64 offset, FILE *output);
-void ReadFile_64(void *outbuff, u64 size, u64 offset, FILE *file);
+void ReadFile64(void *outbuff, u64 size, u64 offset, FILE *file);
 int fseek_64(FILE *fp, u64 file_pos);
 
 //Data Size conversion

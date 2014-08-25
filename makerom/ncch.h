@@ -15,10 +15,10 @@ typedef enum
 	ACCESSDESC_SIG_BAD = -10,
 	NCCH_HDR_SIG_BAD = -11,
 	// HashCheck Errors
-	ExHeader_Hashfail = -12,
-	Logo_Hashfail = -13,
-	ExeFs_Hashfail = -14,
-	RomFs_Hashfail = -15,
+	EXHDR_CORRUPT = -12,
+	LOGO_CORRUPT = -13,
+	EXEFS_CORRUPT = -14,
+	ROMFS_CORRUPT = -15,
 	// Others
 	NCCH_BAD_YAML_SET = -16,
 	DATA_POS_DNE = -17,
@@ -29,34 +29,23 @@ typedef enum
 	ncch_exhdr = 1,
 	ncch_exefs,
 	ncch_romfs,
-	ncch_Logo,
-	ncch_PlainRegion,
 } ncch_section;
 
 typedef enum
 {
-	NoKey,
-	KeyIsNormalFixed,
-	KeyIsSystemFixed,
-	KeyIsUnFixed,
-	KeyIsUnFixed2,
-} ncch_key_type;
-
-typedef enum
-{
-	SecureCrypto2 = 3,
-	ContentPlatform = 4,
-	ContentType = 5,
-	ContentUnitSize = 6,
-	OtherFlag = 7
+	ncchflag_CONTENT_KEYX = 3,
+	ncchflag_CONTENT_PLATFORM = 4,
+	ncchflag_CONTENT_TYPE = 5,
+	ncchflag_CONTENT_BLOCK_SIZE = 6,
+	ncchflag_OTHER_FLAG = 7
 } ncch_flags;
 
 typedef enum
 {
-	UnFixedCryptoKey = 0x0,
-	FixedCryptoKey = 0x1,
-	NoMountRomFs = 0x2,
-	NoCrypto = 0x4,
+	otherflag_Clear = 0,
+	otherflag_FixedCryptoKey = (1 << 0),
+	otherflag_NoMountRomFs = (1 << 1),
+	otherflag_NoCrypto = (1 << 2),
 } ncch_otherflag_bitmask;
 
 typedef enum
@@ -88,10 +77,11 @@ typedef struct
 	u64 romfsHashDataSize;
 	u8 titleId[8];
 	u8 programId[8];
-} ncch_struct;
+} ncch_info;
 
 typedef struct
 {
+	u8 signature[0x100];
 	u8 magic[4];
 	u8 ncchSize[4];
 	u8 titleId[8];
@@ -122,109 +112,24 @@ typedef struct
 	u8 romfsHash[0x20];
 } ncch_hdr;
 
-
-typedef struct
-{
-	buffer_struct *out;
-	keys_struct *keys;
-	rsf_settings *rsfSet;
-
-	struct
-	{
-		u32 mediaSize;
-		bool IncludeExeFsLogo;
-		bool CompressCode;
-		bool UseOnSD;
-		bool Encrypt;
-		bool FreeProductCode;
-		bool IsCfa;
-		bool IsBuildingCodeSection;
-		bool UseRomFS;
-	} options;
-
-	struct
-	{
-		FILE *elf;
-		u64 elfSize;
-
-		FILE *banner;
-		u64 bannerSize;
-
-		FILE *icon;
-		u64 iconSize;
-
-		FILE *logo;
-		u64 logoSize;
-
-		FILE *code;
-		u64 codeSize;
-
-		FILE *exhdr;
-		u64 exhdrSize;
-
-		FILE *romfs;
-		u64 romfsSize;
-
-		FILE *plainregion;
-		u64 plainregionSize;
-	} componentFilePtrs;
-
-	struct
-	{
-		buffer_struct code;
-		buffer_struct banner;
-		buffer_struct icon;
-	} exefsSections;
-
-	struct
-	{
-		u32 textAddress;
-		u32 textSize;
-		u32 textMaxPages;
-		u32 roAddress;
-		u32 roSize;
-		u32 roMaxPages;
-		u32 rwAddress;
-		u32 rwSize;
-		u32 rwMaxPages;
-		u32 bssSize;
-	} codeDetails;
-
-	struct
-	{
-		buffer_struct exhdr;
-		buffer_struct acexDesc;
-		buffer_struct logo;
-		buffer_struct plainRegion;
-		buffer_struct exeFs;
-	} sections;
-	
-	ncch_struct cryptoDetails;
-
-
-} ncch_settings;
-
-// NCCH Build Functions
-int build_NCCH(user_settings *usrset);
-
-
 // NCCH Read Functions
-int VerifyNCCH(u8 *ncch, keys_struct *keys, bool CheckHash, bool SuppressOutput);
+int VerifyNcch(u8 *ncch, keys_struct *keys, bool CheckHash, bool SuppressOutput);
 
-u8* RetargetNCCH(FILE *fp, u64 size, u8 *TitleId, u8 *ProgramId, keys_struct *keys);
 int ModifyNcchIds(u8 *ncch, u8 *titleId, u8 *programId, keys_struct *keys);
 
-
-ncch_hdr* GetNCCH_CommonHDR(void *out, FILE *fp, u8 *buf);
-bool IsNCCH(FILE *fp, u8 *buf);
+void ReadNcchHdr(ncch_hdr *hdr, FILE *fp);
+u8* GetNcchHdrSig(ncch_hdr *hdr);
+u8* GetNcchHdrData(ncch_hdr *hdr);
+u32 GetNcchHdrSigLen(ncch_hdr *hdr);
+u32 GetNcchHdrDataLen(ncch_hdr *hdr);
+bool IsNcch(FILE *fp, u8 *buf);
 bool IsCfa(ncch_hdr* hdr);
-u32 GetNCCH_MediaUnitSize(ncch_hdr* hdr);
-u32 GetNCCH_MediaSize(ncch_hdr* hdr);
-ncch_key_type GetNCCHKeyType(ncch_hdr* hdr);
-
-u8* GetNCCHKey0(ncch_key_type keytype, keys_struct *keys);
-u8* GetNCCHKey1(ncch_key_type keytype, keys_struct *keys);
-
-int GetNCCHStruct(ncch_struct *ctx, ncch_hdr *header);
-void ncch_get_counter(ncch_struct *ctx, u8 counter[16], u8 type);
-void CryptNCCHSection(u8 *buffer, u64 size, u64 src_pos, ncch_struct *ctx, u8 key[16], u8 type);
+bool IsUpdateCfa(ncch_hdr* hdr);
+u32 GetNcchBlockSize(ncch_hdr* hdr);
+u8 GetBlockSizeFlag(u32 size);
+u64 GetNcchSize(ncch_hdr* hdr);
+bool IsNcchEncrypted(ncch_hdr *hdr);
+bool SetNcchKeys(keys_struct *keys, ncch_hdr *hdr);
+int GetNcchInfo(ncch_info *ctx, ncch_hdr *header);
+void GetNcchAesCounter(ncch_info *ctx, u8 counter[16], u8 type);
+void CryptNcchRegion(u8 *buffer, u64 size, u64 src_pos, ncch_info *ctx, u8 key[16], u8 type);

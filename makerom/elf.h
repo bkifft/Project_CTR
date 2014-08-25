@@ -23,7 +23,7 @@ typedef struct
 	u64 size;
 	u64 address;
 	u64 alignment;
-} ElfSectionEntry;
+} elf_section_entry;
 
 typedef struct
 {
@@ -36,18 +36,17 @@ typedef struct
 	u64 physicalAddress;
 	u64 sizeInMemory;
 	u64 alignment;
-	
-} ElfProgramEntry;
+} elf_program_entry;
 
 typedef struct
 {
 	char *name;
 	u64 vAddr;
 
-	ElfProgramEntry *header;
+	elf_program_entry *header;
 	u32 sectionNum;
-	ElfSectionEntry *sections;
-} ElfSegment;
+	elf_section_entry *sections;
+} elf_segment;
 
 typedef struct
 {
@@ -55,7 +54,7 @@ typedef struct
 	u32 size;
 	u32 maxPageNum;
 	u8 *data;
-} CodeSegment;
+} code_segment;
 
 typedef struct
 {
@@ -73,12 +72,12 @@ typedef struct
 	
 	u16 sectionHeaderNameEntryIndex;
 
-	ElfSectionEntry *sections;
-	ElfProgramEntry *programHeaders;
+	elf_section_entry *sections;
+	elf_program_entry *programHeaders;
 
 	u16 activeSegments;
-	ElfSegment *segments;
+	elf_segment *segments;
 
-} ElfContext;
+} elf_context;
 
 int BuildExeFsCode(ncch_settings *ncchset);

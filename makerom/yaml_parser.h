@@ -31,7 +31,7 @@ typedef struct
 } ctr_yaml_context;
 
 // Public Prototypes
-int GetYamlSettings(user_settings *set);
+int GetRsfSettings(user_settings *set);
 
 // For scalar events
 char *GetYamlString(ctr_yaml_context *ctx);

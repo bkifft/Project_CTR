@@ -11,17 +11,14 @@ void CheckEvent(ctr_yaml_context *ctx);
 void BadYamlFormatting(void);
 
 // Code
-int GetYamlSettings(user_settings *set)
+int GetRsfSettings(user_settings *set)
 {
-	memset(&set->common.rsfSet,0,sizeof(rsf_settings));
 	int ret = 0;
 	if(set->common.rsfPath) {
-		FILE *rsf = fopen(set->common.rsfPath,"rb");
-		if(!rsf) {
+		if(!AssertFile(set->common.rsfPath)) {
 			fprintf(stderr,"[RSF ERROR] Failed to open %s\n",set->common.rsfPath);
 			return FAILED_TO_OPEN_FILE;
 		}
-		fclose(rsf);
 		ret = ParseSpecFile(&set->common.rsfSet,set->common.rsfPath, &set->dname);
 	}
 	return ret;

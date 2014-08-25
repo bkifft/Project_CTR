@@ -56,7 +56,7 @@ void GET_Option(ctr_yaml_context *ctx, rsf_settings *rsf)
 		//else if(cmpYamlValue("NoPadding",ctx)) SetBoolYAMLValue(&rsf->Option.NoPadding,"NoPadding",ctx);
 		else if(cmpYamlValue("EnableCrypt",ctx)) SetBoolYAMLValue(&rsf->Option.EnableCrypt,"EnableCrypt",ctx);
 		else if(cmpYamlValue("EnableCompress",ctx)) SetBoolYAMLValue(&rsf->Option.EnableCompress,"EnableCompress",ctx);
-		else if(cmpYamlValue("FreeProductCode",ctx)) SetBoolYAMLValue(&rsf->Option.EnableCompress,"FreeProductCode",ctx);
+		else if(cmpYamlValue("FreeProductCode",ctx)) SetBoolYAMLValue(&rsf->Option.FreeProductCode,"FreeProductCode",ctx);
 		else if(cmpYamlValue("UseOnSD",ctx)) SetBoolYAMLValue(&rsf->Option.UseOnSD,"UseOnSD",ctx);
 		else if(cmpYamlValue("PageSize",ctx)) SetSimpleYAMLValue(&rsf->Option.PageSize,"PageSize",ctx,0);
 		//else if(cmpYamlValue("AppendSystemCall",ctx)) rsf->Option.AppendSystemCallNum = SetYAMLSequence(&rsf->Option.AppendSystemCall,"AppendSystemCall",ctx);

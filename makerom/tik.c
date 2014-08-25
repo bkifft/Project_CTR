@@ -1,6 +1,6 @@
 #include "lib.h"
-#include "cia.h"
-#include "tik.h"
+#include "cia_build.h"
+#include "tik_build.h"
 
 // Private Prototypes
 int SetupTicketBuffer(buffer_struct *tik);
@@ -98,4 +98,35 @@ void SetContentIndexData(tik_hdr *hdr, cia_settings *ciaset) // TODO?
 {
 	memset(hdr->contentIndex,0,0xAC);
 	memcpy(hdr->contentIndex,default_contentIndex,0x30);
+}
+
+tik_hdr *GetTikHdr(u8 *tik)
+{
+	u32 sigType = u8_to_u32(tik,BE);
+
+	switch(sigType){
+		case(RSA_4096_SHA1):
+		case(RSA_4096_SHA256):
+			return (tik_hdr*)(tik+0x240);
+		case(RSA_2048_SHA1):
+		case(RSA_2048_SHA256):
+			return (tik_hdr*)(tik+0x140);
+		case(ECC_SHA1):
+		case(ECC_SHA256):
+			return (tik_hdr*)(tik+0x7C);
+	}
+
+	return NULL;
+}
+
+bool GetTikTitleKey(u8 *titleKey, tik_hdr *hdr, keys_struct *keys)
+{
+	if(keys->aes.commonKey[hdr->keyId] == NULL)
+		return false;
+		
+	keys->aes.currentCommonKey = hdr->keyId;
+	
+	CryptTitleKey(hdr->encryptedTitleKey, titleKey, hdr->titleId, keys, DEC);
+	
+	return true;
 }

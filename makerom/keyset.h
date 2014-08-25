@@ -2,6 +2,13 @@
 
 typedef enum
 {
+	AES_128_KEY_SIZE = 16,
+	MAX_CMN_KEY = MAX_U8,
+	MAX_NCCH_KEYX = MAX_U8
+} keydata_limits;
+
+typedef enum
+{
 	KEYSET_ERROR = -10,
 } keyset_errors;
 
@@ -54,11 +61,10 @@ typedef struct
 		// NCCH Keys
 		u8 *normalKey;
 		u8 *systemFixedKey;
-
-		u8 *ncchKeyX0;
-		u8 *ncchKeyX1;
-		u8 *unFixedKey0;
-		u8 *unFixedKey1;
+		u8 **ncchKeyX;
+		
+		u8 *ncchKey0;
+		u8 *ncchKey1;
 	} aes;
 	
 	struct
@@ -101,5 +107,4 @@ int SetCurrentCommonKey(keys_struct *keys, u8 Index);
 int SetNormalKey(keys_struct *keys, u8 *systemFixedKey);
 int SetSystemFixedKey(keys_struct *keys, u8 *systemFixedKey);
 
-
-int SetNcchUnfixedKeys(keys_struct *keys, u8 *ncchSig);
+u8* AesKeyScrambler(u8 *key, u8 *keyX, u8 *keyY);

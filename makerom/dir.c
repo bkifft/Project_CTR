@@ -118,10 +118,10 @@ fs_entry* fs_GetEntry(fs_DIR *dp)
 	{
 		entry->IsDir = false;
 #ifdef _WIN32
-		entry->size = wGetFileSize_u64(entry->fs_name);
+		entry->size = wGetFileSize64(entry->fs_name);
 		entry->fp = _wfopen(entry->fs_name,L"rb");
 #else
-		entry->size = GetFileSize_u64(entry->fs_name);
+		entry->size = GetFileSize64(entry->fs_name);
 		entry->fp = fopen(entry->fs_name,"rb");
 #endif
 	}

@@ -10,9 +10,9 @@ void PrintArgInvalid(char *arg);
 void PrintArgReqParam(char *arg, u32 paramNum);
 void PrintNoNeedParam(char *arg);
 
-int ParseArgs(int argc, char *argv[], user_settings *usr_settings)
+int ParseArgs(int argc, char *argv[], user_settings *set)
 {
-	if(argv == NULL || usr_settings == NULL)
+	if(argv == NULL || set == NULL)
 		return USR_PTR_PASS_FAIL;
 		
 	if(argc < 2){
@@ -29,26 +29,23 @@ int ParseArgs(int argc, char *argv[], user_settings *usr_settings)
 	}
 	
 	// Allocating Memory for Content Path Ptrs
-	usr_settings->common.contentPath = calloc(CIA_MAX_CONTENT,sizeof(char*));
-	if(usr_settings->common.contentPath == NULL){
+	set->common.contentPath = calloc(CIA_MAX_CONTENT,sizeof(char*));
+	if(set->common.contentPath == NULL){
 		fprintf(stderr,"[SETTING ERROR] Not Enough Memory\n");
 		return USR_MEM_ERROR;
 	}
 	
 	// Initialise Keys
-	InitKeys(&usr_settings->common.keys);
+	InitKeys(&set->common.keys);
 
 	// Setting Defaults
-	SetDefaults(usr_settings);
+	SetDefaults(set);
 	
 	// Parsing Arguments
-#ifdef DEBUG
-	fprintf(stdout,"[DEBUG] Parsing Args\n");
-#endif
 	int set_result;
 	int i = 1;
 	while(i < argc){
-		set_result = SetArgument(argc,i,argv,usr_settings);
+		set_result = SetArgument(argc,i,argv,set);
 		if(set_result < 1){
 			fprintf(stderr,"[RESULT] Invalid arguments, see '%s -help'\n",argv[0]);
 			return set_result;
@@ -57,39 +54,30 @@ int ParseArgs(int argc, char *argv[], user_settings *usr_settings)
 	}
 	
 	// Checking arguments
-#ifdef DEBUG
-	fprintf(stdout,"[DEBUG] Checking Args\n");
-#endif
-	set_result = CheckArgumentCombination(usr_settings);
-	if(set_result) return set_result;
+	if((set_result = CheckArgumentCombination(set)) != 0) 
+		return set_result;
 	
 	// Setting Keys
-#ifdef DEBUG
-	fprintf(stdout,"[DEBUG] Setting Keys\n");
-#endif
-	set_result = SetKeys(&usr_settings->common.keys);
-	if(set_result) return set_result;
+	if((set_result = SetKeys(&set->common.keys)) != 0) 
+		return set_result;
 
-#ifdef DEBUG
-	fprintf(stdout,"[DEBUG] Generating output path name if required\n");
-#endif
-
-	if(!usr_settings->common.outFileName){
+	// Generating outpath if required
+	if(!set->common.outFileName){
 		char *source_path = NULL;
-		if(usr_settings->ncch.buildNcch0) 
-			source_path = usr_settings->common.rsfPath;
-		else if(usr_settings->common.workingFileType == infile_ncsd || usr_settings->common.workingFileType == infile_srl) 
-			source_path = usr_settings->common.workingFilePath;
+		if(set->ncch.buildNcch0) 
+			source_path = set->common.rsfPath;
+		else if(set->common.workingFileType == infile_ncsd || set->common.workingFileType == infile_cia || set->common.workingFileType == infile_srl) 
+			source_path = set->common.workingFilePath;
 		else 
-			source_path = usr_settings->common.contentPath[0];
-		u16 outfile_len = strlen(source_path) + 3;
-		usr_settings->common.outFileName = calloc(outfile_len,sizeof(char));
-		if(!usr_settings->common.outFileName){
+			source_path = set->common.contentPath[0];
+		u16 outfile_len = strlen(source_path) + 0x10;
+		set->common.outFileName = calloc(outfile_len,sizeof(char));
+		if(!set->common.outFileName){
 			fprintf(stderr,"[SETTING ERROR] Not Enough Memory\n");
 			return USR_MEM_ERROR;
 		}
-		usr_settings->common.outFileName_mallocd = true;
-		append_filextention(usr_settings->common.outFileName,outfile_len,source_path,(char*)&output_extention[usr_settings->common.outFormat-1]);
+		set->common.outFileName_mallocd = true;
+		append_filextention(set->common.outFileName,outfile_len,source_path,(char*)&output_extention[set->common.outFormat-1]);
 	}
 	return 0;
 }
@@ -101,12 +89,14 @@ void SetDefaults(user_settings *set)
 	set->common.keys.accessDescSign.presetType = desc_preset_NONE;
 
 	// Build NCCH Info
+	set->ncch.useSecCrypto = false;
 	set->ncch.buildNcch0 = false;
 	set->ncch.includeExefsLogo = false;
 	set->common.outFormat = NCCH;
 	set->ncch.ncchType = format_not_set;
 
 	// RSF Settings
+	clrmem(&set->common.rsfSet,sizeof(rsf_settings));
 	set->common.rsfSet.Option.EnableCompress = true;
 	set->common.rsfSet.Option.EnableCrypt = true;
 	set->common.rsfSet.Option.UseOnSD = false;
@@ -119,13 +109,15 @@ void SetDefaults(user_settings *set)
 	set->cci.useSDKStockData = false;
 
 	// CIA Info
+	set->cia.includeUpdateNcch = false;
+	set->cia.deviceId = 0;
+	set->cia.eshopAccId = 0;
 	set->cia.useDataTitleVer = false;
 	set->cia.titleVersion[VER_MAJOR] = MAX_U16; // invalid so changes can be detected
 	set->cia.randomTitleKey = false;
 	set->common.keys.aes.currentCommonKey = MAX_U8 + 1; // invalid so changes can be detected
-	for(int i = 0; i < CIA_MAX_CONTENT; i++){
+	for(int i = 0; i < CIA_MAX_CONTENT; i++)
 		set->cia.contentId[i] = MAX_U32 + 1; // invalid so changes can be detected
-	}
 }
 
 int SetArgument(int argc, int i, char *argv[], user_settings *set)
@@ -137,7 +129,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 	// Global Settings
 	if(strcmp(argv[i],"-rsf") == 0){
 		if(ParamNum != 1){
-			PrintArgReqParam("-rsf",1);
+			PrintArgReqParam(argv[i],1);
 			return USR_ARG_REQ_PARAM;
 		}
 		set->common.rsfPath = argv[i+1];
@@ -145,7 +137,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 	}
 	else if(strcmp(argv[i],"-f") == 0){
 		if(ParamNum != 1){
-			PrintArgReqParam("-f",1);
+			PrintArgReqParam(argv[i],1);
 			return USR_ARG_REQ_PARAM;
 		}
 		if(strcasecmp(argv[i+1],"ncch") == 0) 
@@ -162,17 +154,25 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 	}
 	else if(strcmp(argv[i],"-o") == 0){
 		if(ParamNum != 1){
-			PrintArgReqParam("-o",1);
+			PrintArgReqParam(argv[i],1);
 			return USR_ARG_REQ_PARAM;
 		}
 		set->common.outFileName = argv[i+1];
 		set->common.outFileName_mallocd = false;
 		return 2;
 	}
+	else if(strcmp(argv[i],"-v") == 0){
+		if(ParamNum){
+			PrintNoNeedParam(argv[i]);
+			return USR_BAD_ARG;
+		}
+		set->common.verbose = true;
+		return 1;
+	}
 	// Key Options
 	else if(strcmp(argv[i],"-target") == 0){
 		if(ParamNum != 1){
-			PrintArgReqParam("-target",1);
+			PrintArgReqParam(argv[i],1);
 			return USR_ARG_REQ_PARAM;
 		}
 		if(strcasecmp(argv[i+1],"test") == 0 || strcasecmp(argv[i+1],"t") == 0)
@@ -181,7 +181,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			set->common.keys.keyset = pki_DEVELOPMENT;
 		else if(strcasecmp(argv[i+1],"retail") == 0 || strcasecmp(argv[i+1],"production") == 0 || strcasecmp(argv[i+1],"p") == 0)
 			set->common.keys.keyset = pki_PRODUCTION;
-		//else if(strcasecmp(argv[i+1],"custom") == 0 || strcasecmp(argv[i+1],"c") == 0)
+		//else if(strcasecmp(argv[i+1],"custom") == 0 || strcasecmp(argv[i+1],"c") == 0) // given all known keys are here, this isn't needed
 		//	set->common.keys.keyset = pki_CUSTOM;
 		else{
 			fprintf(stderr,"[SETTING ERROR] Unrecognised target '%s'\n",argv[i+1]);
@@ -189,22 +189,36 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 		}
 		return 2;
 	}
-	else if(strcmp(argv[i],"-ckeyID") == 0){
+	else if(strcmp(argv[i],"-ckeyid") == 0){
 		if(ParamNum != 1){
-			PrintArgReqParam("-ckeyID",1);
+			PrintArgReqParam(argv[i],1);
 			return USR_ARG_REQ_PARAM;
 		}
 		set->common.keys.aes.currentCommonKey = strtol(argv[i+1],NULL,0);
-		if(set->common.keys.aes.currentCommonKey > 0xff)
+		if(set->common.keys.aes.currentCommonKey > MAX_CMN_KEY)
 		{
-			fprintf(stderr,"[SETTING ERROR] Invalid Common Key ID: 0x%x\n",set->common.keys.aes.currentCommonKey);
+			fprintf(stderr,"[SETTING ERROR] Invalid Common Key Index: 0x%x\n",set->common.keys.aes.currentCommonKey);
+			return USR_BAD_ARG;
+		}
+		return 2;
+	}
+	else if(strcmp(argv[i],"-ncchseckey") == 0){
+		if(ParamNum != 1){
+			PrintArgReqParam(argv[i],1);
+			return USR_ARG_REQ_PARAM;
+		}
+		set->ncch.useSecCrypto = true;
+		set->ncch.keyXID = strtol(argv[i+1],NULL,0);
+		if(set->ncch.keyXID > MAX_NCCH_KEYX)
+		{
+			fprintf(stderr,"[SETTING ERROR] Invalid NCCH KeyX Index: 0x%x\n",set->ncch.keyXID);
 			return USR_BAD_ARG;
 		}
 		return 2;
 	}
 	else if(strcmp(argv[i],"-showkeys") == 0){
 		if(ParamNum){
-			PrintNoNeedParam("-showkeys");
+			PrintNoNeedParam(argv[i]);
 			return USR_BAD_ARG;
 		}
 		set->common.keys.dumpkeys = true;
@@ -212,7 +226,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 	}
 	else if(strcmp(argv[i],"-fsign") == 0){
 		if(ParamNum){
-			PrintNoNeedParam("-fsign");
+			PrintNoNeedParam(argv[i]);
 			return USR_BAD_ARG;
 		}
 		set->common.keys.rsa.isFalseSign = true;
@@ -222,7 +236,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 	// Ncch Options
 	else if(strcmp(argv[i],"-elf") == 0){
 		if(ParamNum != 1){
-			PrintArgReqParam("-elf",1);
+			PrintArgReqParam(argv[i],1);
 			return USR_ARG_REQ_PARAM;
 		}
 		set->ncch.elfPath = argv[i+1];
@@ -232,7 +246,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 	
 	else if(strcmp(argv[i],"-icon") == 0){
 		if(ParamNum != 1){
-			PrintArgReqParam("-icon",1);
+			PrintArgReqParam(argv[i],1);
 			return USR_ARG_REQ_PARAM;
 		}
 		set->ncch.iconPath = argv[i+1];
@@ -241,7 +255,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 	}
 	else if(strcmp(argv[i],"-banner") == 0){
 		if(ParamNum != 1){
-			PrintArgReqParam("-banner",1);
+			PrintArgReqParam(argv[i],1);
 			return USR_ARG_REQ_PARAM;
 		}
 		set->ncch.bannerPath = argv[i+1];
@@ -250,7 +264,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 	}
 	else if(strcmp(argv[i],"-logo") == 0){
 		if(ParamNum != 1){
-			PrintArgReqParam("-logo",1);
+			PrintArgReqParam(argv[i],1);
 			return USR_ARG_REQ_PARAM;
 		}
 		set->ncch.logoPath = argv[i+1];
@@ -259,7 +273,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 	}
 	else if(strcmp(argv[i],"-desc") == 0){
 		if(ParamNum != 1){
-			PrintArgReqParam("-desc",1);
+			PrintArgReqParam(argv[i],1);
 			return USR_ARG_REQ_PARAM;
 		}
 		char *tmp = argv[i+1];
@@ -281,7 +295,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 		else if(strcasecmp(app_type,"ECApp") == 0) set->common.keys.accessDescSign.presetType = desc_preset_EC_APP;
 		else if(strcasecmp(app_type,"Demo") == 0) set->common.keys.accessDescSign.presetType = desc_preset_DEMO;
 		else if(strcasecmp(app_type,"DlpChild") == 0 || strcasecmp(app_type,"Dlp") == 0) set->common.keys.accessDescSign.presetType = desc_preset_DLP;
-		//else if(strcasecmp(app_type,"FIRM") == 0) set->common.keys.accessDescSign.presetType = desc_preset_FIRM;
+		else if(strcasecmp(app_type,"FIRM") == 0) set->common.keys.accessDescSign.presetType = desc_preset_FIRM;
 		else{
 			fprintf(stderr,"[SETTING ERROR] Accessdesc AppType preset '%s' not valid, please manually configure RSF\n",app_type);
 			return USR_BAD_ARG;
@@ -324,7 +338,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 	}
 	else if(strcmp(argv[i],"-exefslogo") == 0){
 		if(ParamNum){
-			PrintNoNeedParam("-exefslogo");
+			PrintNoNeedParam(argv[i]);
 			return USR_BAD_ARG;
 		}
 		set->ncch.includeExefsLogo = true;
@@ -335,7 +349,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 	// Ncch Rebuild Options
 	else if(strcmp(argv[i],"-code") == 0){
 		if(ParamNum != 1){
-			PrintArgReqParam("-code",1);
+			PrintArgReqParam(argv[i],1);
 			return USR_ARG_REQ_PARAM;
 		}
 		set->ncch.codePath = argv[i+1];
@@ -344,16 +358,16 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 	}
 	else if(strcmp(argv[i],"-exheader") == 0){
 		if(ParamNum != 1){
-			PrintArgReqParam("-exheader",1);
+			PrintArgReqParam(argv[i],1);
 			return USR_ARG_REQ_PARAM;
 		}
 		set->ncch.exheaderPath = argv[i+1];
 		set->ncch.ncchType |= CXI;
 		return 2;
 	}
-	else if(strcmp(argv[i],"-plain-region") == 0){
+	else if(strcmp(argv[i],"-plainrgn") == 0){
 		if(ParamNum != 1){
-			PrintArgReqParam("-plain-region",1);
+			PrintArgReqParam(argv[i],1);
 			return USR_ARG_REQ_PARAM;
 		}
 		set->ncch.plainRegionPath = argv[i+1];
@@ -362,7 +376,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 	}
 	else if(strcmp(argv[i],"-romfs") == 0){
 		if(ParamNum != 1){
-			PrintArgReqParam("-romfs",1);
+			PrintArgReqParam(argv[i],1);
 			return USR_ARG_REQ_PARAM;
 		}
 		set->ncch.romfsPath = argv[i+1];
@@ -370,9 +384,9 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 		return 2;
 	}
 	// Cci Options
-	else if(strcmp(argv[i],"-devcardcci") == 0){
+	else if(strcmp(argv[i],"-devcci") == 0){
 		if(ParamNum){
-			PrintNoNeedParam("-devcardcci");
+			PrintNoNeedParam(argv[i]);
 			return USR_BAD_ARG;
 		}
 		set->cci.useSDKStockData = true;
@@ -380,7 +394,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 	}
 	else if(strcmp(argv[i],"-nomodtid") == 0){
 		if(ParamNum){
-			PrintNoNeedParam("-nomodtid");
+			PrintNoNeedParam(argv[i]);
 			return USR_BAD_ARG;
 		}
 		set->cci.dontModifyNcchTitleID = true;
@@ -388,7 +402,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 	}
 	else if(strcmp(argv[i],"-alignwr") == 0){
 		if(ParamNum){
-			PrintNoNeedParam("-alignwr");
+			PrintNoNeedParam(argv[i]);
 			return USR_BAD_ARG;
 		}
 		set->cci.closeAlignWritableRegion = true;
@@ -396,17 +410,42 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 	}
 	else if(strcmp(argv[i],"-cverinfo") == 0){
 		if(ParamNum != 1){
-			PrintArgReqParam("-cverinfo",1);
+			PrintArgReqParam(argv[i],1);
 			return USR_BAD_ARG;
 		}
-		set->cci.cverCiaPath = argv[i+1];
+		char *pos = strstr(argv[i+1],":");
+		if(!pos || strlen(pos) < 2){
+			fprintf(stderr,"[SETTING ERROR] Bad argument '%s %s', correct format:\n",argv[i],argv[i+1]);
+			fprintf(stderr,"	%s <DATA PATH>:<'cia'/'tmd'>\n",argv[i]);
+			return USR_BAD_ARG;
+		}
+		
+		char *dtype = pos + 1;
+		if(strcasecmp(dtype,"tmd") == 0)
+			set->cci.cverDataType = CVER_DTYPE_TMD;
+		else if(strcasecmp(dtype,"cia") == 0)
+			set->cci.cverDataType = CVER_DTYPE_CIA;
+		else{
+			fprintf(stderr,"[SETTING ERROR] Unrecognised cver data type:\"%s\"\n",dtype);
+			return USR_BAD_ARG;
+		}
+		
+		u32 path_len = (pos-argv[i+1])+1;
+		set->cci.cverDataPath = calloc(path_len,sizeof(char));
+		strncpy(set->cci.cverDataPath,argv[i+1],path_len-1);
+		
+		if(!AssertFile(set->cci.cverDataPath)){
+			fprintf(stderr,"[SETTING ERROR] Failed to open '%s'\n",set->cci.cverDataPath);
+			return USR_BAD_ARG;
+		}
+		
 		return 2;
 	}
 
 	// Cia Options
 	else if(strcmp(argv[i],"-major") == 0){
 		if(ParamNum != 1){
-			PrintArgReqParam("-major",1);
+			PrintArgReqParam(argv[i],1);
 			return USR_ARG_REQ_PARAM;
 		}
 		set->cia.useNormTitleVer = true;
@@ -420,7 +459,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 	}
 	else if(strcmp(argv[i],"-minor") == 0){
 		if(ParamNum != 1){
-			PrintArgReqParam("-minor",1);
+			PrintArgReqParam(argv[i],1);
 			return USR_ARG_REQ_PARAM;
 		}
 		set->cia.useNormTitleVer = true;
@@ -434,7 +473,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 	}
 	else if(strcmp(argv[i],"-micro") == 0){
 		if(ParamNum != 1){
-			PrintArgReqParam("-micro",1);
+			PrintArgReqParam(argv[i],1);
 			return USR_ARG_REQ_PARAM;
 		}
 		u32 ver = strtoul(argv[i+1],NULL,10);
@@ -447,7 +486,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 	}
 	else if(strcmp(argv[i],"-dver") == 0){
 		if(ParamNum != 1){
-			PrintArgReqParam("-dver",1);
+			PrintArgReqParam(argv[i],1);
 			return USR_ARG_REQ_PARAM;
 		}
 		set->cia.useDataTitleVer = true;
@@ -457,31 +496,44 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			return USR_BAD_ARG;
 		}
 		set->cia.titleVersion[VER_MAJOR] = (ver >> 6) & VER_MAJOR_MAX;
-		set->cia.titleVersion[VER_MINOR] = ver & VER_MAJOR_MAX;
+		set->cia.titleVersion[VER_MINOR] = ver & VER_MINOR_MAX;
+		return 2;
+	}
+	else if(strcmp(argv[i],"-deviceid") == 0){
+		if(ParamNum != 1){
+			PrintArgReqParam(argv[i],1);
+			return USR_ARG_REQ_PARAM;
+		}
+		set->cia.deviceId = strtoul(argv[i+1],NULL,16);
+		return 2;
+	}
+	else if(strcmp(argv[i],"-esaccid") == 0){
+		if(ParamNum != 1){
+			PrintArgReqParam(argv[i],1);
+			return USR_ARG_REQ_PARAM;
+		}
+		set->cia.eshopAccId = strtoul(argv[i+1],NULL,16);
 		return 2;
 	}
 	else if(strcmp(argv[i],"-rand") == 0){
 		if(ParamNum){
-			PrintNoNeedParam("-rand");
+			PrintNoNeedParam(argv[i]);
 			return USR_BAD_ARG;
 		}
 		set->cia.randomTitleKey = true;
 		return 1;
 	}
-	else if(strcmp(argv[i],"-cci") == 0){
-		if(ParamNum != 1){
-			PrintArgReqParam("-cci",1);
-			return USR_ARG_REQ_PARAM;
+	else if(strcmp(argv[i],"-dlc") == 0){
+		if(ParamNum){
+			PrintNoNeedParam(argv[i]);
+			return USR_BAD_ARG;
 		}
-		set->ncch.buildNcch0 = false;
-		set->common.workingFileType = infile_ncsd;
-		set->common.workingFilePath = argv[i+1];
-		set->common.outFormat = CIA;
-		return 2;
+		set->cia.DlcContent = true;
+		return 1;
 	}
 	else if(strcmp(argv[i],"-srl") == 0){
 		if(ParamNum != 1){
-			PrintArgReqParam("-srl",1);
+			PrintArgReqParam(argv[i],1);
 			return USR_ARG_REQ_PARAM;
 		}
 		set->ncch.buildNcch0 = false;
@@ -491,36 +543,53 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 		return 2;
 
 	}
-	else if(strcmp(argv[i],"-dlc") == 0){
+
+	// Ncch Container Conversion
+	else if(strcmp(argv[i],"-ccitocia") == 0){
+		if(ParamNum != 1){
+			PrintArgReqParam(argv[i],1);
+			return USR_ARG_REQ_PARAM;
+		}
+		set->ncch.buildNcch0 = false;
+		set->common.workingFileType = infile_ncsd;
+		set->common.workingFilePath = argv[i+1];
+		set->common.outFormat = CIA;
+		return 2;
+	}
+	else if(strcmp(argv[i],"-ciatocci") == 0){
+		if(ParamNum != 1){
+			PrintArgReqParam(argv[i],1);
+			return USR_ARG_REQ_PARAM;
+		}
+		set->ncch.buildNcch0 = false;
+		set->common.workingFileType = infile_cia;
+		set->common.workingFilePath = argv[i+1];
+		set->common.outFormat = CCI;
+		return 2;
+	}
+	else if(strcmp(argv[i],"-inclupd") == 0){
 		if(ParamNum){
-			PrintNoNeedParam("-dlc");
+			PrintNoNeedParam(argv[i]);
 			return USR_BAD_ARG;
 		}
-		set->cia.DlcContent = true;
+		set->cia.includeUpdateNcch = true;
 		return 1;
 	}
-
+	
 	// Other Setting
 	else if(strcmp(argv[i],"-content") == 0){
 		if(ParamNum != 1){
-			PrintArgReqParam("-content",1);
+			PrintArgReqParam(argv[i],1);
 			return USR_ARG_REQ_PARAM;
 		}
 		char *pos = strstr(argv[i+1],":");
-		if(!pos){
+		if(!pos || strlen(pos) < 2){
 			fprintf(stderr,"[SETTING ERROR] Bad argument '%s %s', correct format:\n",argv[i],argv[i+1]);
-			fprintf(stderr,"	-content <CONTENT PATH>:<INDEX>\n");
+			fprintf(stderr,"	%s <CONTENT PATH>:<INDEX>\n",argv[i]);
 			fprintf(stderr,"  If generating a CIA, then use the format:\n");
-			fprintf(stderr,"	-content <CONTENT PATH>:<INDEX>:<ID>\n");
+			fprintf(stderr,"	%s <CONTENT PATH>:<INDEX>:<ID>\n",argv[i]);
 			return USR_BAD_ARG;
 		}		
-		if(strlen(pos) < 2){
-			fprintf(stderr,"[SETTING ERROR] Bad argument '%s %s', correct format:\n",argv[i],argv[i+1]);
-			fprintf(stderr,"	-content <CONTENT PATH>:<INDEX>\n");
-			fprintf(stderr,"  If generating a CIA, then use the format:\n");
-			fprintf(stderr,"	-content <CONTENT PATH>:<INDEX>:<ID>\n");
-			return USR_BAD_ARG;
-		}
 
 		/* Getting Content Index */
 		u16 content_index = strtol((char*)(pos+1),NULL,0);
@@ -528,7 +597,6 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 		/* Storing Content Filepath */
 		u32 path_len = (u32)(pos-argv[i+1])+1;
 		
-		if(content_index == 0) set->ncch.buildNcch0 = false;
 		if(set->common.contentPath[content_index] != NULL){
 			fprintf(stderr,"[SETTING ERROR] Content %d is already specified\n",content_index);
 			return USR_BAD_ARG;
@@ -539,12 +607,16 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			return USR_MEM_ERROR;
 		}
 		strncpy(set->common.contentPath[content_index],argv[i+1],path_len-1);	
-
+		if(!AssertFile(set->common.contentPath[content_index])){
+			fprintf(stderr,"[SETTING ERROR] '%s' could not be opened\n",set->common.contentPath[content_index]);
+			return USR_BAD_ARG;
+		}
+		set->common.contentSize[content_index] = GetFileSize64(set->common.contentPath[content_index]);
+		
 		/* Get ContentID for CIA gen */
 		char *pos2 = strstr(pos+1,":"); 
-		if(pos2) {
+		if(pos2) 
 			set->cia.contentId[content_index] = strtoul((pos2+1),NULL,0);
-		}
 		
 		/* Return Next Arg Pos*/
 		return 2;
@@ -563,7 +635,6 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 				fprintf(stderr,"[SETTING ERROR] Not enough memory\n");
 				return MEM_ERROR;
 			}
-			//memset(set->dname.items,0,sizeof(dname_item)*set->dname.m_items);
 		}
 		else if(set->dname.m_items == set->dname.u_items){
 			set->dname.m_items *= 2;
@@ -655,7 +726,7 @@ int CheckArgumentCombination(user_settings *set)
 		return USR_BAD_ARG;
 	}
 
-	if(set->common.outFormat == CIA && set->cci.cverCiaPath){
+	if(set->common.outFormat == CIA && set->cci.cverDataPath){
 		fprintf(stderr,"[SETTING ERROR] You cannot use argument \"-cverinfo\" when generating a CIA\n");
 		return USR_BAD_ARG;
 	}
@@ -700,7 +771,7 @@ int CheckArgumentCombination(user_settings *set)
 		return USR_BAD_ARG;
 	}
 	if(!buildCXI && set->ncch.plainRegionPath){
-		PrintArgInvalid("-plain-region");
+		PrintArgInvalid("-plainrgn");
 		return USR_BAD_ARG;
 	}
 	if(!set->ncch.buildNcch0 && set->ncch.includeExefsLogo){
@@ -715,45 +786,47 @@ int CheckArgumentCombination(user_settings *set)
 	return 0;
 }
 
-void init_UserSettings(user_settings *usr_settings)
+void init_UserSettings(user_settings *set)
 {
-	memset(usr_settings,0,sizeof(user_settings));
+	memset(set,0,sizeof(user_settings));
 }
 
-void free_UserSettings(user_settings *usr_settings)
+void free_UserSettings(user_settings *set)
 {
 	// Free Content Paths
-	if(usr_settings->common.contentPath){
+	if(set->common.contentPath){
 		for(int i = 0; i < CIA_MAX_CONTENT; i++)
-			free(usr_settings->common.contentPath[i]);
-		free(usr_settings->common.contentPath);
+			free(set->common.contentPath[i]);
+		free(set->common.contentPath);
 	}
 
 	// free -DNAME=VALUE
-	for(u32 i = 0; i < usr_settings->dname.u_items; i++){
-		free(usr_settings->dname.items[i].name);
-		free(usr_settings->dname.items[i].value);
+	for(u32 i = 0; i < set->dname.u_items; i++){
+		free(set->dname.items[i].name);
+		free(set->dname.items[i].value);
 	}
-	free(usr_settings->dname.items);
+	free(set->dname.items);
 
+	free(set->cci.cverDataPath);
+	
 	// Free Spec File Setting
-	free_RsfSettings(&usr_settings->common.rsfSet);
+	free_RsfSettings(&set->common.rsfSet);
 
 	// Free Key Data
-	FreeKeys(&usr_settings->common.keys);
+	FreeKeys(&set->common.keys);
 	
 	// Free Working File
-	free(usr_settings->common.workingFile.buffer);
+	free(set->common.workingFile.buffer);
 		
 	// Free outfile path, if malloc'd
-	if(usr_settings->common.outFileName_mallocd) 
-		free(usr_settings->common.outFileName);
+	if(set->common.outFileName_mallocd) 
+		free(set->common.outFileName);
 	
 	// Clear settings
-	init_UserSettings(usr_settings);
+	init_UserSettings(set);
 	
 	// Free
-	free(usr_settings);
+	free(set);
 }
 
 void PrintNeedsArg(char *arg)
@@ -787,53 +860,52 @@ void DisplayHelp(char *app_name)
 	printf("Option          Parameter           Explanation\n");
 	printf("GLOBAL OPTIONS:\n");
 	printf(" -help                              Display this text\n");
-	printf(" -rsf           <file>              Rom Specification File (*.rsf)\n");
-	printf(" -f             <ncch|cci|cia>      Output Format, defaults to 'ncch'\n");
-	printf(" -o             <file>              Output File\n");
-	//printf(" -v                                 Verbose\n");
-	printf(" -DNAME=VALUE                       Substitute values in Spec file\n");
+	printf(" -rsf           <file>              ROM Spec File (*.rsf)\n");
+	printf(" -f             <ncch|cci|cia>      Output format, defaults to 'ncch'\n");
+	printf(" -o             <file>              Output file\n");
+	printf(" -v                                 Verbose output\n");
+	printf(" -DNAME=VALUE                       Substitute values in RSF file\n");
 	printf("KEY OPTIONS:\n");
-	//printf(" -target        <t|d|p|c>           Target for crypto, defaults to 't'\n");
 	printf(" -target        <t|d|p>             Target for crypto, defaults to 't'\n");
 	printf("                                    't' Test(false) Keys & prod Certs\n");
 	printf("                                    'd' Development Keys & Certs\n");
 	printf("                                    'p' Production Keys & Certs\n");
-	//printf("                                    'c' Custom Keys & Certs\n");
-	printf(" -ckeyID        <u8 value>          Override the automatic commonKey selection\n");
-	printf(" -showkeys                          Display the loaded keychain\n");
+	printf(" -ckeyid        <index>             Override the automatic common key selection\n");
+	printf(" -ncchseckey    <index>             Ncch keyX index ('0'=1.0+, '1'=7.0+)\n");
+	printf(" -showkeys                          Display the loaded key chain\n");
 	printf(" -fsign                             Ignore invalid signatures\n");
 	printf("NCCH OPTIONS:\n");
-	printf(" -elf           <file>              ELF File\n");
-	printf(" -icon          <file>              Icon File\n");
-	printf(" -banner        <file>              Banner File\n");
-	printf(" -logo          <file>              Logo File (Overrides \"BasicInfo/Logo\" in RSF)\n");
-	printf(" -desc          <apptype>:<fw>      Specify Access Descriptor Preset\n");
-	//printf("                                    AppTypes:\n");
-	//printf("                                    'SDApp' Normal SD Application\n");
-	//printf("                                    'ECApp' SD Application with DLC Capability\n");
-	//printf("                                    'Demo'  SD Demo Application\n");
-	//printf("                                    'Dlp'   NAND DLP Child Application\n");
-	//printf("                                    'FIRM'  FIRM CXI\n");
-	printf(" -exefslogo                         Include Logo in ExeFs (Required for usage on <5.X Systems)\n");
+	printf(" -elf           <file>              ELF file\n");
+	printf(" -icon          <file>              Icon file\n");
+	printf(" -banner        <file>              Banner file\n");
+	printf(" -logo          <file>              Logo file (Overrides \"BasicInfo/Logo\" in RSF)\n");
+	printf(" -desc          <apptype>:<fw>      Specify Access Descriptor template\n");
+	printf(" -exefslogo                         Include Logo in ExeFS (Required for usage on <5.0 systems)\n");
 	printf("NCCH REBUILD OPTIONS:\n");
-	printf(" -code          <code path>         Specify ExeFs code File\n");
-	printf(" -exheader      <exhdr path>        ExHeader Template File\n");
-	printf(" -plain-region  <pln region path>   PlainRegion File\n");
-	printf(" -romfs         <romfs path>        RomFS File\n");	
+	printf(" -code          <file>              Decompressed ExeFS \".code\"\n");
+	printf(" -exheader      <file>              Exheader template\n");
+	printf(" -plainrgn      <file>              Plain Region binary\n");
+	printf(" -romfs         <file>              RomFS binary\n");	
 	printf("CCI OPTIONS:\n");
-	printf(" -content       <filepath>:<index>  Specify content files\n");
-	printf(" -devcardcci                        Use SDK CardInfo Method\n");
+	printf(" -content       <file>:<index>      Specify content files\n");
+	printf(" -devcci                            Use external CTRSDK \"CardInfo\" method\n");
 	printf(" -nomodtid                          Don't Modify Content TitleIDs\n");
-	printf(" -alignwr                           Align Writeable Region to the end of last NCCH\n");
-	printf(" -cverinfo      <cver cia path>     Include CVer title info\n");
+	printf(" -alignwr                           Align writeable region to the end of last NCCH\n");
+	printf(" -cverinfo      <file>:<cia|tmd>    Include cver title info\n");
 	printf("CIA OPTIONS:\n");
-	printf(" -content <filepath>:<index>:<id>   Specify content files\n");
-	printf(" -major         <major version>     Specify Major Version\n");
-	printf(" -minor         <minor version>     Specify Minor Version\n");
-	printf(" -micro         <micro version>     Specify Micro Version\n");
-	printf(" -dver          <datatitle ver>     Specify Data Title Version\n");
+	printf(" -content       <file>:<index>:<id> Specify content files\n");
+	printf(" -major         <version>           Major version\n");
+	printf(" -minor         <version>           Minor version\n");
+	printf(" -micro         <version>           Micro version\n");
+	printf(" -dver          <version>           Data-title version\n");
+	printf(" -deviceid      <hex id>            3DS unique device ID\n");
+	printf(" -esaccid       <hex id>            e-Shop account ID\n");
 	printf(" -rand                              Use a random title key\n");
-	printf(" -cci           <cci path>          Convert CCI to CIA\n");
-	printf(" -srl           <srl path>          Use TWL SRL as Content0\n");
 	printf(" -dlc                               Create DLC CIA\n");
+	printf(" -srl           <srl file>          Package a TWL SRL in a CIA\n");
+	printf("NCCH CONTAINER CONVERSION:\n");
+	printf(" -ccitocia      <cci file>          Convert CCI to CIA\n");
+	printf(" -ciatocci      <cia file>          Convert CIA to CCI\n");
+	printf(" -inclupd                           Include \"Update NCCH\" in CCI to CIA conversion\n");
+	
 }

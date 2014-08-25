@@ -15,11 +15,11 @@ typedef enum
 
 typedef struct
 {
-	u8 contentID[4];
-	u8 contentIndex[2];
-	u8 contentFlags[2];
-	u8 contentSize[8];
-	u8 contentHash[0x20]; // SHA 256
+	u8 id[4];
+	u8 index[2];
+	u8 flags[2];
+	u8 size[8];
+	u8 hash[0x20]; // SHA 256
 } tmd_content_chunk;
 
 typedef struct
@@ -59,10 +59,3 @@ typedef struct
 	u8 padding3[2];
 	u8 infoRecordHash[0x20]; // SHA-256
 } tmd_hdr;
-
-// Prototypes
-u32 PredictTMDSize(u16 ContentCount);
-int BuildTMD(cia_settings *ciaset);
-
-// Read TMD
-tmd_hdr *GetTmdHdr(u8 *tmd);

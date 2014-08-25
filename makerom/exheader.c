@@ -1,6 +1,6 @@
 #include "lib.h"
-#include "ncch.h"
-#include "exheader.h"
+#include "ncch_build.h"
+#include "exheader_build.h"
 #include "accessdesc.h"
 #include "titleid.h"
 
@@ -124,13 +124,13 @@ int get_ExHeaderSettingsFromNcchset(exheader_settings *exhdrset, ncch_settings *
 	
 	/* Import ExHeader Code Section template */
 	if(ncchset->componentFilePtrs.exhdrSize){ 
-		u32 import_size = 0x30; //min_u64(0x30,ncchset->componentFilePtrs.exhdrSize);
+		u32 import_size = 0x30; //min64(0x30,ncchset->componentFilePtrs.exhdrSize);
 		u32 import_offset = 0x10;
 		if((import_size+import_offset) > ncchset->componentFilePtrs.exhdrSize){
 			fprintf(stderr,"[EXHEADER ERROR] Exheader Template is too small\n");
 			return FAILED_TO_IMPORT_FILE;
 		}
-		ReadFile_64((ncchset->sections.exhdr.buffer+import_offset),import_size,import_offset,ncchset->componentFilePtrs.exhdr);
+		ReadFile64((ncchset->sections.exhdr.buffer+import_offset),import_size,import_offset,ncchset->componentFilePtrs.exhdr);
 	}
 
 	/* Create ExHeader Struct for output */

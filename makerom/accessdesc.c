@@ -1,13 +1,11 @@
 #include "lib.h"
-#include "ncch.h"
-#include "exheader.h"
+#include "ncch_build.h"
+#include "exheader_build.h"
 #include "accessdesc.h"
 
-#include "polarssl/base64.h"
-
-#include "desc_presets.h"
-#include "desc_dev_sigdata.h"
-#include "desc_prod_sigdata.h"
+#include "desc/presets.h"
+#include "desc/dev_sigdata.h"
+#include "desc/prod_sigdata.h"
 
 const int RSF_RSA_DATA_LEN = 344;
 const int RSF_DESC_DATA_LEN = 684;
@@ -19,20 +17,16 @@ int accessdesc_GetSignFromPreset(exheader_settings *exhdrset);
 void accessdesc_GetPresetData(u8 **desc, u8 **accessDesc, u8 **depList, keys_struct *keys);
 void accessdesc_GetPresetSigData(u8 **accessDescSig, u8 **cxiPubk, u8 **cxiPvtk, keys_struct *keys);
 
-bool IsValidB64Char(char chr);
-u32 b64_strlen(char *str);
-void b64_strcpy(char *dst, char *src);
-
 int set_AccessDesc(exheader_settings *exhdrset)
 {
-	if(exhdrset->useAccessDescPreset)
+	if(exhdrset->useAccessDescPreset) // Use AccessDesc Template
 		return accessdesc_GetSignFromPreset(exhdrset);
 	else if(exhdrset->rsf->CommonHeaderKey.Found) // Keydata exists in RSF
 		return accessdesc_GetSignFromRsf(exhdrset);
 	else if(!exhdrset->keys->rsa.requiresPresignedDesc) // Else if The AccessDesc can be signed with key
 		return accessdesc_SignWithKey(exhdrset);
 	else{ // No way the access desc signature can be 'obtained'
-		fprintf(stderr,"[EXHEADER ERROR] Current keyset cannot sign AccessDesc, please appropriatly setup RSF, or specify a preset with -accessdesc\n");
+		fprintf(stderr,"[ACEXDESC ERROR] Current keyset cannot sign AccessDesc, please appropriately set-up RSF, or specify a preset with \"-desc\"\n");
 		return CANNOT_SIGN_ACCESSDESC;
 	}
 }
@@ -65,7 +59,7 @@ int accessdesc_GetSignFromRsf(exheader_settings *exhdrset)
 {
 	/* Yaml Option Sanity Checks */
 	if(!exhdrset->rsf->CommonHeaderKey.Found){
-		fprintf(stderr,"[EXHEADER ERROR] RSF Section \"CommonHeaderKey\" not found\n");
+		fprintf(stderr,"[ACEXDESC ERROR] RSF Section \"CommonHeaderKey\" not found\n");
 		return COMMON_HEADER_KEY_NOT_FOUND;
 	}
 
@@ -74,7 +68,7 @@ int accessdesc_GetSignFromRsf(exheader_settings *exhdrset)
 		return COMMON_HEADER_KEY_NOT_FOUND;
 	}
 	if(b64_strlen(exhdrset->rsf->CommonHeaderKey.D) != RSF_RSA_DATA_LEN){
-		fprintf(stderr,"[EXHEADER ERROR] \"CommonHeaderKey/D\" has invalid length (%d)\n",b64_strlen(exhdrset->rsf->CommonHeaderKey.D));
+		fprintf(stderr,"[ACEXDESC ERROR] \"CommonHeaderKey/D\" has invalid length (%d)\n",b64_strlen(exhdrset->rsf->CommonHeaderKey.D));
 		return COMMON_HEADER_KEY_NOT_FOUND;
 	}
 
@@ -83,7 +77,7 @@ int accessdesc_GetSignFromRsf(exheader_settings *exhdrset)
 		return COMMON_HEADER_KEY_NOT_FOUND;
 	}
 	if(b64_strlen(exhdrset->rsf->CommonHeaderKey.Modulus) != RSF_RSA_DATA_LEN){
-		fprintf(stderr,"[EXHEADER ERROR] \"CommonHeaderKey/Modulus\" has invalid length (%d)\n",b64_strlen(exhdrset->rsf->CommonHeaderKey.Modulus));
+		fprintf(stderr,"[ACEXDESC ERROR] \"CommonHeaderKey/Modulus\" has invalid length (%d)\n",b64_strlen(exhdrset->rsf->CommonHeaderKey.Modulus));
 		return COMMON_HEADER_KEY_NOT_FOUND;
 	}
 
@@ -92,7 +86,7 @@ int accessdesc_GetSignFromRsf(exheader_settings *exhdrset)
 		return COMMON_HEADER_KEY_NOT_FOUND;
 	}
 	if(b64_strlen(exhdrset->rsf->CommonHeaderKey.AccCtlDescSign) != RSF_RSA_DATA_LEN){
-		fprintf(stderr,"[EXHEADER ERROR] \"CommonHeaderKey/Signature\" has invalid length (%d)\n",b64_strlen(exhdrset->rsf->CommonHeaderKey.AccCtlDescSign));
+		fprintf(stderr,"[ACEXDESC ERROR] \"CommonHeaderKey/Signature\" has invalid length (%d)\n",b64_strlen(exhdrset->rsf->CommonHeaderKey.AccCtlDescSign));
 		return COMMON_HEADER_KEY_NOT_FOUND;
 	}
 
@@ -101,41 +95,30 @@ int accessdesc_GetSignFromRsf(exheader_settings *exhdrset)
 		return COMMON_HEADER_KEY_NOT_FOUND;
 	}
 	if(b64_strlen(exhdrset->rsf->CommonHeaderKey.AccCtlDescBin) != RSF_DESC_DATA_LEN){
-		fprintf(stderr,"[EXHEADER ERROR] \"CommonHeaderKey/Descriptor\" has invalid length (%d)\n",b64_strlen(exhdrset->rsf->CommonHeaderKey.AccCtlDescBin));
+		fprintf(stderr,"[ACEXDESC ERROR] \"CommonHeaderKey/Descriptor\" has invalid length (%d)\n",b64_strlen(exhdrset->rsf->CommonHeaderKey.AccCtlDescBin));
 		return COMMON_HEADER_KEY_NOT_FOUND;
 	}
 
 	/* Set RSA Keys */
 	int result = 0;
-	u32 out;
-
-	out = 0x100;
-	result = base64_decode(exhdrset->keys->rsa.cxiHdrPub,(size_t *)&out,(const u8*)exhdrset->rsf->CommonHeaderKey.Modulus,strlen(exhdrset->rsf->CommonHeaderKey.Modulus));
-	if(out != 0x100)
-		result = POLARSSL_ERR_BASE64_BUFFER_TOO_SMALL;
-	if(result) goto finish;
-
-	out = 0x100;
-	result = base64_decode(exhdrset->keys->rsa.cxiHdrPvt,(size_t *)&out,(const u8*)exhdrset->rsf->CommonHeaderKey.D,strlen(exhdrset->rsf->CommonHeaderKey.D));
-	if(out != 0x100)
-		result = POLARSSL_ERR_BASE64_BUFFER_TOO_SMALL;
-	if(result) goto finish;
+	// NCCH Header pubk
+	result = b64_decode(exhdrset->keys->rsa.cxiHdrPub,exhdrset->rsf->CommonHeaderKey.Modulus,0x100);
+	if(result) return result;
+	// NCCH Header privk
+	result = b64_decode(exhdrset->keys->rsa.cxiHdrPvt,exhdrset->rsf->CommonHeaderKey.D,0x100);
+	if(result) return result;
 
 	/* Set AccessDesc */
-	out = 0x100;
-	result = base64_decode(exhdrset->acexDesc->signature,(size_t *)&out,(const u8*)exhdrset->rsf->CommonHeaderKey.AccCtlDescSign, strlen( exhdrset->rsf->CommonHeaderKey.AccCtlDescSign));
-	if(out != 0x100)
-		result = POLARSSL_ERR_BASE64_BUFFER_TOO_SMALL;
-	if(result) goto finish;
+	// Signature
+	result = b64_decode(exhdrset->acexDesc->signature,exhdrset->rsf->CommonHeaderKey.AccCtlDescSign,0x100);
+	if(result) return result;
+	// NCCH Header pubk
 	memcpy(exhdrset->acexDesc->ncchRsaPubKey,exhdrset->keys->rsa.cxiHdrPub,0x100);
-
-	out = 0x200;
-	result = base64_decode((u8*)&exhdrset->acexDesc->arm11SystemLocalCapabilities,(size_t *)&out,(const u8*)exhdrset->rsf->CommonHeaderKey.AccCtlDescBin,strlen(exhdrset->rsf->CommonHeaderKey.AccCtlDescBin));
-	if(out != 0x200)
-		result = POLARSSL_ERR_BASE64_BUFFER_TOO_SMALL;
-	if(result) goto finish;
-finish:
-	return result;	
+	// Access Control
+	result = b64_decode((u8*)&exhdrset->acexDesc->arm11SystemLocalCapabilities,exhdrset->rsf->CommonHeaderKey.AccCtlDescBin,0x200);
+	if(result) return result;
+	
+	return 0;	
 }
 
 int accessdesc_GetSignFromPreset(exheader_settings *exhdrset)
@@ -153,12 +136,12 @@ int accessdesc_GetSignFromPreset(exheader_settings *exhdrset)
 
 	// Error Checking
 	if(!desc || !depList){
-		fprintf(stderr,"[EXHEADER ERROR] AccessDesc preset is unavailable, please configure RSF file\n");
+		fprintf(stderr,"[ACEXDESC ERROR] AccessDesc template is unavailable, please configure RSF file\n");
 		return CANNOT_SIGN_ACCESSDESC;
 	}
 
 	if((!cxiPubk || !cxiPvtk || !accessDesc || !accessDescSig) && exhdrset->keys->rsa.requiresPresignedDesc){
-		fprintf(stderr,"[EXHEADER ERROR] This AccessDesc preset needs to be signed, the current keyset is incapable of doing so. Please configure RSF file with the appropriate signature data.\n");
+		fprintf(stderr,"[ACEXDESC ERROR] This AccessDesc template needs to be signed, the current keyset is incapable of doing so. Please configure RSF file with the appropriate signature data.\n");
 		return CANNOT_SIGN_ACCESSDESC;
 	}
 	
@@ -451,40 +434,4 @@ void accessdesc_GetPresetSigData(u8 **accessDescSig, u8 **cxiPubk, u8 **cxiPvtk,
  				break;
 		}
 	}
-}
-
-bool IsValidB64Char(char chr)
-{
-	return (isalnum(chr) || chr == '+' || chr == '/' || chr == '=');
-}
-
-u32 b64_strlen(char *str)
-{
-	u32 count = 0;
-	u32 i = 0;
-	while(str[i] != 0x0){
-		if(IsValidB64Char(str[i])) {
-			//printf("Is Valid: %c\n",str[i]);
-			count++;
-		}
-		i++;
-	}
-
-	return count;
-}
-
-void b64_strcpy(char *dst, char *src)
-{
-	u32 src_len = strlen(src);
-	u32 j = 0;
-	for(u32 i = 0; i < src_len; i++){
-		if(IsValidB64Char(src[i])){
-			dst[j] = src[i];
-			j++;
-		}
-	}
-	dst[j] = 0;
-
-	//memdump(stdout,"src: ",(u8*)src,src_len+1);
-	//memdump(stdout,"dst: ",(u8*)dst,j+1);
 }
