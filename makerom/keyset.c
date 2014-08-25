@@ -118,9 +118,10 @@ int LoadKeysFromResources(keys_struct *keys)
 		SetNormalKey(keys,(u8*)dev_fixed_ncch_key[0]);
 		SetSystemFixedKey(keys,(u8*)dev_fixed_ncch_key[1]);
 		
+		/*
 		for(int i = 0; i < 2; i++)
 			SetNcchKeyX(keys,(u8*)dev_unfixed_ncch_keyX[i],i);
-		
+		*/
 
 		/* RSA Keys */
 		// CIA
