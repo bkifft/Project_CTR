@@ -126,7 +126,6 @@ bool IsNcch(FILE *fp, u8 *buf);
 bool IsCfa(ncch_hdr* hdr);
 bool IsUpdateCfa(ncch_hdr* hdr);
 u32 GetNcchBlockSize(ncch_hdr* hdr);
-u8 GetBlockSizeFlag(u32 size);
 u64 GetNcchSize(ncch_hdr* hdr);
 bool IsNcchEncrypted(ncch_hdr *hdr);
 bool SetNcchKeys(keys_struct *keys, ncch_hdr *hdr);
