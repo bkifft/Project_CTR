@@ -629,6 +629,7 @@ int SetCommonHeaderBasicData(ncch_settings *set, ncch_hdr *hdr)
 		
 	if(!SetNcchKeys(set->keys,hdr) && set->options.Encrypt){
 		hdr->flags[ncchflag_OTHER_FLAG] = (otherflag_NoCrypto|otherflag_FixedCryptoKey);
+		hdr->flags[ncchflag_CONTENT_KEYX] = 0;
 		set->options.Encrypt = false;
 		fprintf(stderr,"[NCCH WARNING] NCCH AES Key could not be loaded, NCCH will not be encrypted\n");
 	}
@@ -992,17 +993,20 @@ bool SetNcchKeys(keys_struct *keys, ncch_hdr *hdr)
 		return true;
 		
 	if((hdr->flags[ncchflag_OTHER_FLAG] & otherflag_FixedCryptoKey) == otherflag_FixedCryptoKey){
-		if((hdr->programId[4] & 0x10) == 0x10 && keys->aes.systemFixedKey){
+		if((hdr->programId[4] & 0x10) == 0x10){
+			if(!keys->aes.systemFixedKey)
+				return false;
 			memcpy(keys->aes.ncchKey0,keys->aes.systemFixedKey,AES_128_KEY_SIZE);
 			memcpy(keys->aes.ncchKey1,keys->aes.systemFixedKey,AES_128_KEY_SIZE);
 			return true;
 		}
-		else if(keys->aes.normalKey){
+		else{
+			if(!keys->aes.normalKey)
+				return false;
 			memcpy(keys->aes.ncchKey0,keys->aes.normalKey,AES_128_KEY_SIZE);
 			memcpy(keys->aes.ncchKey1,keys->aes.normalKey,AES_128_KEY_SIZE);
 			return true;
 		}
-		return false;
 	}
 	
 	if(keys->aes.ncchKeyX[0])
@@ -1024,7 +1028,7 @@ int GetNcchInfo(ncch_info *info, ncch_hdr *hdr)
 	memcpy(info->programId,hdr->programId,8);
 
 	
-	u32 media_unit = GetNcchBlockSize(hdr);
+	u32 block_size = GetNcchBlockSize(hdr);
 	
 	info->formatVersion = u8_to_u16(hdr->formatVersion,LE);
 	if(!IsCfa(hdr)){
@@ -1032,18 +1036,18 @@ int GetNcchInfo(ncch_info *info, ncch_hdr *hdr)
 		info->exhdrSize = u8_to_u32(hdr->exhdrSize,LE);
 		info->acexOffset = (info->exhdrOffset + info->exhdrSize);
 		info->acexSize = sizeof(access_descriptor);
-		info->plainRegionOffset = (u64)(u8_to_u32(hdr->plainRegionOffset,LE)*media_unit);
-		info->plainRegionSize = (u64)(u8_to_u32(hdr->plainRegionSize,LE)*media_unit);
+		info->plainRegionOffset = (u64)(u8_to_u32(hdr->plainRegionOffset,LE)*block_size);
+		info->plainRegionSize = (u64)(u8_to_u32(hdr->plainRegionSize,LE)*block_size);
 	}
 
-	info->logoOffset = (u64)(u8_to_u32(hdr->logoOffset,LE)*media_unit);
-	info->logoSize = (u64)(u8_to_u32(hdr->logoSize,LE)*media_unit);
-	info->exefsOffset = (u64)(u8_to_u32(hdr->exefsOffset,LE)*media_unit);
-	info->exefsSize = (u64)(u8_to_u32(hdr->exefsSize,LE)*media_unit);
-	info->exefsHashDataSize = (u64)(u8_to_u32(hdr->exefsHashSize,LE)*media_unit);
-	info->romfsOffset = (u64) (u8_to_u32(hdr->romfsOffset,LE)*media_unit);
-	info->romfsSize = (u64) (u8_to_u32(hdr->romfsSize,LE)*media_unit);
-	info->romfsHashDataSize = (u64)(u8_to_u32(hdr->romfsHashSize,LE)*media_unit);
+	info->logoOffset = (u64)(u8_to_u32(hdr->logoOffset,LE)*block_size);
+	info->logoSize = (u64)(u8_to_u32(hdr->logoSize,LE)*block_size);
+	info->exefsOffset = (u64)(u8_to_u32(hdr->exefsOffset,LE)*block_size);
+	info->exefsSize = (u64)(u8_to_u32(hdr->exefsSize,LE)*block_size);
+	info->exefsHashDataSize = (u64)(u8_to_u32(hdr->exefsHashSize,LE)*block_size);
+	info->romfsOffset = (u64) (u8_to_u32(hdr->romfsOffset,LE)*block_size);
+	info->romfsSize = (u64) (u8_to_u32(hdr->romfsSize,LE)*block_size);
+	info->romfsHashDataSize = (u64)(u8_to_u32(hdr->romfsHashSize,LE)*block_size);
 	return 0;
 }
 
@@ -1079,8 +1083,7 @@ void GetNcchAesCounter(ncch_info *ctx, u8 counter[16], u8 type)
 
 	if (ctx->formatVersion == 2 || ctx->formatVersion == 0)
 	{
-		for(i=0; i<8; i++)
-			counter[i] = titleId[7-i];
+		endian_memcpy(counter,titleId,8,LE);
 		counter[8] = type;
 	}
 	else if (ctx->formatVersion == 1)
