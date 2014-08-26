@@ -483,18 +483,18 @@ void PrintElfContext(elf_context *elf, u8 *elfFile)
 	printf(" Class:  %s\n",elf->Is64bit ? "64-bit" : "32-bit");
 	printf(" Data:   %s\n",elf->IsLittleEndian ? "Little Endian" : "Big Endian");
 	printf("[ELF] Program Table Data\n");
-	printf(" Offset: 0x%"PRIX64"\n",elf->programTableOffset);
+	printf(" Offset: 0x%"PRIx64"\n",elf->programTableOffset);
 	printf(" Size:   0x%x\n",elf->programTableEntrySize);
 	printf(" Count:  0x%x\n",elf->programTableEntryCount);
 	printf("[ELF] Section Table Data\n");
-	printf(" Offset: 0x%"PRIX64"\n",elf->sectionTableOffset);
+	printf(" Offset: 0x%"PRIx64"\n",elf->sectionTableOffset);
 	printf(" Size:   0x%x\n",elf->sectionTableEntrySize);
 	printf(" Count:  0x%x\n",elf->sectionTableEntryCount);
 	printf(" Label index: 0x%x\n",elf->sectionHeaderNameEntryIndex);
 	for(int i = 0; i < elf->activeSegments; i++){
 		printf(" Segment [%d][%s]\n",i,elf->segments[i].name);
-		printf(" > Size :     0x%"PRIX64"\n",elf->segments[i].header->sizeInFile);
-		printf(" > Address :  0x%"PRIX64"\n",elf->segments[i].vAddr);
+		printf(" > Size :     0x%"PRIx64"\n",elf->segments[i].header->sizeInFile);
+		printf(" > Address :  0x%"PRIx64"\n",elf->segments[i].vAddr);
 		printf(" > Sections : %d\n",elf->segments[i].sectionNum);  
 		for(int j = 0; j < elf->segments[i].sectionNum; j++)
 			printf("    > Section [%d][%s]\n",j,elf->segments[i].sections[j].name);

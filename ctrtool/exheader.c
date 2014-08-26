@@ -429,7 +429,7 @@ void exheader_print_arm11storageinfo(exheader_context* ctx)
 			accessiblesaveID[i] = 0;
 	}
 
-	fprintf(stdout, "Ext savedata id:        0x%08"PRIX64"\n",extdataID);
+	fprintf(stdout, "Ext savedata id:        0x%08"PRIx64"\n",extdataID);
 	for(i = 0; i < 2; i++)
 		fprintf(stdout, "System savedata id %d:   0x%08x %s\n",i+1,systemsaveID[i],exheader_getvalidstring(ctx->validsystemsaveID[i]));
 	for(i = 0; i < 3; i++)
@@ -579,17 +579,17 @@ void exheader_print(exheader_context* ctx)
 	for(i=0; i<0x30; i++)
 	{
 		if (getle64(ctx->header.deplist.programid[i]) != 0x0000000000000000UL)
-			fprintf(stdout, "Dependency:             %016"PRIX64"\n", getle64(ctx->header.deplist.programid[i]));
+			fprintf(stdout, "Dependency:             %016"PRIx64"\n", getle64(ctx->header.deplist.programid[i]));
 	}
 	if(savedatasize < sizeKB)
-		fprintf(stdout, "Savedata size:          0x%"PRIX64"\n", savedatasize);
+		fprintf(stdout, "Savedata size:          0x%"PRIx64"\n", savedatasize);
 	else if(savedatasize < sizeMB)
 		fprintf(stdout, "Savedata size:          %"PRIu64"K\n", savedatasize/sizeKB);
 	else
 		fprintf(stdout, "Savedata size:          %"PRIu64"M\n", savedatasize/sizeMB);
 	fprintf(stdout, "Jump id:                %016"PRIx64"\n", getle64(ctx->header.systeminfo.jumpid));
 
-	fprintf(stdout, "Program id:             %016"PRIX64" %s\n", getle64(ctx->header.arm11systemlocalcaps.programid), exheader_getvalidstring(ctx->validprogramid));
+	fprintf(stdout, "Program id:             %016"PRIx64" %s\n", getle64(ctx->header.arm11systemlocalcaps.programid), exheader_getvalidstring(ctx->validprogramid));
 	fprintf(stdout, "Core version:           0x%X\n", getle32(ctx->header.arm11systemlocalcaps.coreversion));
 	fprintf(stdout, "System mode:            0x%X\n", (ctx->header.arm11systemlocalcaps.flag>>4)&0xF);
 	fprintf(stdout, "Ideal processor:        %d %s\n", (ctx->header.arm11systemlocalcaps.flag>>0)&0x3, exheader_getvalidstring(ctx->valididealprocessor));
