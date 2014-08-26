@@ -4,6 +4,7 @@
 #include <time.h>
 #include "tmd.h"
 #include "utils.h"
+#include <inttypes.h>
 
 
 void tmd_init(tmd_context* ctx)
@@ -158,7 +159,7 @@ void tmd_print(tmd_context* ctx)
 				fprintf(stdout, "[shared]");
 		}
 		fprintf(stdout, "\n");
-		fprintf(stdout, "Content size:           %016llx\n", getbe64(chunk->size));
+		fprintf(stdout, "Content size:           %016"PRIx64"\n", getbe64(chunk->size));
 
 		switch(ctx->content_hash_stat[getbe16(chunk->index)]) {
 			case 1:  memdump(stdout, "Content hash [OK]:      ", chunk->hash, 32); break;

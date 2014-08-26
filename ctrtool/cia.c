@@ -4,6 +4,7 @@
 #include "types.h"
 #include "utils.h"
 #include "cia.h"
+#include <inttypes.h>
 
 
 void cia_init(cia_context* ctx)
@@ -304,5 +305,5 @@ void cia_print(cia_context* ctx)
 	fprintf(stdout, "Meta offset:            0x%04x\n", ctx->offsetmeta);
 	fprintf(stdout, "Meta size:              0x%04x\n", ctx->sizemeta);
 	fprintf(stdout, "Content offset:         0x%08x\n", ctx->offsetcontent);
-	fprintf(stdout, "Content size:           0x%016llx\n", getle64(header->contentsize));
+	fprintf(stdout, "Content size:           0x%016"PRIx64"\n", getle64(header->contentsize));
 }

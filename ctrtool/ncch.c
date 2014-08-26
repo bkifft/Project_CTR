@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "ctr.h"
 #include "settings.h"
+#include <inttypes.h>
 
 static int programid_is_system(u8 programid[8])
 {
@@ -561,10 +562,10 @@ void ncch_print(ncch_context* ctx)
 	else
 		memdump(stdout, "Signature (FAIL):       ", header->signature, 0x100);
 	fprintf(stdout, "Content size:           0x%08x\n", getle32(header->contentsize)*mediaunitsize);
-	fprintf(stdout, "Partition id:           %016llx\n", getle64(header->partitionid));
+	fprintf(stdout, "Partition id:           %016"PRIx64"\n", getle64(header->partitionid));
 	fprintf(stdout, "Maker code:             %04x\n", getle16(header->makercode));
 	fprintf(stdout, "Version:                %04x\n", getle16(header->version));
-	fprintf(stdout, "Program id:             %016llx\n", getle64(header->programid));
+	fprintf(stdout, "Program id:             %016"PRIx64"\n", getle64(header->programid));
 	if(ctx->logohashcheck == Unchecked)
 		memdump(stdout, "Logo hash:              ", header->logohash, 0x20);
 	else if(ctx->logohashcheck == Good)
@@ -579,7 +580,7 @@ void ncch_print(ncch_context* ctx)
 		memdump(stdout, "Exheader hash (GOOD):   ", header->extendedheaderhash, 0x20);
 	else
 		memdump(stdout, "Exheader hash (FAIL):   ", header->extendedheaderhash, 0x20);
-	fprintf(stdout, "Flags:                  %016llx\n", getle64(header->flags));
+	fprintf(stdout, "Flags:                  %016"PRIx64"\n", getle64(header->flags));
 	fprintf(stdout, " > Mediaunit size:      0x%x\n", mediaunitsize);
 	if (header->flags[7] & 4)
 		fprintf(stdout, " > Crypto key:          None\n");
