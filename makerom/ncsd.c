@@ -681,7 +681,6 @@ bool IsCci(u8 *ncsd)
 u64 GetPartitionOffset(u8 *ncsd, u8 index)
 {
 	cci_hdr *hdr = (cci_hdr*)ncsd;
-	u32 offset = ;
 	return (u64)u8_to_u64(hdr->offset_sizeTable[index].offset,LE) * (u64)GetCtrBlockSize(hdr->flags[cciflag_MEDIA_BLOCK_SIZE]);
 }
 
