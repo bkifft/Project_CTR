@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "ivfc.h"
 #include "ctr.h"
+#include <inttypes.h>
 
 void ivfc_init(ivfc_context* ctx)
 {
@@ -168,9 +169,9 @@ void ivfc_print(ivfc_context* ctx)
 			fprintf(stdout, "Level %d:               \n", i);
 		else
 			fprintf(stdout, "Level %d (%s):          \n", i, level->hashcheck == Good? "GOOD" : "FAIL");
-		fprintf(stdout, " Data offset:           0x%016llx\n", ctx->offset + level->dataoffset);
-		fprintf(stdout, " Data size:             0x%016llx\n", level->datasize);
-		fprintf(stdout, " Hash offset:           0x%016llx\n", ctx->offset + level->hashoffset);
+		fprintf(stdout, " Data offset:           0x%016"PRIx64"\n", ctx->offset + level->dataoffset);
+		fprintf(stdout, " Data size:             0x%016"PRIx64"\n", level->datasize);
+		fprintf(stdout, " Hash offset:           0x%016"PRIx64"\n", ctx->offset + level->hashoffset);
 		fprintf(stdout, " Hash block size:       0x%08x\n", level->hashblocksize);
 	}
 }
