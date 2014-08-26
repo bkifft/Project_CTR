@@ -589,7 +589,7 @@ void exheader_print(exheader_context* ctx)
 		fprintf(stdout, "Savedata size:          %"PRIu64"M\n", savedatasize/sizeMB);
 	fprintf(stdout, "Jump id:                %016"PRIx64"\n", getle64(ctx->header.systeminfo.jumpid));
 
-	fprintf(stdout, "Program id:             %016"PRIx64" %s\n", getle64(ctx->header.arm11systemlocalcaps.programid), exheader_getvalidstring(ctx->validprogramid));
+	fprintf(stdout, "Program id:             %016"PRIX64" %s\n", getle64(ctx->header.arm11systemlocalcaps.programid), exheader_getvalidstring(ctx->validprogramid));
 	fprintf(stdout, "Core version:           0x%X\n", getle32(ctx->header.arm11systemlocalcaps.coreversion));
 	fprintf(stdout, "System mode:            0x%X\n", (ctx->header.arm11systemlocalcaps.flag>>4)&0xF);
 	fprintf(stdout, "Ideal processor:        %d %s\n", (ctx->header.arm11systemlocalcaps.flag>>0)&0x3, exheader_getvalidstring(ctx->valididealprocessor));

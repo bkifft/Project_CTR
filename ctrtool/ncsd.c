@@ -123,7 +123,7 @@ void ncsd_print(ncsd_context* ctx)
 	else
 		memdump(stdout, "Signature (FAIL):       ", header->signature, 0x100);       
 	fprintf(stdout, "Media size:             0x%08x\n", getle32(header->mediasize));
-	fprintf(stdout, "Media id:               %016"PRIX64"\n", getle64(header->mediaid));
+	fprintf(stdout, "Media id:               %016"PRIx64"\n", getle64(header->mediaid));
 	//memdump(stdout, "Partition FS type:      ", header->partitionfstype, 8);
 	//memdump(stdout, "Partition crypt type:   ", header->partitioncrypttype, 8);
 	//memdump(stdout, "Partition offset/size:  ", header->partitionoffsetandsize, 0x40);
