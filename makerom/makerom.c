@@ -65,9 +65,6 @@ int main(int argc, char *argv[])
 		}
 	}
 	else{// Build Content 0
-#ifdef DEBUG
-	printf("[DEBUG] Build NCCH0\n");
-#endif
 		result = build_NCCH(set);
 		if(result < 0) { 
 			//fprintf(stderr,"[ERROR] %s generation failed\n",set->build_ncch_type == CXI? "CXI" : "CFA"); 
@@ -77,9 +74,6 @@ int main(int argc, char *argv[])
 	}
 	// Make CCI
 	if(set->common.outFormat == CCI){
-#ifdef DEBUG
-	printf("[DEBUG] Building CCI\n");
-#endif
 		result = build_CCI(set);
 		if(result < 0) { 
 			fprintf(stderr,"[RESULT] Failed to build CCI\n");
@@ -88,9 +82,6 @@ int main(int argc, char *argv[])
 	}
 	// Make CIA
 	else if(set->common.outFormat == CIA){
-#ifdef DEBUG
-	printf("[DEBUG] Building CIA\n");
-#endif
 		result = build_CIA(set);
 		if(result < 0) { 
 			fprintf(stderr,"[RESULT] Failed to build CIA\n"); 
@@ -99,9 +90,6 @@ int main(int argc, char *argv[])
 	}
 	// No Container Raw CXI/CFA
 	else if(set->common.outFormat == CXI || set->common.outFormat == CFA){
-#ifdef DEBUG
-	printf("[DEBUG] Outputting NCCH, because No Container\n");
-#endif
 		FILE *ncch_out = fopen(set->common.outFileName,"wb");
 		if(!ncch_out) {
 			fprintf(stderr,"[MAKEROM ERROR] Failed to create '%s'\n",set->common.outFileName); 
@@ -114,12 +102,6 @@ int main(int argc, char *argv[])
 	}
 	
 finish:
-#ifdef DEBUG
-	printf("[DEBUG] Free Context\n");
-#endif
 	free_UserSettings(set);
-#ifdef DEBUG
-	printf("[DEBUG] Finished returning (result=%d)\n",result);
-#endif
 	return result;
 }
