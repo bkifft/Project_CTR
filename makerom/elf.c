@@ -113,7 +113,6 @@ finish:
 		if(result == NOT_ELF_FILE) fprintf(stderr,"[ELF ERROR] Not ELF File\n");
 		else if(result == NOT_ARM_ELF) fprintf(stderr,"[ELF ERROR] Not ARM ELF\n");
 		else if(result == NON_EXECUTABLE_ELF) fprintf(stderr,"[ELF ERROR] Not Executeable ELF\n");
-		else if(result == NOT_FIND_BSS_SIZE) fprintf(stderr,"[ELF ERROR] BSS Size Could not be found\n");
 		else if(result == NOT_FIND_CODE_SECTIONS) fprintf(stderr,"[ELF ERROR] Failed to retrieve code sections from ELF\n");
 		else fprintf(stderr,"[ELF ERROR] Failed to process ELF file (%d)\n",result);
 	}
@@ -175,13 +174,14 @@ u32 SizeToPage(u32 memorySize, elf_context *elf)
 
 int GetBSSFromElf(elf_context *elf, u8 *elfFile, ncch_settings *set)
 {
+	set->codeDetails.bssSize = 0;
+	
 	for(int i = 0; i < elf->sectionTableEntryCount; i++){
-		if(IsBss(&elf->sections[i])) {
+		if(IsBss(&elf->sections[i]))
 			set->codeDetails.bssSize = elf->sections[i].size;
-			return 0;
-		}
 	}
-	return NOT_FIND_BSS_SIZE;
+	
+	return 0;
 }
 
 int ImportPlainRegionFromElf(elf_context *elf, u8 *elfFile, ncch_settings *set) // Doesn't work same as N makerom
