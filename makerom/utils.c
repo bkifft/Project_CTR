@@ -41,10 +41,15 @@ void clrmem(void *ptr, u64 num)
 }
 
 // Misc
+u64 roundup(u64 value, u64 alignment)
+{
+	return value + alignment - value % alignment;
+}
+
 u64 align(u64 value, u64 alignment)
 {
 	if(value % alignment != 0)
-		return value + alignment - value % alignment;
+		return roundup(value,alignment);
 	else
 		return value;
 }
