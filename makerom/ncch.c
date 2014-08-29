@@ -858,17 +858,16 @@ int ModifyNcchIds(u8 *ncch, u8 *titleId, u8 *programId, keys_struct *keys)
 		
 	ncch_hdr *hdr = (ncch_hdr*)ncch;
 	
-	if(/*keys->rsa.requiresPresignedDesc && */!IsCfa(hdr)){
-		fprintf(stderr,"[NCCH ERROR] CXI's ID cannot be modified without the ability to resign the AccessDesc\n"); // Not yet yet, requires AccessDesc Privk, may implement anyway later
-		return -1;
-	}
-	
 	bool titleIdMatches = titleId == NULL? true : memcmp(titleId,hdr->titleId,8) == 0;
 	bool programIdMatches = programId == NULL? true : memcmp(programId,hdr->programId,8) == 0;
 
 	if(titleIdMatches && programIdMatches) 
 		return 0;// if no modification is required don't do anything
 
+	if(/*keys->rsa.requiresPresignedDesc && */!IsCfa(hdr)){
+		fprintf(stderr,"[NCCH ERROR] CXI's ID cannot be modified without the ability to resign the AccessDesc\n"); // Not yet yet, requires AccessDesc Privk, may implement anyway later
+		return -1;
+	}
 
 	ncch_info ncchInfo;
 	u8 *romfs = NULL;
