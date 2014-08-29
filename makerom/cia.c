@@ -443,7 +443,7 @@ int ImportNcchContent(cia_settings *ciaset)
 		return MEM_ERROR;
 	}
 
-	ncch_hdr *ncch0hdr = (ncch_hdr*)(ciaset->ciaSections.content.buffer+0x100);
+	ncch_hdr *ncch0hdr = (ncch_hdr*)ciaset->ciaSections.content.buffer;
 	for(int i = 1; i < ciaset->content.count; i++){
 		// Import
 		u8 *ncchpos = (u8*)(ciaset->ciaSections.content.buffer+ciaset->content.offset[i]);
