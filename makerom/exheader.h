@@ -99,11 +99,11 @@ typedef struct
 	u8 padding0[5];
 	u8 flag;
 	u8 remasterVersion[2]; // le u16
-	exhdr_CodeSegmentInfo textSectionInfo;
+	exhdr_CodeSegmentInfo text;
 	u8 stackSize[4]; // le u32
-	exhdr_CodeSegmentInfo readOnlySectionInfo;
+	exhdr_CodeSegmentInfo rodata;
 	u8 padding1[4];
-	exhdr_CodeSegmentInfo dataSectionInfo;
+	exhdr_CodeSegmentInfo data;
 	u8 bssSize[4]; // le u32
 } exhdr_CodeSetInfo;
 

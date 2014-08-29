@@ -1,5 +1,6 @@
 #include "lib.h"
 #include "ncch_build.h"
+#include "exheader_read.h"
 #include "elf_hdr.h"
 #include "elf.h"
 #include "blz.h"
@@ -140,7 +141,10 @@ int ImportExeFsCodeBinaryFromFile(ncch_settings *set)
 {
 	u32 size = set->componentFilePtrs.codeSize;
 	u8 *buffer = malloc(size);
-	if(!buffer) {fprintf(stderr,"[ELF ERROR] Not enough memory\n"); return MEM_ERROR;}
+	if(!buffer) {
+		fprintf(stderr,"[ELF ERROR] Not enough memory\n");
+		return MEM_ERROR;
+	}
 	ReadFile64(buffer,size,0,set->componentFilePtrs.code);
 
 	set->exefsSections.code.size = set->componentFilePtrs.codeSize;
@@ -157,6 +161,36 @@ int ImportExeFsCodeBinaryFromFile(ncch_settings *set)
 		set->exefsSections.code.size = size;
 		set->exefsSections.code.buffer = buffer;
 	}
+	
+	size = set->componentFilePtrs.exhdrSize;
+	if(size < sizeof(extended_hdr)){
+		fprintf(stderr,"[ELF ERROR] Exheader code info template is too small\n");
+		return FAILED_TO_IMPORT_FILE;
+	}
+	extended_hdr *exhdr = malloc(size);
+	if(!exhdr) {
+		fprintf(stderr,"[ELF ERROR] Not enough memory\n");
+		return MEM_ERROR;
+	}
+	ReadFile64(exhdr,size,0,set->componentFilePtrs.exhdr);
+	
+	/* Setting code_segment data */
+	set->codeDetails.textAddress = u8_to_u32(exhdr->codeSetInfo.text.address,LE);
+	set->codeDetails.textMaxPages = u8_to_u32(exhdr->codeSetInfo.text.numMaxPages,LE);
+	set->codeDetails.textSize = u8_to_u32(exhdr->codeSetInfo.text.codeSize,LE);
+
+	set->codeDetails.roAddress = u8_to_u32(exhdr->codeSetInfo.rodata.address,LE);
+	set->codeDetails.roMaxPages = u8_to_u32(exhdr->codeSetInfo.rodata.numMaxPages,LE);
+	set->codeDetails.roSize = u8_to_u32(exhdr->codeSetInfo.rodata.codeSize,LE);
+
+	set->codeDetails.rwAddress = u8_to_u32(exhdr->codeSetInfo.data.address,LE);
+	set->codeDetails.rwMaxPages = u8_to_u32(exhdr->codeSetInfo.data.numMaxPages,LE);
+	set->codeDetails.rwSize = u8_to_u32(exhdr->codeSetInfo.data.codeSize,LE);
+	
+	set->codeDetails.bssSize = u8_to_u32(exhdr->codeSetInfo.bssSize,LE);
+	
+	free(exhdr);
+	
 	return 0;
 }
 
@@ -269,7 +303,7 @@ int CreateExeFsCode(elf_context *elf, u8 *elfFile, ncch_settings *set)
 		set->exefsSections.code.buffer = code;
 	}
 
-	/* Setting code_segment rwdata and freeing original buffers */
+	/* Setting code_segment data and freeing original buffers */
 	set->codeDetails.textAddress = text.address;
 	set->codeDetails.textMaxPages = text.maxPageNum;
 	set->codeDetails.textSize = text.size;

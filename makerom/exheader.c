@@ -121,17 +121,6 @@ int get_ExHeaderSettingsFromNcchset(exheader_settings *exhdrset, ncch_settings *
 		fprintf(stderr,"[EXHEADER ERROR] Not enough memory\n"); 
 		return MEM_ERROR;
 	}
-	
-	/* Import ExHeader Code Section template */
-	if(ncchset->componentFilePtrs.exhdrSize){ 
-		u32 import_size = 0x30; //min64(0x30,ncchset->componentFilePtrs.exhdrSize);
-		u32 import_offset = 0x10;
-		if((import_size+import_offset) > ncchset->componentFilePtrs.exhdrSize){
-			fprintf(stderr,"[EXHEADER ERROR] Exheader Template is too small\n");
-			return FAILED_TO_IMPORT_FILE;
-		}
-		ReadFile64((ncchset->sections.exhdr.buffer+import_offset),import_size,import_offset,ncchset->componentFilePtrs.exhdr);
-	}
 
 	/* Create ExHeader Struct for output */
 	exhdrset->exHdr = (extended_hdr*)ncchset->sections.exhdr.buffer;
@@ -142,17 +131,17 @@ int get_ExHeaderSettingsFromNcchset(exheader_settings *exhdrset, ncch_settings *
 		/* BSS Size */
 		u32_to_u8(exhdrset->exHdr->codeSetInfo.bssSize,ncchset->codeDetails.bssSize,LE);
 		/* Data */
-		u32_to_u8(exhdrset->exHdr->codeSetInfo.dataSectionInfo.address,ncchset->codeDetails.rwAddress,LE);
-		u32_to_u8(exhdrset->exHdr->codeSetInfo.dataSectionInfo.codeSize,ncchset->codeDetails.rwSize,LE);
-		u32_to_u8(exhdrset->exHdr->codeSetInfo.dataSectionInfo.numMaxPages,ncchset->codeDetails.rwMaxPages,LE);
+		u32_to_u8(exhdrset->exHdr->codeSetInfo.data.address,ncchset->codeDetails.rwAddress,LE);
+		u32_to_u8(exhdrset->exHdr->codeSetInfo.data.codeSize,ncchset->codeDetails.rwSize,LE);
+		u32_to_u8(exhdrset->exHdr->codeSetInfo.data.numMaxPages,ncchset->codeDetails.rwMaxPages,LE);
 		/* RO */
-		u32_to_u8(exhdrset->exHdr->codeSetInfo.readOnlySectionInfo.address,ncchset->codeDetails.roAddress,LE);
-		u32_to_u8(exhdrset->exHdr->codeSetInfo.readOnlySectionInfo.codeSize,ncchset->codeDetails.roSize,LE);
-		u32_to_u8(exhdrset->exHdr->codeSetInfo.readOnlySectionInfo.numMaxPages,ncchset->codeDetails.roMaxPages,LE);
+		u32_to_u8(exhdrset->exHdr->codeSetInfo.rodata.address,ncchset->codeDetails.roAddress,LE);
+		u32_to_u8(exhdrset->exHdr->codeSetInfo.rodata.codeSize,ncchset->codeDetails.roSize,LE);
+		u32_to_u8(exhdrset->exHdr->codeSetInfo.rodata.numMaxPages,ncchset->codeDetails.roMaxPages,LE);
 		/* Text */
-		u32_to_u8(exhdrset->exHdr->codeSetInfo.textSectionInfo.address,ncchset->codeDetails.textAddress,LE);
-		u32_to_u8(exhdrset->exHdr->codeSetInfo.textSectionInfo.codeSize,ncchset->codeDetails.textSize,LE);
-		u32_to_u8(exhdrset->exHdr->codeSetInfo.textSectionInfo.numMaxPages,ncchset->codeDetails.textMaxPages,LE);
+		u32_to_u8(exhdrset->exHdr->codeSetInfo.text.address,ncchset->codeDetails.textAddress,LE);
+		u32_to_u8(exhdrset->exHdr->codeSetInfo.text.codeSize,ncchset->codeDetails.textSize,LE);
+		u32_to_u8(exhdrset->exHdr->codeSetInfo.text.numMaxPages,ncchset->codeDetails.textMaxPages,LE);
 	}
 
 	/* Set Simple Flags */
