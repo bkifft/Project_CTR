@@ -3,32 +3,42 @@
 #include "tik_build.h"
 
 // Private Prototypes
-int SetupTicketBuffer(buffer_struct *tik);
-int SetupTicketHeader(tik_hdr *hdr, cia_settings *ciaset);
-int SignTicketHeader(tik_hdr *hdr, tik_signature *sig, keys_struct *keys);
+int SetupTicketBuffer(cia_settings *set);
+void SetupTicketHeader(tik_hdr *hdr, cia_settings *ciaset);
+int SignTicketHeader(buffer_struct *tik, keys_struct *keys);
 void SetLimits(tik_hdr *hdr, cia_settings *ciaset);
-void SetContentIndexData(tik_hdr *hdr, cia_settings *ciaset);
+u32 GetContentIndexSegNum(cia_settings *set);
+void SetContentIndexHeader(tik_content_index_hdr *hdr, cia_settings *set);
+void SetContentIndexData(tik_content_index_struct *data, cia_settings *set);
 
 
-int BuildTicket(cia_settings *ciaset)
+int BuildTicket(cia_settings *set)
 {
 	int result = 0;
-	result = SetupTicketBuffer(&ciaset->ciaSections.tik);
+	result = SetupTicketBuffer(set);
 	if(result) return result;
 	
 	// Setting Ticket Struct Ptrs
-	tik_signature *sig = (tik_signature*)ciaset->ciaSections.tik.buffer;
-	tik_hdr *hdr = (tik_hdr*)(ciaset->ciaSections.tik.buffer+sizeof(tik_signature));
-
-	result = SetupTicketHeader(hdr,ciaset);
-	if(result) return result;
-	result = SignTicketHeader(hdr,sig,ciaset->keys);
+	buffer_struct *tik = &set->ciaSections.tik;
+	
+	tik_hdr *hdr = (tik_hdr*) (tik->buffer + sizeof(tik_signature));
+	tik_content_index_hdr *idxHdr = (tik_content_index_hdr*) (tik->buffer + sizeof(tik_signature) + sizeof(tik_hdr));
+	tik_content_index_struct *idxData = (tik_content_index_struct*) (tik->buffer + sizeof(tik_signature) + sizeof(tik_hdr) + sizeof(tik_content_index_hdr));
+	
+	
+	SetupTicketHeader(hdr,set);
+	SetContentIndexHeader(idxHdr,set);
+	SetContentIndexData(idxData,set);
+	
+	result = SignTicketHeader(tik,set->keys);
 	return 0;
 }
 
-int SetupTicketBuffer(buffer_struct *tik)
+int SetupTicketBuffer(cia_settings *set)
 {
-	tik->size = sizeof(tik_signature) + sizeof(tik_hdr);
+	buffer_struct *tik = &set->ciaSections.tik;
+	
+	tik->size = sizeof(tik_signature) + sizeof(tik_hdr) + sizeof(tik_content_index_hdr) + sizeof(tik_content_index_struct)*GetContentIndexSegNum(set);
 	tik->buffer = calloc(1,tik->size);
 	if(!tik->buffer) { 
 		fprintf(stderr,"[TIK ERROR] Not enough memory\n"); 
@@ -37,7 +47,7 @@ int SetupTicketBuffer(buffer_struct *tik)
 	return 0;
 }
 
-int SetupTicketHeader(tik_hdr *hdr, cia_settings *ciaset)
+void SetupTicketHeader(tik_hdr *hdr, cia_settings *ciaset)
 {
 	clrmem(hdr,sizeof(tik_hdr));
 
@@ -58,15 +68,19 @@ int SetupTicketHeader(tik_hdr *hdr, cia_settings *ciaset)
 	memcpy(hdr->eshopAccId,ciaset->tik.eshopAccId,4);
 	hdr->audit = ciaset->tik.audit;
 	SetLimits(hdr,ciaset);
-	SetContentIndexData(hdr,ciaset);
-	return 0;
 }
 
-int SignTicketHeader(tik_hdr *hdr, tik_signature *sig, keys_struct *keys)
+int SignTicketHeader(buffer_struct *tik, keys_struct *keys)
 {
+	tik_signature *sig = (tik_signature*)tik->buffer;
+	u8 *data = tik->buffer + sizeof(tik_signature);
+	u32 len = tik->size - sizeof(tik_signature);
+	
+
 	clrmem(sig,sizeof(tik_signature));
 	u32_to_u8(sig->sigType,RSA_2048_SHA256,BE);
-	return ctr_sig((u8*)hdr,sizeof(tik_hdr),sig->data,keys->rsa.xsPub,keys->rsa.xsPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
+	
+	return ctr_sig(data,len,sig->data,keys->rsa.xsPub,keys->rsa.xsPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
 }
 
 int CryptTitleKey(u8 *EncTitleKey, u8 *DecTitleKey, u8 *TitleID, keys_struct *keys, u8 mode)
@@ -94,10 +108,62 @@ void SetLimits(tik_hdr *hdr, cia_settings *ciaset) // TODO?
 	memset(hdr->limits,0,0x40);
 }
 
-void SetContentIndexData(tik_hdr *hdr, cia_settings *ciaset) // TODO?
+u32 GetContentIndexSegNum(cia_settings *set)
 {
-	memset(hdr->contentIndex,0,0xAC);
-	memcpy(hdr->contentIndex,default_contentIndex,0x30);
+	u32 num, level, i;
+	
+	num = level = 0;
+	
+	for( i = 0; i < set->content.count; i++)
+	{
+		if(set->content.index[i] >= level)
+		{
+			level = roundup(set->content.index[i],0x400);
+			num++;
+		}
+	}
+	return num;
+}
+
+void SetContentIndexHeader(tik_content_index_hdr *hdr, cia_settings *set)
+{
+	u32 hdrSize = sizeof(tik_content_index_hdr);
+	u32 segNum = GetContentIndexSegNum(set);
+	u32 segSize = sizeof(tik_content_index_struct);
+	u32 segTotalSize = segSize * segNum;
+	u32 totalSize = hdrSize + segTotalSize;
+	
+	u32_to_u8(hdr->unk0,0x00010014,BE);
+	u32_to_u8(hdr->totalSize,totalSize,BE);
+	u32_to_u8(hdr->unk1,0x00000014,BE);
+	u32_to_u8(hdr->unk2,0x00010014,BE);
+	u32_to_u8(hdr->unk3,0x00000000,BE);
+	u32_to_u8(hdr->hdrSize,hdrSize,BE);
+	u32_to_u8(hdr->segNum,segNum,BE);
+	u32_to_u8(hdr->segSize,segSize,BE);
+	u32_to_u8(hdr->segTotalSize,segTotalSize,BE);
+	u32_to_u8(hdr->unk4,0x00030000,BE);
+}
+
+void SetContentIndexData(tik_content_index_struct *data, cia_settings *set)
+{
+	u32 level, i;
+	int j;
+	
+	j = -1;
+	level = 0;
+	
+	for( i = 0; i < set->content.count; i++)
+	{
+		if(set->content.index[i] >= level)
+		{
+			level = roundup(set->content.index[i],0x400);
+			j++;
+			u32_to_u8(data[j].level,(set->content.index[i]/0x400)*0x400,BE);
+		}
+		data[j].index[(set->content.index[i] & 0x3ff)/8] |= 1 << (set->content.index[i] & 0x7);
+	}
+	
 }
 
 tik_hdr *GetTikHdr(u8 *tik)

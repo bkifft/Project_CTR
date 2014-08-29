@@ -13,6 +13,7 @@ void rndset(void *ptr, u64 num);
 void clrmem(void *ptr, u64 num);
 
 // MISC
+u64 roundup(u64 value, u64 alignment);
 u64 align(u64 value, u64 alignment);
 u64 min64(u64 a, u64 b);
 u64 max64(u64 a, u64 b);

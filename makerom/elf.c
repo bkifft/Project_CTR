@@ -1,5 +1,6 @@
 #include "lib.h"
 #include "ncch_build.h"
+#include "exheader_read.h"
 #include "elf_hdr.h"
 #include "elf.h"
 #include "blz.h"
@@ -113,7 +114,8 @@ finish:
 		if(result == NOT_ELF_FILE) fprintf(stderr,"[ELF ERROR] Not ELF File\n");
 		else if(result == NOT_ARM_ELF) fprintf(stderr,"[ELF ERROR] Not ARM ELF\n");
 		else if(result == NON_EXECUTABLE_ELF) fprintf(stderr,"[ELF ERROR] Not Executeable ELF\n");
-		else if(result == NOT_FIND_CODE_SECTIONS) fprintf(stderr,"[ELF ERROR] Failed to retrieve code sections from ELF\n");
+		else if(result == NOT_FIND_TEXT_SEGMENT) fprintf(stderr,"[ELF ERROR] Failed to retrieve text sections from ELF\n");
+		else if(result == NOT_FIND_DATA_SEGMENT) fprintf(stderr,"[ELF ERROR] Failed to retrieve data sections from ELF\n");
 		else fprintf(stderr,"[ELF ERROR] Failed to process ELF file (%d)\n",result);
 	}
 	for(int i = 0; i < elf->activeSegments; i++)
@@ -139,7 +141,10 @@ int ImportExeFsCodeBinaryFromFile(ncch_settings *set)
 {
 	u32 size = set->componentFilePtrs.codeSize;
 	u8 *buffer = malloc(size);
-	if(!buffer) {fprintf(stderr,"[ELF ERROR] Not enough memory\n"); return MEM_ERROR;}
+	if(!buffer) {
+		fprintf(stderr,"[ELF ERROR] Not enough memory\n");
+		return MEM_ERROR;
+	}
 	ReadFile64(buffer,size,0,set->componentFilePtrs.code);
 
 	set->exefsSections.code.size = set->componentFilePtrs.codeSize;
@@ -156,6 +161,36 @@ int ImportExeFsCodeBinaryFromFile(ncch_settings *set)
 		set->exefsSections.code.size = size;
 		set->exefsSections.code.buffer = buffer;
 	}
+	
+	size = set->componentFilePtrs.exhdrSize;
+	if(size < sizeof(extended_hdr)){
+		fprintf(stderr,"[ELF ERROR] Exheader code info template is too small\n");
+		return FAILED_TO_IMPORT_FILE;
+	}
+	extended_hdr *exhdr = malloc(size);
+	if(!exhdr) {
+		fprintf(stderr,"[ELF ERROR] Not enough memory\n");
+		return MEM_ERROR;
+	}
+	ReadFile64(exhdr,size,0,set->componentFilePtrs.exhdr);
+	
+	/* Setting code_segment data */
+	set->codeDetails.textAddress = u8_to_u32(exhdr->codeSetInfo.text.address,LE);
+	set->codeDetails.textMaxPages = u8_to_u32(exhdr->codeSetInfo.text.numMaxPages,LE);
+	set->codeDetails.textSize = u8_to_u32(exhdr->codeSetInfo.text.codeSize,LE);
+
+	set->codeDetails.roAddress = u8_to_u32(exhdr->codeSetInfo.rodata.address,LE);
+	set->codeDetails.roMaxPages = u8_to_u32(exhdr->codeSetInfo.rodata.numMaxPages,LE);
+	set->codeDetails.roSize = u8_to_u32(exhdr->codeSetInfo.rodata.codeSize,LE);
+
+	set->codeDetails.rwAddress = u8_to_u32(exhdr->codeSetInfo.data.address,LE);
+	set->codeDetails.rwMaxPages = u8_to_u32(exhdr->codeSetInfo.data.numMaxPages,LE);
+	set->codeDetails.rwSize = u8_to_u32(exhdr->codeSetInfo.data.codeSize,LE);
+	
+	set->codeDetails.bssSize = u8_to_u32(exhdr->codeSetInfo.bssSize,LE);
+	
+	free(exhdr);
+	
 	return 0;
 }
 
@@ -239,9 +274,13 @@ int CreateExeFsCode(elf_context *elf, u8 *elfFile, ncch_settings *set)
 	result = CreateCodeSegmentFromElf(&rwdata,elf,elfFile,set->rsfSet->ExeFs.ReadWrite,set->rsfSet->ExeFs.ReadWriteNum);
 	if(result) return result;
 
+	/* Checking the existence of essential ELF Segments */
+	if(!text.size) return NOT_FIND_TEXT_SEGMENT;
+	if(!rwdata.size) return NOT_FIND_DATA_SEGMENT;
+	
 	/* Allocating Buffer for ExeFs Code */
 	u32 size = (text.maxPageNum + rodata.maxPageNum + rwdata.maxPageNum)*elf->pageSize;
-	u8 *code = malloc(size);
+	u8 *code = calloc(1,size);
 
 	/* Writing Code into Buffer */
 	u8 *textPos = (code + 0);
@@ -264,7 +303,7 @@ int CreateExeFsCode(elf_context *elf, u8 *elfFile, ncch_settings *set)
 		set->exefsSections.code.buffer = code;
 	}
 
-	/* Setting code_segment rwdata and freeing original buffers */
+	/* Setting code_segment data and freeing original buffers */
 	set->codeDetails.textAddress = text.address;
 	set->codeDetails.textMaxPages = text.maxPageNum;
 	set->codeDetails.textSize = text.size;

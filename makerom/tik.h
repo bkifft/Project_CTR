@@ -22,6 +22,26 @@ typedef enum
 
 typedef struct
 {
+	u8 unk0[4];
+	u8 totalSize[4];
+	u8 unk1[4];
+	u8 unk2[4];
+	u8 unk3[4];
+	u8 hdrSize[4];
+	u8 segNum[4];
+	u8 segSize[4];
+	u8 segTotalSize[4];
+	u8 unk4[4];
+} tik_content_index_hdr;
+
+typedef struct
+{
+    u8 level[4];
+	u8 index[0x80];
+} tik_content_index_struct;
+
+typedef struct
+{
 	u8 sigType[4];
 	u8 data[0x100];
 	u8 padding[0x3C];
@@ -50,7 +70,6 @@ typedef struct
 	u8 audit;
 	u8 padding5[0x42];
 	u8 limits[0x40];
-	u8 contentIndex[0xAC];
 } tik_hdr;
 
 

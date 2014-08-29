@@ -140,7 +140,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			PrintArgReqParam(argv[i],1);
 			return USR_ARG_REQ_PARAM;
 		}
-		if(strcasecmp(argv[i+1],"ncch") == 0) 
+		if(strcasecmp(argv[i+1],"ncch") == 0 || strcasecmp(argv[i+1],"cxi") == 0 || strcasecmp(argv[i+1],"cfa") == 0) 
 			set->common.outFormat = NCCH;
 		else if(strcasecmp(argv[i+1],"cci") == 0)
 			set->common.outFormat = CCI;
