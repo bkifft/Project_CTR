@@ -629,24 +629,9 @@ int BuildCiaHdr(cia_settings *ciaset)
 	ciaset->ciaSections.contentOffset = align(ciaset->ciaSections.tmdOffset+ciaset->ciaSections.tmd.size,0x40);
 	ciaset->ciaSections.metaOffset = align(ciaset->ciaSections.contentOffset+ciaset->content.totalSize,0x40);
 	
-	for(int i = 0; i < ciaset->content.count; i++){
-		// This works by treating the 0x2000 byte index array as an array of 2048 u32 values
+	for(int i = 0; i < ciaset->content.count; i++)
+		hdr->contentIndex[ciaset->content.index[i]/8] |= 1 << (7 - (ciaset->content.index[i] & 7));
 		
-		// Used for determining which u32 chunk to write the value to
-		u16 section = ciaset->content.index[i]/32;
-		
-		// Calculating the value added to the u32
-		u32 value = 1 << (0x1F-ciaset->content.index[i]);
-
-		// Retrieving current u32 block
-		u32 cur_content_index_section = u8_to_u32(hdr->contentIndex+(sizeof(u32)*section),BE);
-		
-		// Adding value to block
-		cur_content_index_section += value;
-		
-		// Returning block
-		u32_to_u8(hdr->contentIndex+(sizeof(u32)*section),cur_content_index_section,BE);
-	}
 	return 0;
 }
 
