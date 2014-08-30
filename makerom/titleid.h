@@ -88,6 +88,9 @@ u64 ConvertTwlIdToCtrId(u64 pgid);
 int GetProgramID(u64 *dest, rsf_settings *rsf, bool IsForExheader);
 int GetUniqueID(u32 *dest, rsf_settings *rsf);
 
+u16 GetTidCategory(u64 titleId);
+u32 GetTidUniqueId(u64 titleId);
+
 bool IsDemo(u16 Category);
 bool IsSystem(u16 Category);
 bool IsDlpChild(u16 Category);

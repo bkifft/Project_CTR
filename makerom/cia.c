@@ -166,7 +166,7 @@ int GetSettingsFromUsrset(cia_settings *ciaset, user_settings *usrset)
 	ciaset->content.includeUpdateNcch = usrset->cia.includeUpdateNcch;
 	ciaset->verbose = usrset->common.verbose;
 	
-	u32_to_u8(ciaset->tmd.titleType,TYPE_CTR,BE);
+	ciaset->tmd.titleType = TYPE_CTR;
 	ciaset->content.encryptCia = usrset->common.rsfSet.Option.EnableCrypt;
 	ciaset->content.IsDlc = usrset->cia.DlcContent;
 	if(ciaset->keys->aes.commonKey[ciaset->keys->aes.currentCommonKey] == NULL && ciaset->content.encryptCia){
@@ -182,10 +182,10 @@ int GetSettingsFromUsrset(cia_settings *ciaset, user_settings *usrset)
 	}
 
 	// Ticket Data
-	rndset(ciaset->tik.ticketId,8);
-	u32_to_u8(ciaset->tik.deviceId,usrset->cia.deviceId,BE);
-	u32_to_u8(ciaset->tik.eshopAccId,usrset->cia.eshopAccId,BE);
-	ciaset->tik.licenceType = 0;
+	ciaset->tik.ticketId = u64GetRand();
+	ciaset->tik.deviceId = usrset->cia.deviceId;
+	ciaset->tik.eshopAccId = usrset->cia.eshopAccId;
+	ciaset->tik.licenceType = lic_Permanent;
 	ciaset->tik.audit = 0;
 	
 	if(usrset->cia.randomTitleKey)
@@ -208,6 +208,7 @@ int GetSettingsFromUsrset(cia_settings *ciaset, user_settings *usrset)
 		ciaset->content.id[0] = usrset->cia.contentId[0];
 
 	ciaset->tmd.formatVersion = 1;
+	ciaset->tmd.accessRights = 0;
 	result = GenCertChildIssuer(ciaset->tmd.issuer,ciaset->keys->certs.cpCert);
 	return 0;
 }
@@ -256,7 +257,7 @@ int GetSettingsFromNcch0(cia_settings *ciaset, u32 ncch0_offset)
 	}
 
 	/* Gen Settings From Ncch0 */
-	endian_memcpy(ciaset->common.titleId,hdr->titleId,8,LE);
+	ciaset->common.titleId = u8_to_u64(hdr->titleId,LE);
 
 
 	/* Getting ncch key */
@@ -289,19 +290,17 @@ int GetTmdDataFromNcch(cia_settings *ciaset, u8 *ncch, ncch_info *ncch_ctx, u8 *
 	memcpy(exhdr,ncch+ncch_ctx->exhdrOffset,sizeof(extended_hdr));
 	if(key != NULL)
 		CryptNcchRegion((u8*)exhdr,sizeof(extended_hdr),0,ncch_ctx,key,ncch_exhdr);
-
-	u16 Category = u8_to_u16((ciaset->common.titleId+2),BE);
-	if(IsPatch(Category)||ciaset->content.IsCfa||ciaset->content.keyNotFound) 
-		u32_to_u8(ciaset->tmd.savedataSize,0,LE);
-	else 
-		u32_to_u8(ciaset->tmd.savedataSize,(u32)GetSaveDataSize_frm_exhdr(exhdr),LE);
 		
-	if(ciaset->rsf->SystemControlInfo.SaveDataSize && !ciaset->content.IsCfa && ciaset->content.keyNotFound){
+	if(IsPatch(GetTidCategory(ciaset->common.titleId))||ciaset->content.IsCfa) 
+		ciaset->tmd.savedataSize = 0;
+	else if(ciaset->content.keyNotFound && ciaset->rsf->SystemControlInfo.SaveDataSize){ // if it's a title which can have save data, but save data size could not be read from exhdr
 		u64 size = 0;
 		GetSaveDataSizeFromString(&size,ciaset->rsf->SystemControlInfo.SaveDataSize,"CIA");
-		u32_to_u8(ciaset->tmd.savedataSize,(u32)size,LE);
+		ciaset->tmd.savedataSize = (u32)(size & MAX_U32);
 	}
-	
+	else 
+		ciaset->tmd.savedataSize = (u32)(GetSaveDataSize_frm_exhdr(exhdr) & MAX_U32);
+			
 	if(ciaset->content.IsCfa||ciaset->content.keyNotFound){
 		if(ciaset->common.titleVersion[VER_MAJOR] == MAX_U16){ // '-major' wasn't set
 			if(ciaset->content.IsCfa){ // Is a CFA and can be decrypted
@@ -479,8 +478,7 @@ int GetSettingsFromSrl(cia_settings *ciaset)
 	}
 
 	// Generate and store Converted TitleID
-	u64_to_u8(ciaset->common.titleId,ConvertTwlIdToCtrId(u8_to_u64(hdr->title_id,LE)),BE);
-	//memdump(stdout,"SRL TID: ",ciaset->TitleID,8);
+	ciaset->common.titleId = ConvertTwlIdToCtrId(u8_to_u64(hdr->title_id,LE));
 
 	// Get TWL Flag
 	ciaset->tmd.twlFlag = ((hdr->reserved_flags[3] & 6) >> 1);
@@ -491,8 +489,8 @@ int GetSettingsFromSrl(cia_settings *ciaset)
 	ciaset->tmd.version = version;
 
 	// Get SaveDataSize (Public and Private)
-	memcpy(ciaset->tmd.savedataSize,hdr->pubSaveDataSize,4);
-	memcpy(ciaset->tmd.privSavedataSize,hdr->privSaveDataSize,4);
+	ciaset->tmd.savedataSize = u8_to_u32(hdr->pubSaveDataSize,LE);
+	ciaset->tmd.privSavedataSize = u8_to_u32(hdr->privSaveDataSize,LE);
 
 	// Setting CIA Content Settings
 	ciaset->content.count = 1;

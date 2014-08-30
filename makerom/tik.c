@@ -50,24 +50,26 @@ int SetupTicketBuffer(cia_settings *set)
 void SetupTicketHeader(tik_hdr *hdr, cia_settings *ciaset)
 {
 	clrmem(hdr,sizeof(tik_hdr));
-
+	
 	memcpy(hdr->issuer,ciaset->tik.issuer,0x40);
 	hdr->formatVersion = ciaset->tik.formatVersion;
 	hdr->caCrlVersion = ciaset->cert.caCrlVersion;
 	hdr->signerCrlVersion = ciaset->cert.signerCrlVersion;
-	if(ciaset->content.encryptCia)
-		CryptTitleKey(hdr->encryptedTitleKey, ciaset->common.titleKey,ciaset->common.titleId,ciaset->keys,ENC);
-	else
-		rndset(hdr->encryptedTitleKey,16);
-	memcpy(hdr->ticketId,ciaset->tik.ticketId,8);
-	memcpy(hdr->deviceId,ciaset->tik.deviceId,4);
-	memcpy(hdr->titleId,ciaset->common.titleId,8);
+	u64_to_u8(hdr->ticketId,ciaset->tik.ticketId,BE);
+	u32_to_u8(hdr->deviceId,ciaset->tik.deviceId,BE);
+	u64_to_u8(hdr->titleId,ciaset->common.titleId,BE);
 	u16_to_u8(hdr->ticketVersion,ciaset->tik.version,BE);
 	hdr->licenceType = ciaset->tik.licenceType;
 	hdr->keyId = ciaset->keys->aes.currentCommonKey;
-	memcpy(hdr->eshopAccId,ciaset->tik.eshopAccId,4);
+	u32_to_u8(hdr->eshopAccId,ciaset->tik.eshopAccId,BE);
 	hdr->audit = ciaset->tik.audit;
 	SetLimits(hdr,ciaset);
+	
+	// Crypt TitleKey
+	if(ciaset->content.encryptCia)
+		CryptTitleKey(hdr->encryptedTitleKey, ciaset->common.titleKey, hdr->titleId, ciaset->keys, ENC);
+	else
+		rndset(hdr->encryptedTitleKey,AES_128_KEY_SIZE);
 }
 
 int SignTicketHeader(buffer_struct *tik, keys_struct *keys)
@@ -83,12 +85,12 @@ int SignTicketHeader(buffer_struct *tik, keys_struct *keys)
 	return ctr_sig(data,len,sig->data,keys->rsa.xsPub,keys->rsa.xsPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
 }
 
-int CryptTitleKey(u8 *EncTitleKey, u8 *DecTitleKey, u8 *TitleID, keys_struct *keys, u8 mode)
+int CryptTitleKey(u8 *encKey, u8 *decKey, u8 *titleId, keys_struct *keys, u8 mode)
 {
 	//Generating IV
 	u8 iv[16];
 	memset(&iv,0x0,16);
-	memcpy(iv,TitleID,0x8);
+	memcpy(iv,titleId,0x8);
 	
 	//Setting up Aes Context
 	ctr_aes_context ctx;
@@ -96,9 +98,9 @@ int CryptTitleKey(u8 *EncTitleKey, u8 *DecTitleKey, u8 *TitleID, keys_struct *ke
 	
 	//Crypting TitleKey
 	ctr_init_aes_cbc(&ctx,keys->aes.commonKey[keys->aes.currentCommonKey],iv,mode);
-	if(mode == ENC) ctr_aes_cbc(&ctx,DecTitleKey,EncTitleKey,0x10,ENC);
-	else ctr_aes_cbc(&ctx,EncTitleKey,DecTitleKey,0x10,DEC);
-
+	if(mode == ENC) ctr_aes_cbc(&ctx,decKey,encKey,0x10,ENC);
+	else ctr_aes_cbc(&ctx,encKey,decKey,0x10,DEC);
+	
 	// Return
 	return 0;
 }

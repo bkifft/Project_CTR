@@ -14,6 +14,16 @@ u64 ConvertTwlIdToCtrId(u64 pgid)
 	return 0x0004800000000000 | (pgid & 0x00007FFFFFFFFFFF);
 }
 
+u16 GetTidCategory(u64 titleId)
+{
+	return (titleId>>32) & MAX_U16; 
+}
+
+u32 GetTidUniqueId(u64 titleId)
+{
+	return (titleId>>8) & 0xFFFFFF; 
+}
+
 int GetProgramID(u64 *dest, rsf_settings *rsf, bool IsForExheader)
 {
 	int ret;
