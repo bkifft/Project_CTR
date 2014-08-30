@@ -54,11 +54,12 @@ int SetupTMDHeader(tmd_hdr *hdr, tmd_content_info_record *info_record, cia_setti
 	hdr->formatVersion = ciaset->tmd.formatVersion;
 	hdr->caCrlVersion = ciaset->cert.caCrlVersion;
 	hdr->signerCrlVersion = ciaset->cert.signerCrlVersion;
-	memcpy(hdr->titleID,ciaset->common.titleId,8);
-	memcpy(hdr->titleType,ciaset->tmd.titleType,4);
-	memcpy(hdr->savedataSize,ciaset->tmd.savedataSize,4);
-	memcpy(hdr->privSavedataSize,ciaset->tmd.privSavedataSize,4);
+	u64_to_u8(hdr->titleID,ciaset->common.titleId,BE);
+	u32_to_u8(hdr->titleType,ciaset->tmd.titleType,BE);
+	u32_to_u8(hdr->savedataSize,ciaset->tmd.savedataSize,LE);
+	u32_to_u8(hdr->privSavedataSize,ciaset->tmd.privSavedataSize,LE);
 	hdr->twlFlag = ciaset->tmd.twlFlag;
+	u32_to_u8(hdr->accessRights,ciaset->tmd.accessRights,BE);
 	u16_to_u8(hdr->titleVersion,ciaset->tmd.version,BE);
 	u16_to_u8(hdr->contentCount,ciaset->content.count,BE);
 	ctr_sha(info_record,sizeof(tmd_content_info_record)*64,hdr->infoRecordHash,CTR_SHA_256);
@@ -129,7 +130,7 @@ u64 GetTmdTitleId(tmd_hdr *hdr)
 
 u32 GetTmdSaveSize(tmd_hdr *hdr)
 {
-	return u8_to_u32(hdr->savedataSize,BE);
+	return u8_to_u32(hdr->savedataSize,LE);
 }
 
 u16 GetTmdContentCount(tmd_hdr *hdr)

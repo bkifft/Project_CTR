@@ -23,7 +23,7 @@ typedef struct
 	bool verbose;
 	
 	struct{
-		u8 titleId[8];
+		u64 titleId;
 		u16 titleVersion[4];
 		u8 titleKey[16];
 	} common;
@@ -39,12 +39,12 @@ typedef struct
 		u8 formatVersion;
 
 		u16 version;
-
-		u8 ticketId[8];
-		u8 deviceId[4];
+		
+		u64 ticketId;
+		u32 deviceId;
 		u8 licenceType;
 		u8 audit;
-		u8 eshopAccId[4];
+		u32 eshopAccId;
 	} tik;
 
 	struct{
@@ -52,10 +52,11 @@ typedef struct
 		u8 formatVersion;
 
 		u16 version;
-
-		u8 titleType[4];
-		u8 savedataSize[4];
-		u8 privSavedataSize[4];
+		u32 accessRights;
+		
+		u32 titleType;
+		u32 savedataSize;
+		u32 privSavedataSize;
 		u8 twlFlag;
 	} tmd;
 
