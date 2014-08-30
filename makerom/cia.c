@@ -262,7 +262,7 @@ int GetSettingsFromNcch0(cia_settings *ciaset, u32 ncch0_offset)
 
 	/* Getting ncch key */
 	u8 *ncchkey = NULL;
-	if(!ciaset->content.keyNotFound || IsNcchEncrypted(hdr)){
+	if(!ciaset->content.keyNotFound && IsNcchEncrypted(hdr)){
 		SetNcchKeys(ciaset->keys,hdr);
 		ncchkey = ciaset->keys->aes.ncchKey0;
 		if(ciaset->verbose){
