@@ -20,7 +20,7 @@ typedef enum
 	EXEFS_CORRUPT = -14,
 	ROMFS_CORRUPT = -15,
 	// Others
-	NCCH_BAD_YAML_SET = -16,
+	NCCH_BAD_RSF_SET = -16,
 	DATA_POS_DNE = -17,
 } ncch_errors;
 

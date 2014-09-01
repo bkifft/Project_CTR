@@ -19,7 +19,6 @@ int CheckCFASignature(ncch_hdr *hdr, keys_struct *keys);
 int SignCXI(ncch_hdr *hdr, keys_struct *keys);
 int CheckCXISignature(ncch_hdr *hdr, u8 *pubk);
 
-void InitNcchSettings(ncch_settings *set);
 void FreeNcchSettings(ncch_settings *set);
 int GetNcchSettings(ncch_settings *ncchset, user_settings *usrset);
 int GetBasicOptions(ncch_settings *ncchset, user_settings *usrset);
@@ -71,7 +70,6 @@ int build_NCCH(user_settings *usrset)
 		fprintf(stderr,"[NCCH ERROR] Not enough memory\n"); 
 		return MEM_ERROR;
 	}
-	InitNcchSettings(ncchset);
 
 	// Get Settings
 	result = GetNcchSettings(ncchset,usrset);
@@ -124,11 +122,6 @@ finish:
 		fprintf(stderr,"[NCCH ERROR] NCCH Build Process Failed\n");
 	FreeNcchSettings(ncchset);
 	return result;
-}
-
-void InitNcchSettings(ncch_settings *set)
-{
-	memset(set,0,sizeof(ncch_settings));
 }
 
 void FreeNcchSettings(ncch_settings *set)
@@ -193,7 +186,7 @@ int GetBasicOptions(ncch_settings *ncchset, user_settings *usrset)
 	
 	if(ncchset->options.IsCfa && !ncchset->options.UseRomFS){
 		fprintf(stderr,"[NCCH ERROR] \"Rom/HostRoot\" must be set\n");
-		return NCCH_BAD_YAML_SET;
+		return NCCH_BAD_RSF_SET;
 	}
 
 	return result;
@@ -352,7 +345,7 @@ int ImportLogo(ncch_settings *set)
 		}
 		else if(strcasecmp(set->rsfSet->BasicInfo.Logo,"none") != 0){
 			fprintf(stderr,"[NCCH ERROR] Invalid logo name\n");
-			return NCCH_BAD_YAML_SET;
+			return NCCH_BAD_RSF_SET;
 		}
 	}
 	return 0;
@@ -602,7 +595,7 @@ int SetCommonHeaderBasicData(ncch_settings *set, ncch_hdr *hdr)
 	if(set->rsfSet->BasicInfo.ProductCode){
 		if(!IsValidProductCode((char*)set->rsfSet->BasicInfo.ProductCode,set->options.FreeProductCode)){
 			fprintf(stderr,"[NCCH ERROR] Invalid Product Code\n");
-			return NCCH_BAD_YAML_SET;
+			return NCCH_BAD_RSF_SET;
 		}
 		memcpy(hdr->productCode,set->rsfSet->BasicInfo.ProductCode,strlen((char*)set->rsfSet->BasicInfo.ProductCode));
 	}
@@ -611,7 +604,7 @@ int SetCommonHeaderBasicData(ncch_settings *set, ncch_hdr *hdr)
 	if(set->rsfSet->BasicInfo.CompanyCode){
 		if(strlen((char*)set->rsfSet->BasicInfo.CompanyCode) != 2){
 			fprintf(stderr,"[NCCH ERROR] CompanyCode length must be 2\n");
-			return NCCH_BAD_YAML_SET;
+			return NCCH_BAD_RSF_SET;
 		}
 		memcpy(hdr->makerCode,set->rsfSet->BasicInfo.CompanyCode,2);
 	}
@@ -657,7 +650,7 @@ int SetCommonHeaderBasicData(ncch_settings *set, ncch_hdr *hdr)
 		else if(strcmp(set->rsfSet->BasicInfo.ContentType,"Trial") == 0) hdr->flags[ncchflag_CONTENT_TYPE] |= content_Trial;
 		else{
 			fprintf(stderr,"[NCCH ERROR] Invalid ContentType '%s'\n",set->rsfSet->BasicInfo.ContentType);
-			return NCCH_BAD_YAML_SET;
+			return NCCH_BAD_RSF_SET;
 		}
 	}
 
