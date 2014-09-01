@@ -57,7 +57,7 @@ static void usage(const char *argv0)
 		   "  --ncchsyskey=key   Set ncch fixed system key.\n"
 		   "  --showkeys         Show the keys being used.\n"
 		   "  -t, --intype=type	 Specify input file type [ncsd, ncch, exheader, cia, tmd, lzss,\n"
-		   "                        firm, cwav, romfs]\n"
+		   "                        firm, cwav, exefs, romfs]\n"
 		   "LZSS options:\n"
 		   "  --lzssout=file	 Specify lzss output file\n"
 		   "CXI/CCI options:\n"
