@@ -78,6 +78,9 @@ static void usage(const char *argv0)
 		   "CWAV options:\n"
 		   "  --wav=file         Specify wav output file.\n"
 		   "  --wavloops=count   Specify wav loop count, default 0.\n"
+		   "EXEFS options:\n"
+		   "  --decompresscode   Decompress .code section\n"
+		   "                     (only needed when using raw EXEFS file)\n"
 		   "ROMFS options:\n"
 		   "  --romfsdir=dir     Specify RomFS directory path.\n"
 		   "  --listromfs        List files in RomFS.\n"
@@ -142,6 +145,7 @@ int main(int argc, char* argv[])
 			{"listromfs", 0, NULL, 18},
 			{"wavloops", 1, NULL, 19},
 			{"logo", 1, NULL, 20},
+			{"decompresscode", 0, NULL, 21},
 			{NULL},
 		};
 
@@ -201,6 +205,8 @@ int main(int argc, char* argv[])
 					ctx.filetype = FILETYPE_FIRM;
 				else if (!strcmp(optarg, "cwav"))
 					ctx.filetype = FILETYPE_CWAV;
+				else if (!strcmp(optarg, "exefs"))
+					ctx.filetype = FILETYPE_EXEFS;
 				else if (!strcmp(optarg, "romfs"))
 					ctx.filetype = FILETYPE_ROMFS;
 			break;
@@ -226,6 +232,7 @@ int main(int argc, char* argv[])
 			case 18: settings_set_list_romfs_files(&ctx.usersettings, 1); break;
 			case 19: settings_set_cwav_loopcount(&ctx.usersettings, strtoul(optarg, 0, 0)); break;
 			case 20: settings_set_logo_path(&ctx.usersettings, optarg); break;
+			case 21: ctx.actions |= DecompressCodeFlag; break;
 
 			default:
 				usage(argv[0]);
@@ -421,6 +428,19 @@ int main(int argc, char* argv[])
 			cwav_set_size(&cwavctx, ctx.infilesize);
 			cwav_set_usersettings(&cwavctx, &ctx.usersettings);
 			cwav_process(&cwavctx, ctx.actions);
+	
+			break;
+		}
+		
+		case FILETYPE_EXEFS:
+		{
+			exefs_context exefsctx;
+
+			exefs_init(&exefsctx);
+			exefs_set_file(&exefsctx, ctx.infile);
+			exefs_set_size(&exefsctx, ctx.infilesize);
+			exefs_set_usersettings(&exefsctx, &ctx.usersettings);
+			exefs_process(&exefsctx, ctx.actions);
 	
 			break;
 		}
