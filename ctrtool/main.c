@@ -61,7 +61,7 @@ static void usage(const char *argv0)
 		   "LZSS options:\n"
 		   "  --lzssout=file	 Specify lzss output file\n"
 		   "CXI/CCI options:\n"
-		   "  -n, --ncch=offs    Specify offset for NCCH header.\n"
+		   "  -n, --ncch=index   Specify NCCH partition index.\n"
 		   "  --exefs=file       Specify ExeFS file path.\n"
 		   "  --exefsdir=dir     Specify ExeFS directory path.\n"
 		   "  --romfs=file       Specify RomFS file path.\n"
@@ -96,7 +96,7 @@ int main(int argc, char* argv[])
 	u8 magic[4];
 	char infname[512];
 	int c;
-	u32 ncchoffset = ~0;
+	u32 ncchindex = 0;
 	char keysetfname[512] = "keys.xml";
 	keyset tmpkeys;
 	unsigned int checkkeysetfile = 0;
@@ -180,7 +180,7 @@ int main(int argc, char* argv[])
 			break;
 
 			case 'n':
-				ncchoffset = strtoul(optarg, 0, 0);
+				ncchindex = strtoul(optarg, 0, 0);
 			break;
 
 			case 'k':
@@ -331,6 +331,7 @@ int main(int argc, char* argv[])
 			ncsd_init(&ncsdctx);
 			ncsd_set_file(&ncsdctx, ctx.infile);
 			ncsd_set_size(&ncsdctx, ctx.infilesize);
+			ncsd_set_ncch_index(&ncsdctx, ncchindex);
 			ncsd_set_usersettings(&ncsdctx, &ctx.usersettings);
 			ncsd_process(&ncsdctx, ctx.actions);
 			
