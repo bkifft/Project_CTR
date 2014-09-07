@@ -22,5 +22,5 @@ typedef struct
 	u8 padding1[0xfc];
 } cia_metadata;
 
-int CryptContent(u8 *enc, u8 *dec, u64 size, u8 *title_key, u16 index, u8 mode);
+int CryptContent(u8 *input, u8 *output, u64 size, u8 *title_key, u16 index, u8 mode);
 

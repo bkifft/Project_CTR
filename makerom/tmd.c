@@ -175,7 +175,5 @@ bool IsTmdContentEncrypted(tmd_content_chunk info)
 
 bool ValidateTmdContent(u8 *data, tmd_content_chunk info)
 {
-	u8 hash[32];
-	ctr_sha(data,GetTmdContentSize(info),hash,CTR_SHA_256);
-	return memcmp(hash,GetTmdContentHash(&info),32) == 0;
+	return VerifySha256(data, GetTmdContentSize(info), GetTmdContentHash(&info));
 }

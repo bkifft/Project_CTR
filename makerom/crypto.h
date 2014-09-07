@@ -57,13 +57,6 @@ typedef enum
 
 typedef struct
 {
-	u8 ctr[16];
-	u8 iv[16];
-	aes_context aes;
-} ctr_aes_context;
-
-typedef struct
-{
 	rsa_context rsa;
 } ctr_rsa_context;
 
@@ -74,12 +67,8 @@ extern "C" {
 bool VerifySha256(void *data, u64 size, u8 hash[32]);
 void ctr_sha(void *data, u64 size, u8 *hash, int mode);
 // AES
-void ctr_add_counter(ctr_aes_context* ctx, u32 carry);
-void ctr_init_counter(ctr_aes_context* ctx, u8 key[16],u8 ctr[16]);
-void ctr_crypt_counter_block(ctr_aes_context* ctx, u8 input[16], u8 output[16]);
-void ctr_crypt_counter(ctr_aes_context* ctx, u8* input,  u8* output, u32 size);
-void ctr_init_aes_cbc(ctr_aes_context* ctx,u8 key[16],u8 iv[16], u8 mode);
-void ctr_aes_cbc(ctr_aes_context* ctx,u8* input,u8* output,u32 size,u8 mode);
+void AesCtr(u8 *key, u8 *ctr, u8 *input, u8 *output, u64 length, u64 offset);
+void AesCbc(u8 *key, u8 *iv, u8 *input, u8 *output, u64 length, u8 mode);
 // RSA
 void ctr_rsa_free(ctr_rsa_context* ctx);
 int ctr_rsa_init(ctr_rsa_context* ctx, u8 *modulus, u8 *private_exp, u8 *exponent, u8 rsa_type, u8 mode);

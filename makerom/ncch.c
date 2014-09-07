@@ -31,12 +31,7 @@ int FinaliseNcch(ncch_settings *ncchset);
 int SetCommonHeaderBasicData(ncch_settings *ncchset, ncch_hdr *hdr);
 bool IsValidProductCode(char *ProductCode, bool FreeProductCode);
 
-int BuildCommonHeader(ncch_settings *ncchset);
-int EnCryptNcchRegions(ncch_settings *ncchset);
-int WriteNCCHSectionsToBuffer(ncch_settings *ncchset);
-
 // Code
-
 int SignCFA(ncch_hdr *hdr, keys_struct *keys)
 {
 	return ctr_sig(GetNcchHdrData(hdr),GetNcchHdrDataLen(hdr),GetNcchHdrSig(hdr),keys->rsa.cciCfaPub,keys->rsa.cciCfaPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
@@ -540,8 +535,8 @@ int FinaliseNcch(ncch_settings *set)
 
 		// Crypting Exheader/AcexDesc
 		if(set->cryptoDetails.exhdrSize){
-			CryptNcchRegion(exhdr,set->cryptoDetails.exhdrSize,0x0,&set->cryptoDetails,set->keys->aes.ncchKey0,ncch_exhdr);
-			CryptNcchRegion(acexDesc,set->cryptoDetails.acexSize,set->cryptoDetails.exhdrSize,&set->cryptoDetails,set->keys->aes.ncchKey0,ncch_exhdr);
+			CryptNcchRegion(exhdr,set->cryptoDetails.exhdrSize,0x0,set->cryptoDetails.titleId,set->keys->aes.ncchKey0,ncch_exhdr);
+			CryptNcchRegion(acexDesc,set->cryptoDetails.acexSize,set->cryptoDetails.exhdrSize,set->cryptoDetails.titleId,set->keys->aes.ncchKey0,ncch_exhdr);
 		}			
 
 		// Crypting ExeFs Files
@@ -558,16 +553,16 @@ int FinaliseNcch(ncch_settings *set)
 				u32 size = u8_to_u32(exefsHdr->fileHdr[i].size,LE);
 
 				if(size)
-					CryptNcchRegion((exefs+offset),align(size,set->options.blockSize),offset,&set->cryptoDetails,key,ncch_exefs);
+					CryptNcchRegion((exefs+offset),align(size,set->options.blockSize),offset,set->cryptoDetails.titleId,key,ncch_exefs);
 
 			}
 			// Crypting ExeFs Header
-			CryptNcchRegion(exefs,sizeof(exefs_hdr),0x0,&set->cryptoDetails,set->keys->aes.ncchKey0,ncch_exefs);
+			CryptNcchRegion(exefs,sizeof(exefs_hdr),0x0,set->cryptoDetails.titleId,set->keys->aes.ncchKey0,ncch_exefs);
 		}
 
 		// Crypting RomFs
 		if(set->cryptoDetails.romfsSize)
-			CryptNcchRegion(romfs,set->cryptoDetails.romfsSize,0x0,&set->cryptoDetails,set->keys->aes.ncchKey1,ncch_romfs);
+			CryptNcchRegion(romfs,set->cryptoDetails.romfsSize,0x0,set->cryptoDetails.titleId,set->keys->aes.ncchKey1,ncch_romfs);
 	}
 
 	return 0;
@@ -584,12 +579,12 @@ int SetCommonHeaderBasicData(ncch_settings *set, ncch_hdr *hdr)
 
 	
 	/* Setting ProgramId/TitleId */
-	u64 ProgramId = 0;
-	int result = GetProgramID(&ProgramId,set->rsfSet,false); 
+	u64 programId = 0;
+	int result = GetProgramID(&programId,set->rsfSet,false); 
 	if(result) return result;
 
-	u64_to_u8(hdr->programId,ProgramId,LE);
-	u64_to_u8(hdr->titleId,ProgramId,LE);
+	u64_to_u8(hdr->programId,programId,LE);
+	u64_to_u8(hdr->titleId,programId,LE);
 
 	/* Get Product Code and Maker Code */
 	if(set->rsfSet->BasicInfo.ProductCode){
@@ -741,7 +736,7 @@ int VerifyNcch(u8 *ncch, keys_struct *keys, bool CheckHash, bool SuppressOutput)
 		}
 		memcpy(exHdr,ncch+ncchInfo->exhdrOffset,ncchInfo->exhdrSize);
 		if(IsNcchEncrypted(hdr))
-			CryptNcchRegion((u8*)exHdr,ncchInfo->exhdrSize,0,ncchInfo,keys->aes.ncchKey0,ncch_exhdr);
+			CryptNcchRegion((u8*)exHdr,ncchInfo->exhdrSize,0,ncchInfo->titleId,keys->aes.ncchKey0,ncch_exhdr);
 
 		// Checking Exheader Hash to see if decryption was sucessful
 		if(!VerifySha256(exHdr, ncchInfo->exhdrSize, hdr->exhdrHash)){
@@ -768,7 +763,7 @@ int VerifyNcch(u8 *ncch, keys_struct *keys, bool CheckHash, bool SuppressOutput)
 		}
 		memcpy(acexDesc,ncch+ncchInfo->acexOffset,ncchInfo->acexSize);
 		if(IsNcchEncrypted(hdr))
-			CryptNcchRegion((u8*)acexDesc,ncchInfo->acexSize,ncchInfo->exhdrSize,ncchInfo,keys->aes.ncchKey0,ncch_exhdr);
+			CryptNcchRegion((u8*)acexDesc,ncchInfo->acexSize,ncchInfo->exhdrSize,ncchInfo->titleId,keys->aes.ncchKey0,ncch_exhdr);
 
 		if(CheckAccessDescSignature(acexDesc,keys) != 0 && !keys->rsa.isFalseSign){
 			if(!SuppressOutput) fprintf(stderr,"[NCCH ERROR] AccessDesc Sigcheck Failed\n");
@@ -799,7 +794,7 @@ int VerifyNcch(u8 *ncch, keys_struct *keys, bool CheckHash, bool SuppressOutput)
 		}
 		memcpy(exefs,ncch+ncchInfo->exefsOffset,ncchInfo->exefsHashDataSize);
 		if(IsNcchEncrypted(hdr))
-			CryptNcchRegion(exefs,ncchInfo->exefsHashDataSize,0,ncchInfo,keys->aes.ncchKey0,ncch_exefs);
+			CryptNcchRegion(exefs,ncchInfo->exefsHashDataSize,0,ncchInfo->titleId,keys->aes.ncchKey0,ncch_exefs);
 		if(!VerifySha256(exefs, ncchInfo->exefsHashDataSize, hdr->exefsHash)){
 			if(!SuppressOutput) fprintf(stderr,"[NCCH ERROR] ExeFs Hashcheck Failed\n");
 			free(ncchInfo);
@@ -819,7 +814,7 @@ int VerifyNcch(u8 *ncch, keys_struct *keys, bool CheckHash, bool SuppressOutput)
 		}
 		memcpy(romfs,ncch+ncchInfo->romfsOffset,ncchInfo->romfsHashDataSize);
 		if(IsNcchEncrypted(hdr))
-			CryptNcchRegion(romfs,ncchInfo->romfsHashDataSize,0,ncchInfo,keys->aes.ncchKey1,ncch_romfs);
+			CryptNcchRegion(romfs,ncchInfo->romfsHashDataSize,0,ncchInfo->titleId,keys->aes.ncchKey1,ncch_romfs);
 		if(!VerifySha256(romfs,ncchInfo->romfsHashDataSize,hdr->romfsHash)){
 			if(!SuppressOutput) fprintf(stderr,"[NCCH ERROR] RomFs Hashcheck Failed\n");
 			free(ncchInfo);
@@ -873,7 +868,7 @@ int ModifyNcchIds(u8 *ncch, u8 *titleId, u8 *programId, keys_struct *keys)
 			fprintf(stderr,"[NCCH ERROR] Failed to load ncch aes key\n");
 			return -1;
 		}
-		CryptNcchRegion(romfs,ncchInfo.romfsSize,0,&ncchInfo,keys->aes.ncchKey1,ncch_romfs);
+		CryptNcchRegion(romfs,ncchInfo.romfsSize,0,ncchInfo.titleId,keys->aes.ncchKey1,ncch_romfs);
 	}
 	
 	// Editing data and resigning
@@ -891,7 +886,7 @@ int ModifyNcchIds(u8 *ncch, u8 *titleId, u8 *programId, keys_struct *keys)
 			fprintf(stderr,"[NCCH ERROR] Failed to load ncch aes key\n");
 			return -1;
 		}
-		CryptNcchRegion(romfs,ncchInfo.romfsSize,0,&ncchInfo,keys->aes.ncchKey1,ncch_romfs);
+		CryptNcchRegion(romfs,ncchInfo.romfsSize,0,ncchInfo.titleId,keys->aes.ncchKey1,ncch_romfs);
 	}
 
 	return 0;
@@ -1016,15 +1011,14 @@ bool SetNcchKeys(keys_struct *keys, ncch_hdr *hdr)
 
 int GetNcchInfo(ncch_info *info, ncch_hdr *hdr)
 {
-	memcpy(info->titleId,hdr->titleId,8);
-	memcpy(info->programId,hdr->programId,8);
+	info->titleId = u8_to_u64(hdr->titleId,LE);
+	info->programId = u8_to_u64(hdr->programId,LE);
 
-	
 	u32 block_size = GetNcchBlockSize(hdr);
 	
 	info->formatVersion = u8_to_u16(hdr->formatVersion,LE);
 	if(!IsCfa(hdr)){
-		info->exhdrOffset = 0x200;
+		info->exhdrOffset = sizeof(ncch_hdr);
 		info->exhdrSize = u8_to_u32(hdr->exhdrSize,LE);
 		info->acexOffset = (info->exhdrOffset + info->exhdrSize);
 		info->acexSize = sizeof(access_descriptor);
@@ -1043,53 +1037,17 @@ int GetNcchInfo(ncch_info *info, ncch_hdr *hdr)
 	return 0;
 }
 
-void CryptNcchRegion(u8 *buffer, u64 size, u64 src_pos, ncch_info *ctx, u8 key[16], u8 type)
+void GetNcchAesCounter(u8 ctr[16], u64 titleId, u8 type)
 {
-	if(type < 1 || type > 3)
-		return;
-	u8 counter[0x10];
-	ctr_aes_context aes_ctx;
-	memset(&aes_ctx,0x0,sizeof(ctr_aes_context));
-	
-	GetNcchAesCounter(ctx,counter,type);	
-	ctr_init_counter(&aes_ctx, key, counter);
-	
-	if(src_pos > 0){
-		u32 carry = 0;
-		carry = align(src_pos,0x10);
-		carry /= 0x10;
-		ctr_add_counter(&aes_ctx,carry);
-	}
-	
-	ctr_crypt_counter(&aes_ctx, buffer, buffer, size);
-	return;
+	clrmem(ctr,16);	
+	u64_to_u8(ctr,titleId,BE);
+	ctr[8] = type;
 }
 
-void GetNcchAesCounter(ncch_info *ctx, u8 counter[16], u8 type)
+void CryptNcchRegion(u8 *buffer, u64 size, u64 src_pos, u64 titleId, u8 key[16], u8 type)
 {
-	u8 *titleId = ctx->titleId;
-	u32 i;
-	u32 x = 0;
-
-	memset(counter, 0, 16);
-
-	if (ctx->formatVersion == 2 || ctx->formatVersion == 0)
-	{
-		endian_memcpy(counter,titleId,8,LE);
-		counter[8] = type;
-	}
-	else if (ctx->formatVersion == 1)
-	{
-		switch(type){
-			case ncch_exhdr : x = ctx->exhdrOffset; break;
-			case ncch_exefs : x = ctx->exefsOffset; break;
-			case ncch_romfs : x = ctx->romfsOffset; break;
-		}
-		for(i=0; i<8; i++)
-			counter[i] = titleId[i];
-		for(i=0; i<4; i++)
-			counter[12+i] = x>>((3-i)*8);
-	}
-	
-	//memdump(stdout,"CTR: ",counter,16);
+	u8 ctr[0x10];
+	GetNcchAesCounter(ctr,titleId,type);	
+	AesCtr(key,ctr,buffer,buffer,size,src_pos);
+	return;
 }

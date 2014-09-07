@@ -16,115 +16,43 @@ void ctr_sha(void *data, u64 size, u8 *hash, int mode)
 	}
 }
 
-void ctr_add_counter(ctr_aes_context* ctx, u32 carry)
+void SetAesCtrOffset(u8 *ctr, u64 offset)
 {
-	u32 counter[4];
-	u32 sum;
-	int i;
-
-	for(i=0; i<4; i++)
-		counter[i] = (ctx->ctr[i*4+0]<<24) | (ctx->ctr[i*4+1]<<16) | (ctx->ctr[i*4+2]<<8) | (ctx->ctr[i*4+3]<<0);
-
-	for(i=3; i>=0; i--)
-	{
-		sum = counter[i] + carry;
-
-		if (sum < counter[i])
-			carry = 1;
-		else
-			carry = 0;
-
-		counter[i] = sum;
-	}
-
-	for(i=0; i<4; i++)
-	{
-		ctx->ctr[i*4+0] = counter[i]>>24;
-		ctx->ctr[i*4+1] = counter[i]>>16;
-		ctx->ctr[i*4+2] = counter[i]>>8;
-		ctx->ctr[i*4+3] = counter[i]>>0;
-	}
+	u64_to_u8(ctr+8,u8_to_u64(ctr+8,BE)|align(offset,16)/16,BE);
 }
 
-void ctr_init_counter(ctr_aes_context* ctx, u8 key[16], u8 ctr[16])
-{
-	aes_setkey_enc(&ctx->aes, key, 128);
-	memcpy(ctx->ctr, ctr, 16);
-}
-
-void ctr_crypt_counter_block(ctr_aes_context* ctx, u8 input[16], u8 output[16])
-{
-	int i;
-	u8 stream[16];
-
-
-	aes_crypt_ecb(&ctx->aes, AES_ENCRYPT, ctx->ctr, stream);
-
-
-	if (input)
-	{
-		for(i=0; i<16; i++)
-		{
-			output[i] = stream[i] ^ input[i];
-		}
-	}
-	else
-	{
-		for(i=0; i<16; i++)
-			output[i] = stream[i];
-	}
-
-	ctr_add_counter(ctx, 1);
-}
-
-void ctr_crypt_counter(ctr_aes_context* ctx, u8* input,  u8* output, u32 size)
+void AesCtr(u8 *key, u8 *ctr, u8 *input, u8 *output, u64 length, u64 offset)
 {
 	u8 stream[16];
-	u32 i;
-
-	while(size >= 16)
-	{
-		ctr_crypt_counter_block(ctx, input, output);
-
-		if (input)
-			input += 16;
-		if (output)
-			output += 16;
-
-		size -= 16;
-	}
-
-	if (size)
-	{
-		memset(stream, 0, 16);
-		ctr_crypt_counter_block(ctx, stream, stream);
-
-		if (input)
-		{
-			for(i=0; i<size; i++)
-				output[i] = input[i] ^ stream[i];
-		}
-		else
-		{
-			memcpy(output, stream, size);
-		}
-	}
+	aes_context aes;
+	u64 nc_off = 0;
+	
+	clrmem(&aes,sizeof(aes_context));
+	aes_setkey_enc(&aes, key, 128);
+	SetAesCtrOffset(ctr,offset);
+	
+	aes_crypt_ctr(&aes, length, &nc_off, ctr, stream, input, output);
+	
+	
+	return;
 }
 
-void ctr_init_aes_cbc(ctr_aes_context* ctx,u8 key[16],u8 iv[16], u8 mode)
+void AesCbc(u8 *key, u8 *iv, u8 *input, u8 *output, u64 length, u8 mode)
 {
+	aes_context aes;
+	clrmem(&aes,sizeof(aes_context));
+	
 	switch(mode){
-		case(ENC): aes_setkey_enc(&ctx->aes, key, 128); break;
-		case(DEC): aes_setkey_dec(&ctx->aes, key, 128); break;
-	}
-	memcpy(ctx->iv, iv, 16);
-}
-
-void ctr_aes_cbc(ctr_aes_context* ctx,u8* input,u8* output,u32 size,u8 mode)
-{
-	switch(mode){
-		case(ENC): aes_crypt_cbc(&ctx->aes, AES_ENCRYPT, size, ctx->iv, input, output); break;
-		case(DEC): aes_crypt_cbc(&ctx->aes, AES_DECRYPT, size, ctx->iv, input, output); break;
+		case(ENC): 
+			aes_setkey_enc(&aes, key, 128);
+			aes_crypt_cbc(&aes, AES_ENCRYPT, length, iv, input, output);
+			return;
+		case(DEC):
+			aes_setkey_dec(&aes, key, 128);
+			aes_crypt_cbc(&aes, AES_DECRYPT, length, iv, input, output); 
+			return;
+		default:
+			return;
 	}
 }
 
