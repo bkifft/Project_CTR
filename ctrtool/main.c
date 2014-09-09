@@ -53,6 +53,7 @@ static void usage(const char *argv0)
 		   "  -y, --verify       Verify hashes and signatures.\n"
 		   "  --unitsize=size    Set media unit size (default 0x200).\n"
 		   "  --commonkey=key    Set common key.\n"
+		   "  --titlekey=key     Set tik title key.\n"
 		   "  --ncchkey=key      Set ncch key.\n"
 		   "  --ncchsyskey=key   Set ncch fixed system key.\n"
 		   "  --showkeys         Show the keys being used.\n"
@@ -146,6 +147,7 @@ int main(int argc, char* argv[])
 			{"wavloops", 1, NULL, 19},
 			{"logo", 1, NULL, 20},
 			{"decompresscode", 0, NULL, 21},
+			{"titlekey", 1, NULL, 22},
 			{NULL},
 		};
 
@@ -233,6 +235,7 @@ int main(int argc, char* argv[])
 			case 19: settings_set_cwav_loopcount(&ctx.usersettings, strtoul(optarg, 0, 0)); break;
 			case 20: settings_set_logo_path(&ctx.usersettings, optarg); break;
 			case 21: ctx.actions |= DecompressCodeFlag; break;
+			case 22: keyset_parse_titlekey(&tmpkeys, optarg, strlen(optarg)); break;
 
 			default:
 				usage(argv[0]);

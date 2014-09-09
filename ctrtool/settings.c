@@ -152,6 +152,13 @@ unsigned char* settings_get_common_key(settings* usersettings)
 		return 0;
 }
 
+unsigned char* settings_get_title_key(settings* usersettings)
+{
+	if (usersettings && usersettings->keys.titlekey.valid)
+		return usersettings->keys.titlekey.data;
+	else
+		return 0;
+}
 
 int settings_get_ignore_programid(settings* usersettings)
 {
