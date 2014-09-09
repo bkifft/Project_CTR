@@ -222,7 +222,7 @@ void cia_process(cia_context* ctx, u32 actions)
 	tmd_set_offset(&ctx->tmd, ctx->offsettmd);
 	tmd_set_size(&ctx->tmd, ctx->sizetmd);
 	tmd_set_usersettings(&ctx->tmd, ctx->usersettings);
-	tmd_process(&ctx->tmd, actions);
+	tmd_process(&ctx->tmd, (actions & ~InfoFlag));
 
 	if (actions & VerifyFlag)
 	{
