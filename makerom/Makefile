@@ -9,7 +9,7 @@ LIB_API_OBJS = crypto.o yaml_parser.o blz.o
 OBJS = makerom.o $(UTILS_OBJS) $(LIB_API_OBJS) $(SETTINGS_OBJS) $(NCSD_OBJS) $(NCCH_OBJS) $(CIA_OBJS)
 
 # Libraries
-POLAR_OBJS = polarssl/aes.o polarssl/bignum.o polarssl/rsa.o polarssl/sha1.o polarssl/sha2.o polarssl/padlock.o polarssl/md.o polarssl/md_wrap.o polarssl/md2.o polarssl/md4.o polarssl/md5.o polarssl/sha4.o polarssl/base64.o polarssl/cipher.o polarssl/cipher_wrap.o polarssl/camellia.o polarssl/des.o polarssl/blowfish.o
+POLAR_OBJS = polarssl/aes.o polarssl/rsa.o  polarssl/sha1.o polarssl/sha2.o polarssl/base64.o polarssl/bignum.o polarssl/padlock.o polarssl/md.o polarssl/md_wrap.o polarssl/md5.o polarssl/sha4.o 
 YAML_OBJS = libyaml/api.o libyaml/dumper.o libyaml/emitter.o libyaml/loader.o libyaml/parser.o libyaml/reader.o libyaml/scanner.o libyaml/writer.o
 
 # Compiler Settings

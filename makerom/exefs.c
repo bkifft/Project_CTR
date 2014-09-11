@@ -65,19 +65,18 @@ u32 PredictExeFS_Size(exefs_buildctx *ctx)
 
 int GenerateExeFS_Header(exefs_buildctx *ctx, u8 *outbuff)
 {
+	exefs_hdr *exefs = (exefs_hdr*)outbuff;
 	for(int i = 0; i < ctx->fileCount; i++){
 		if(i == 0)
 			ctx->fileOffset[i] = 0;
 		else
 			ctx->fileOffset[i] = align((ctx->fileOffset[i-1]+ctx->fileSize[i-1]),ctx->blockSize);
 		
-		memcpy(ctx->fileHdr[i].name,ctx->fileName[i],8);
-		u32_to_u8(ctx->fileHdr[i].offset,ctx->fileOffset[i],LE);
-		u32_to_u8(ctx->fileHdr[i].size,ctx->fileSize[i],LE);
-		ctr_sha(ctx->file[i],ctx->fileSize[i],ctx->fileHashes[9-i],CTR_SHA_256);
+		memcpy(exefs->fileHdr[i].name,ctx->fileName[i],8);
+		u32_to_u8(exefs->fileHdr[i].offset,ctx->fileOffset[i],LE);
+		u32_to_u8(exefs->fileHdr[i].size,ctx->fileSize[i],LE);
+		ctr_sha(ctx->file[i],ctx->fileSize[i],exefs->fileHashes[MAX_EXEFS_SECTIONS-1-i],CTR_SHA_256);
 	}
-	memcpy(outbuff,ctx->fileHdr,sizeof(exefs_filehdr)*10);
-	memcpy(outbuff+0xc0,ctx->fileHashes,0x20*10);
 	return 0;
 }
 

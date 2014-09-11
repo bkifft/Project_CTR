@@ -217,12 +217,14 @@ void cia_process(cia_context* ctx, u32 actions)
 
 	if (settings_get_common_key(ctx->usersettings))
 		tik_get_decrypted_titlekey(&ctx->tik, ctx->titlekey);
-
+	else if(settings_get_title_key(ctx->usersettings))
+		memcpy(ctx->titlekey, settings_get_title_key(ctx->usersettings), 16);
+		
 	tmd_set_file(&ctx->tmd, ctx->file);
 	tmd_set_offset(&ctx->tmd, ctx->offsettmd);
 	tmd_set_size(&ctx->tmd, ctx->sizetmd);
 	tmd_set_usersettings(&ctx->tmd, ctx->usersettings);
-	tmd_process(&ctx->tmd, actions);
+	tmd_process(&ctx->tmd, (actions & ~InfoFlag));
 
 	if (actions & VerifyFlag)
 	{

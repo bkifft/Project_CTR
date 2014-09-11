@@ -20,7 +20,7 @@ typedef enum
 	EXEFS_CORRUPT = -14,
 	ROMFS_CORRUPT = -15,
 	// Others
-	NCCH_BAD_YAML_SET = -16,
+	NCCH_BAD_RSF_SET = -16,
 	DATA_POS_DNE = -17,
 } ncch_errors;
 
@@ -75,8 +75,8 @@ typedef struct
 	u64 romfsOffset;
 	u64 romfsSize;
 	u64 romfsHashDataSize;
-	u8 titleId[8];
-	u8 programId[8];
+	u64 titleId;
+	u64 programId;
 } ncch_info;
 
 typedef struct
@@ -113,7 +113,7 @@ typedef struct
 } ncch_hdr;
 
 // NCCH Read Functions
-int VerifyNcch(u8 *ncch, keys_struct *keys, bool CheckHash, bool SuppressOutput);
+int VerifyNcch(u8 *ncch, keys_struct *keys, bool checkHash, bool suppressOutput);
 
 int ModifyNcchIds(u8 *ncch, u8 *titleId, u8 *programId, keys_struct *keys);
 
@@ -130,5 +130,5 @@ u64 GetNcchSize(ncch_hdr* hdr);
 bool IsNcchEncrypted(ncch_hdr *hdr);
 bool SetNcchKeys(keys_struct *keys, ncch_hdr *hdr);
 int GetNcchInfo(ncch_info *ctx, ncch_hdr *header);
-void GetNcchAesCounter(ncch_info *ctx, u8 counter[16], u8 type);
-void CryptNcchRegion(u8 *buffer, u64 size, u64 src_pos, ncch_info *ctx, u8 key[16], u8 type);
+void GetNcchAesCounter(u8 ctr[16], u64 titleId, u8 type);
+void CryptNcchRegion(u8 *buffer, u64 size, u64 src_pos, u64 titleId, u8 key[16], u8 type);

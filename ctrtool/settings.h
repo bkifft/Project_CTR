@@ -47,6 +47,7 @@ unsigned int settings_get_mediaunit_size(settings* usersettings);
 unsigned char* settings_get_ncch_key(settings* usersettings);
 unsigned char* settings_get_ncch_fixedsystemkey(settings* usersettings);
 unsigned char* settings_get_common_key(settings* usersettings);
+unsigned char* settings_get_title_key(settings* usersettings);
 int settings_get_ignore_programid(settings* usersettings);
 int settings_get_list_romfs_files(settings* usersettings);
 int settings_get_cwav_loopcount(settings* usersettings);

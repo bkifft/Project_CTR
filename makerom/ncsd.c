@@ -150,9 +150,9 @@ int ImportNcchForCci(cci_settings *set)
 	return 0;
 }
 
-bool CanCiaBeCci(u16 cat, u16 count, tmd_content_chunk *content)
+bool CanCiaBeCci(u64 titleId, u16 count, tmd_content_chunk *content)
 {
-	if(cat != PROGRAM_ID_CATEGORY_APPLICATION && cat != PROGRAM_ID_CATEGORY_SYSTEM_APPLICATION)
+	if(GetTidCategory(titleId) != PROGRAM_ID_CATEGORY_APPLICATION && GetTidCategory(titleId) != PROGRAM_ID_CATEGORY_SYSTEM_APPLICATION)
 		return false;
 		
 	if(count > CCI_MAX_CONTENT)
@@ -235,7 +235,6 @@ int ProcessCiaForCci(cci_settings *set)
 	tmd_content_chunk *contentInfo = GetTmdContentInfo(GetCiaTmd(set->content.data));
 	u64 contentOffset = GetCiaContentOffset((cia_hdr*)set->content.data);
 	
-	u16 titleCat = (GetTmdTitleId(tmd) >> 32) & 0xffff;
 	u16 contentCount = GetTmdContentCount(tmd);
 	set->romInfo.saveSize = GetTmdSaveSize(tmd);
 	if(set->romInfo.saveSize > 0 && set->romInfo.saveSize < (u64)(128*KB))
@@ -245,7 +244,7 @@ int ProcessCiaForCci(cci_settings *set)
 	else if(set->romInfo.saveSize > (u64)(512*KB))
 		set->romInfo.saveSize = align(set->romInfo.saveSize,MB);
 	
-	if(!CanCiaBeCci(titleCat,contentCount,contentInfo)){
+	if(!CanCiaBeCci(GetTmdTitleId(tmd),contentCount,contentInfo)){
 		fprintf(stderr,"[CCI ERROR] This CIA cannot be converted to CCI\n");
 		return INCOMPAT_CIA;
 	}
@@ -269,9 +268,8 @@ int ProcessCiaForCci(cci_settings *set)
 		set->content.dSize[index] = GetTmdContentSize(contentInfo[i]);
 		u8 *content = set->content.data + contentOffset;
 		if(IsTmdContentEncrypted(contentInfo[i])){
-			if(canDecrypt){
+			if(canDecrypt)
 				CryptContent(content,content,set->content.dSize[index],titleKey,i,DEC);
-			}
 			else{
 				fprintf(stderr,"[CCI ERROR] Failed to decrypt CIA content: 0x%08x\n",GetTmdContentId(contentInfo[i]));
 				return INCOMPAT_CIA;

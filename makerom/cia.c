@@ -289,7 +289,7 @@ int GetTmdDataFromNcch(cia_settings *ciaset, u8 *ncch, ncch_info *ncch_ctx, u8 *
 	extended_hdr *exhdr = malloc(sizeof(extended_hdr));
 	memcpy(exhdr,ncch+ncch_ctx->exhdrOffset,sizeof(extended_hdr));
 	if(key != NULL)
-		CryptNcchRegion((u8*)exhdr,sizeof(extended_hdr),0,ncch_ctx,key,ncch_exhdr);
+		CryptNcchRegion((u8*)exhdr,sizeof(extended_hdr),0,ncch_ctx->titleId,key,ncch_exhdr);
 		
 	if(IsPatch(GetTidCategory(ciaset->common.titleId))||ciaset->content.IsCfa) 
 		ciaset->tmd.savedataSize = 0;
@@ -334,12 +334,12 @@ int GetMetaRegion(cia_settings *ciaset, u8 *ncch, ncch_info *info, u8 *key)
 	extended_hdr *exhdr = malloc(sizeof(extended_hdr));
 	memcpy(exhdr,ncch+info->exhdrOffset,sizeof(extended_hdr));
 	if(key != NULL)
-		CryptNcchRegion((u8*)exhdr,sizeof(extended_hdr),0,info,key,ncch_exhdr);
+		CryptNcchRegion((u8*)exhdr,sizeof(extended_hdr),0,info->titleId,key,ncch_exhdr);
 
 	exefs_hdr *exefsHdr = malloc(sizeof(exefs_hdr));
 	memcpy(exefsHdr,ncch+info->exefsOffset,sizeof(exefs_hdr));
 	if(key != NULL)
-		CryptNcchRegion((u8*)exefsHdr,sizeof(exefs_hdr),0,info,key,ncch_exefs);
+		CryptNcchRegion((u8*)exefsHdr,sizeof(exefs_hdr),0,info->titleId,key,ncch_exefs);
 
 	u32 icon_size = 0;
 	u32 icon_offset = 0;
@@ -364,7 +364,7 @@ int GetMetaRegion(cia_settings *ciaset, u8 *ncch, ncch_info *info, u8 *key)
 		u8 *IconDestPos = (ciaset->ciaSections.meta.buffer + sizeof(cia_metadata));
 		memcpy(IconDestPos,ncch+info->exefsOffset+icon_offset,icon_size);
 		if(key != NULL)
-			CryptNcchRegion(IconDestPos,icon_size,icon_offset,info,key,ncch_exefs);
+			CryptNcchRegion(IconDestPos,icon_size,icon_offset,info->titleId,key,ncch_exefs);
 		//memdump(stdout,"Icon: ",IconDestPos,0x10);
 	}
 
@@ -628,7 +628,7 @@ int BuildCiaHdr(cia_settings *ciaset)
 	ciaset->ciaSections.metaOffset = align(ciaset->ciaSections.contentOffset+ciaset->content.totalSize,0x40);
 	
 	for(int i = 0; i < ciaset->content.count; i++)
-		hdr->contentIndex[ciaset->content.index[i]/8] |= 1 << (7 - (ciaset->content.index[i] & 7));
+		hdr->contentIndex[ciaset->content.index[i]/8] |= 0x80 >> (ciaset->content.index[i] & 7);
 		
 	return 0;
 }
@@ -645,19 +645,15 @@ int WriteCiaToFile(cia_settings *ciaset)
 }
 
 
-int CryptContent(u8 *enc, u8 *dec, u64 size, u8 *title_key, u16 index, u8 mode)
+int CryptContent(u8 *input, u8 *output, u64 size, u8 *title_key, u16 index, u8 mode)
 {
 	//generating IV
 	u8 iv[16];
-	memset(&iv,0x0,16);
+	clrmem(&iv,16);
 	iv[0] = (index >> 8) & 0xff;
 	iv[1] = index & 0xff;
 	//Crypting content
-	ctr_aes_context ctx;
-	memset(&ctx,0x0,sizeof(ctr_aes_context));
-	ctr_init_aes_cbc(&ctx,title_key,iv,mode);
-	if(mode == ENC) ctr_aes_cbc(&ctx,dec,enc,size,ENC);
-	else ctr_aes_cbc(&ctx,enc,dec,size,DEC);
+	AesCbc(title_key,iv,input,output,size,mode);
 	return 0;
 }
 

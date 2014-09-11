@@ -26,6 +26,7 @@ typedef enum
 	FILETYPE_LZSS,
 	FILETYPE_FIRM,
 	FILETYPE_CWAV,
+	FILETYPE_EXEFS,
 	FILETYPE_ROMFS
 } ctr_filetypes;
 

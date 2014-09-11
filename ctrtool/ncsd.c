@@ -28,6 +28,11 @@ void ncsd_set_size(ncsd_context* ctx, u32 size)
 	ctx->size = size;
 }
 
+void ncsd_set_ncch_index(ncsd_context* ctx, u32 ncch_index)
+{
+	ctx->ncch_index = ncch_index;
+}
+
 void ncsd_set_usersettings(ncsd_context* ctx, settings* usersettings)
 {
 	ctx->usersettings = usersettings;
@@ -74,9 +79,15 @@ void ncsd_process(ncsd_context* ctx, u32 actions)
 	if (actions & InfoFlag)
 		ncsd_print(ctx);
 
+	if(ctx->ncch_index > 7 || ctx->header.partitiongeometry[ctx->ncch_index].size == 0)
+	{
+		fprintf(stderr," ERROR NCSD partition %d, does not exist\n",ctx->ncch_index);
+		return;
+	}
+		
 	ncch_set_file(&ctx->ncch, ctx->file);
-	ncch_set_offset(&ctx->ncch, ctx->header.partitiongeometry[0].offset * ncsd_get_mediaunit_size(ctx));
-	ncch_set_size(&ctx->ncch, ctx->header.partitiongeometry[0].size * ncsd_get_mediaunit_size(ctx));
+	ncch_set_offset(&ctx->ncch, ctx->header.partitiongeometry[ctx->ncch_index].offset * ncsd_get_mediaunit_size(ctx));
+	ncch_set_size(&ctx->ncch, ctx->header.partitiongeometry[ctx->ncch_index].size * ncsd_get_mediaunit_size(ctx));
 	ncch_set_usersettings(&ctx->ncch, ctx->usersettings);
 	ncch_process(&ctx->ncch, actions);
 }

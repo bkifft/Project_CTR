@@ -43,6 +43,7 @@ typedef struct
 typedef struct
 {
 	key128 commonkey;
+	key128 titlekey;
 	key128 ncchkey;
 	key128 ncchfixedsystemkey;
 	rsakey2048 ncsdrsakey;
@@ -56,6 +57,8 @@ int keyset_load(keyset* keys, const char* fname, int verbose);
 void keyset_merge(keyset* keys, keyset* src);
 void keyset_set_commonkey(keyset* keys, unsigned char* keydata);
 void keyset_parse_commonkey(keyset* keys, char* keytext, int keylen);
+void keyset_set_titlekey(keyset* keys, unsigned char* keydata);
+void keyset_parse_titlekey(keyset* keys, char* keytext, int keylen);
 void keyset_set_ncchkey(keyset* keys, unsigned char* keydata);
 void keyset_parse_ncchkey(keyset* keys, char* keytext, int keylen);
 void keyset_set_ncchfixedsystemkey(keyset* keys, unsigned char* keydata);

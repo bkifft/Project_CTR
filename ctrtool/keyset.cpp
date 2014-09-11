@@ -175,6 +175,8 @@ void keyset_merge(keyset* keys, keyset* src)
 		keyset_set_key128(&keys->ncchfixedsystemkey, src->ncchfixedsystemkey.data);
 	if (src->commonkey.valid)
 		keyset_set_key128(&keys->commonkey, src->commonkey.data);
+	if (src->titlekey.valid)
+		keyset_set_key128(&keys->titlekey, src->titlekey.data);
 }
 
 void keyset_set_key128(key128* key, unsigned char* keydata)
@@ -196,6 +198,16 @@ void keyset_set_commonkey(keyset* keys, unsigned char* keydata)
 void keyset_parse_commonkey(keyset* keys, char* keytext, int keylen)
 {
 	keyset_parse_key128(&keys->commonkey, keytext, keylen);
+}
+
+void keyset_set_titlekey(keyset* keys, unsigned char* keydata)
+{
+	keyset_set_key128(&keys->titlekey, keydata);
+}
+
+void keyset_parse_titlekey(keyset* keys, char* keytext, int keylen)
+{
+	keyset_parse_key128(&keys->titlekey, keytext, keylen);
 }
 
 void keyset_set_ncchkey(keyset* keys, unsigned char* keydata)

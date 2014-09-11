@@ -11,6 +11,7 @@ u32 GetContentIndexSegNum(cia_settings *set);
 void SetContentIndexHeader(tik_content_index_hdr *hdr, cia_settings *set);
 void SetContentIndexData(tik_content_index_struct *data, cia_settings *set);
 
+int CryptTitleKey(u8 *input, u8 *output, u8 *titleId, keys_struct *keys, u8 mode);
 
 int BuildTicket(cia_settings *set)
 {
@@ -67,7 +68,7 @@ void SetupTicketHeader(tik_hdr *hdr, cia_settings *ciaset)
 	
 	// Crypt TitleKey
 	if(ciaset->content.encryptCia)
-		CryptTitleKey(hdr->encryptedTitleKey, ciaset->common.titleKey, hdr->titleId, ciaset->keys, ENC);
+		CryptTitleKey(ciaset->common.titleKey, hdr->encryptedTitleKey, hdr->titleId, ciaset->keys, ENC);
 	else
 		rndset(hdr->encryptedTitleKey,AES_128_KEY_SIZE);
 }
@@ -85,21 +86,15 @@ int SignTicketHeader(buffer_struct *tik, keys_struct *keys)
 	return ctr_sig(data,len,sig->data,keys->rsa.xsPub,keys->rsa.xsPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
 }
 
-int CryptTitleKey(u8 *encKey, u8 *decKey, u8 *titleId, keys_struct *keys, u8 mode)
+int CryptTitleKey(u8 *input, u8 *output, u8 *titleId, keys_struct *keys, u8 mode)
 {
 	//Generating IV
 	u8 iv[16];
-	memset(&iv,0x0,16);
+	clrmem(&iv,16);
 	memcpy(iv,titleId,0x8);
-	
-	//Setting up Aes Context
-	ctr_aes_context ctx;
-	clrmem(&ctx,sizeof(ctr_aes_context));
-	
+		
 	//Crypting TitleKey
-	ctr_init_aes_cbc(&ctx,keys->aes.commonKey[keys->aes.currentCommonKey],iv,mode);
-	if(mode == ENC) ctr_aes_cbc(&ctx,decKey,encKey,0x10,ENC);
-	else ctr_aes_cbc(&ctx,encKey,decKey,0x10,DEC);
+	AesCbc(keys->aes.commonKey[keys->aes.currentCommonKey],iv,input,output,0x10,mode);
 	
 	// Return
 	return 0;
