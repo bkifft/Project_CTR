@@ -15,9 +15,8 @@ int CryptTitleKey(u8 *input, u8 *output, u8 *titleId, keys_struct *keys, u8 mode
 
 int BuildTicket(cia_settings *set)
 {
-	int result = 0;
-	result = SetupTicketBuffer(set);
-	if(result) return result;
+	if(SetupTicketBuffer(set)) 
+		return MEM_ERROR;
 	
 	// Setting Ticket Struct Ptrs
 	buffer_struct *tik = &set->ciaSections.tik;
@@ -31,8 +30,7 @@ int BuildTicket(cia_settings *set)
 	SetContentIndexHeader(idxHdr,set);
 	SetContentIndexData(idxData,set);
 	
-	result = SignTicketHeader(tik,set->keys);
-	return 0;
+	return SignTicketHeader(tik,set->keys);
 }
 
 int SetupTicketBuffer(cia_settings *set)
@@ -83,7 +81,7 @@ int SignTicketHeader(buffer_struct *tik, keys_struct *keys)
 	clrmem(sig,sizeof(tik_signature));
 	u32_to_u8(sig->sigType,RSA_2048_SHA256,BE);
 	
-	return ctr_sig(data,len,sig->data,keys->rsa.xsPub,keys->rsa.xsPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
+	return RsaSignVerify(data,len,sig->data,keys->rsa.xsPub,keys->rsa.xsPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
 }
 
 int CryptTitleKey(u8 *input, u8 *output, u8 *titleId, keys_struct *keys, u8 mode)
@@ -94,7 +92,7 @@ int CryptTitleKey(u8 *input, u8 *output, u8 *titleId, keys_struct *keys, u8 mode
 	memcpy(iv,titleId,0x8);
 		
 	//Crypting TitleKey
-	AesCbc(keys->aes.commonKey[keys->aes.currentCommonKey],iv,input,output,0x10,mode);
+	AesCbcCrypt(keys->aes.commonKey[keys->aes.currentCommonKey],iv,input,output,0x10,mode);
 	
 	// Return
 	return 0;

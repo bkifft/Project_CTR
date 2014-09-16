@@ -75,7 +75,7 @@ int GenerateExeFS_Header(exefs_buildctx *ctx, u8 *outbuff)
 		memcpy(exefs->fileHdr[i].name,ctx->fileName[i],8);
 		u32_to_u8(exefs->fileHdr[i].offset,ctx->fileOffset[i],LE);
 		u32_to_u8(exefs->fileHdr[i].size,ctx->fileSize[i],LE);
-		ctr_sha(ctx->file[i],ctx->fileSize[i],exefs->fileHashes[MAX_EXEFS_SECTIONS-1-i],CTR_SHA_256);
+		ShaCalc(ctx->file[i],ctx->fileSize[i],exefs->fileHashes[MAX_EXEFS_SECTIONS-1-i],CTR_SHA_256);
 	}
 	return 0;
 }

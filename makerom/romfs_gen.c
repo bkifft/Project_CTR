@@ -467,7 +467,7 @@ void GenIvfcHashTree(romfs_buildctx *ctx)
 		for(u32 j = 0; j < numHashes; j++){
 			u8 *datapos = (u8*)(ctx->level[i+1].pos + ROMFS_BLOCK_SIZE * j);
 			u8 *hashpos = (u8*)(ctx->level[i].pos + 0x20 * j);
-			ctr_sha(datapos, ROMFS_BLOCK_SIZE, hashpos, CTR_SHA_256);
+			ShaCalc(datapos, ROMFS_BLOCK_SIZE, hashpos, CTR_SHA_256);
 		}
 	}
 	

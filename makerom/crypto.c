@@ -1,14 +1,24 @@
 #include "lib.h"
 #include "crypto.h"
 
+const u8 RSA_PUB_EXP[0x3] = {0x01,0x00,0x01};
+const int HASH_MAX_LEN = 0x20;
+
+int ctr_rsa_rsassa_pkcs1_v15_sign( rsa_context *ctx,
+                               int mode,
+                               int hash_id,
+                               unsigned int hashlen,
+                               const unsigned char *hash,
+                               unsigned char *sig );
+
 bool VerifySha256(void *data, u64 size, u8 hash[32])
 {
 	u8 calchash[32];
-	ctr_sha(data, size, calchash, CTR_SHA_256);
+	ShaCalc(data, size, calchash, CTR_SHA_256);
 	return memcmp(hash,calchash,32) == 0;
 }
 
-void ctr_sha(void *data, u64 size, u8 *hash, int mode)
+void ShaCalc(void *data, u64 size, u8 *hash, int mode)
 {
 	switch(mode){
 		case(CTR_SHA_1): sha1((u8*)data, size, hash); break;
@@ -21,7 +31,7 @@ void SetAesCtrOffset(u8 *ctr, u64 offset)
 	u64_to_u8(ctr+8,u8_to_u64(ctr+8,BE)|align(offset,16)/16,BE);
 }
 
-void AesCtr(u8 *key, u8 *ctr, u8 *input, u8 *output, u64 length, u64 offset)
+void AesCtrCrypt(u8 *key, u8 *ctr, u8 *input, u8 *output, u64 length, u64 offset)
 {
 	u8 stream[16];
 	aes_context aes;
@@ -37,7 +47,7 @@ void AesCtr(u8 *key, u8 *ctr, u8 *input, u8 *output, u64 length, u64 offset)
 	return;
 }
 
-void AesCbc(u8 *key, u8 *iv, u8 *input, u8 *output, u64 length, u8 mode)
+void AesCbcCrypt(u8 *key, u8 *iv, u8 *input, u8 *output, u64 length, u8 mode)
 {
 	aes_context aes;
 	clrmem(&aes,sizeof(aes_context));
@@ -56,168 +66,138 @@ void AesCbc(u8 *key, u8 *iv, u8 *input, u8 *output, u64 length, u8 mode)
 	}
 }
 
-void ctr_rsa_free(ctr_rsa_context* ctx)
-{
-	rsa_free(&ctx->rsa);
-}
-
-int ctr_rsa_init(ctr_rsa_context* ctx, u8 *modulus, u8 *private_exp, u8 *exponent, u8 rsa_type, u8 mode)
+bool RsaKeyInit(rsa_context* ctx, u8 *modulus, u8 *private_exp, u8 *exponent, u8 rsa_type)
 {
 	// Sanity Check
-	if(ctx == NULL || modulus == NULL ||(private_exp == NULL && mode == RSAKEY_PRIV) || (exponent == NULL && mode == RSAKEY_PUB))
-		return Fail;
-	rsa_init(&ctx->rsa, RSA_PKCS_V15, 0);
+	if(!ctx)
+		return false;
+	
+	rsa_init(ctx, RSA_PKCS_V15, 0);
+	
 	u16 n_size = 0;
 	u16 d_size = 0;
 	u16 e_size = 0;
+	
 	switch(rsa_type){
 		case RSA_2048:
-			ctx->rsa.len = 0x100;
+			ctx->len = 0x100;
 			n_size = 0x100;
 			d_size = 0x100;
 			e_size = 3;
 			break;
 		case RSA_4096:
-			ctx->rsa.len = 0x200;
+			ctx->len = 0x200;
 			n_size = 0x200;
 			d_size = 0x200;
 			e_size = 3;
 			break;
-		default: return Fail;
+		default: return false;
 	}
-		
-	switch(mode){
-		case(RSAKEY_PUB):
-			if (mpi_read_binary(&ctx->rsa.N, modulus, n_size))
-				goto clean;
-			if (mpi_read_binary(&ctx->rsa.E, exponent, e_size))
-				goto clean;
-			break;
-		case(RSAKEY_PRIV):
-			if (mpi_read_binary(&ctx->rsa.N, modulus, n_size))
-				goto clean;
-			if (mpi_read_binary(&ctx->rsa.D, private_exp, d_size))
-				goto clean;
-			break;
-		default: return Fail;
-	}
+	
+	if (modulus && mpi_read_binary(&ctx->N, modulus, n_size))
+		goto clean;
+	if (exponent && mpi_read_binary(&ctx->E, exponent, e_size))
+		goto clean;
+	if (private_exp && mpi_read_binary(&ctx->D, private_exp, d_size))
+		goto clean;
+	
 
-	return Good;
+	return true;
 clean:
-	ctr_rsa_free(ctx);
-	return Fail;
+	rsa_free(ctx);
+	return false;
 }
 
-int ctr_sig(void *data, u64 size, u8 *signature, u8 *modulus, u8 *private_exp, u32 type, u8 mode)
+u8 GetRsaType(u32 sig_type)
 {
-	int result = 0;
-	int hashtype, hashlen, sigtype;
-	if(data == NULL || signature == NULL || modulus == NULL ||(private_exp == NULL && mode == CTR_RSA_SIGN))
-		return Fail;
-		
-	switch(type){
+	switch(sig_type){
 		case RSA_4096_SHA1:
-			hashtype = CTR_SHA_1;
-			hashlen = 0x14;
-			sigtype = RSA_4096;
 		case RSA_4096_SHA256:
-			hashtype = CTR_SHA_256;
-			hashlen = 0x20;
-			sigtype = RSA_4096;
-			break;
+			return RSA_4096;
 		case RSA_2048_SHA1:
-			hashtype = CTR_SHA_1;
-			hashlen = 0x14;
-			sigtype = RSA_2048;
 		case RSA_2048_SHA256:
-			hashtype = CTR_SHA_256;
-			hashlen = 0x20;
-			sigtype = RSA_2048;
-			break;
-		case ECC_SHA1:
-			hashtype = CTR_SHA_1;
-			hashlen = 0x14;
-			sigtype = ECC;
-		case ECC_SHA256:
-			hashtype = CTR_SHA_256;
-			hashlen = 0x20;
-			sigtype = ECC;
-			break;
-		default: return Fail;
+			return RSA_2048;			
 	}
-	
-	u8 hash[hashlen];
-	memset(hash,0,hashlen);
-	ctr_sha(data,size,hash,hashtype);
-	//memdump(stdout,"Data:        ",data,size);
-	//memdump(stdout,"HashFor Sig: ",hash,hashlen);
-	
-	if(sigtype == RSA_2048 || sigtype == RSA_4096)
-		result = ctr_rsa(hash,signature,modulus,private_exp,type,mode);
-	else if(sigtype == ECC){
-		printf("[!] ECC is not yet implemented\n");
-		result = Fail;
-	}
-	return result;
+	return INVALID_SIG_TYPE;
 }
 
-int ctr_rsa(u8 *hash, u8 *signature, u8 *modulus, u8 *private_exp, u32 type, u8 mode)
+u32 GetSigHashType(u32 sig_type)
 {
-	int result = 0;
-	// Sanity Check
-	if(hash == NULL || signature == NULL || modulus == NULL ||(private_exp == NULL && mode == CTR_RSA_SIGN))
-		return Fail;
-	
-	// Getting details from sig type
-	int hashtype;
-	int hashlen;
-	int sigtype;
-	switch(type){
-			case RSA_4096_SHA1:
-				hashtype = SIG_RSA_SHA1;
-				hashlen = 0x14;
-				sigtype = RSA_4096;
-				break;
-			case RSA_4096_SHA256:
-				hashtype = SIG_RSA_SHA256;
-				hashlen = 0x14;
-				sigtype = RSA_4096;
-				break;
-			case RSA_2048_SHA1:
-				hashtype = SIG_RSA_SHA1;
-				hashlen = 0x20;
-				sigtype = RSA_2048;
-				break;
-			case RSA_2048_SHA256:
-				hashtype = SIG_RSA_SHA256;
-				hashlen = 0x20;
-				sigtype = RSA_2048;
-				break;
-			default: return Fail;
+	switch(sig_type){
+		case RSA_4096_SHA1:
+		case RSA_2048_SHA1:
+		case ECC_SHA1:
+			return CTR_SHA_1;
+		case RSA_4096_SHA256:
+		case RSA_2048_SHA256:
+		case ECC_SHA256:
+			return CTR_SHA_256;
 	}
-	
-	// Setting up
-	ctr_rsa_context ctx;
-	u8 exponent[3] = {0x01,0x00,0x01};
-	switch(mode){
-		case CTR_RSA_VERIFY: 
-			result = ctr_rsa_init(&ctx,modulus,NULL,(u8*)exponent,sigtype,RSAKEY_PUB);
-			break;
-		case CTR_RSA_SIGN: 
-			result = ctr_rsa_init(&ctx,modulus,private_exp,NULL,sigtype,RSAKEY_PRIV);
-			break;
-	}
-	if(result)return result;
-	
-	switch(mode){
-		case CTR_RSA_VERIFY: 
-			return rsa_pkcs1_verify(&ctx.rsa,RSA_PUBLIC,hashtype,hashlen,hash,signature);
-		case CTR_RSA_SIGN: 
-			return ctr_rsa_rsassa_pkcs1_v15_sign(&ctx.rsa,RSA_PRIVATE,hashtype,hashlen,hash,signature);
-	}
-	return Fail;
-} 
+	return 0;
+}
 
+int GetRsaHashType(u32 sig_type)
+{
+	switch(sig_type){
+		case RSA_4096_SHA1:
+		case RSA_2048_SHA1:
+			return SIG_RSA_SHA1;
+		case RSA_4096_SHA256:
+		case RSA_2048_SHA256:
+			return SIG_RSA_SHA256;
+	}
+	return 0;
+}
+
+u32 GetSigHashLen(u32 sig_type)
+{
+	switch(sig_type){
+		case RSA_4096_SHA1:
+			return 0x14;
+		case RSA_4096_SHA256:
+			return 0x20;
+		case RSA_2048_SHA1:
+			return 0x14;
+		case RSA_2048_SHA256:
+			return 0x20;
+		case ECC_SHA1:
+			return 0x14;
+		case ECC_SHA256:
+			return 0x20;
+	}
+	return 0;
+}
+
+bool CalcHashForSign(void *data, u64 len, u8 *hash, u32 sig_type)
+{
+	if(GetSigHashType(sig_type) == 0)
+		return false;
+
+	ShaCalc(data, len, hash, GetSigHashType(sig_type));
+	
+	return true;
+}
+
+int RsaSignVerify(void *data, u64 len, u8 *sign, u8 *mod, u8 *priv_exp, u32 sig_type, u8 rsa_mode)
+{
+	int rsa_result = 0;
+	rsa_context ctx;
+	u8 hash[HASH_MAX_LEN];
+		
+	if(!RsaKeyInit(&ctx, mod, priv_exp, (u8*)RSA_PUB_EXP, GetRsaType(sig_type)))
+		return -1;
+		
+	if(!CalcHashForSign(data, len, hash, sig_type))
+		return -1;		
+
+	if(rsa_mode == CTR_RSA_VERIFY)
+		rsa_result = rsa_pkcs1_verify(&ctx, RSA_PUBLIC, GetRsaHashType(sig_type), 0, hash, sign);
+	else // CTR_RSA_SIGN
+		rsa_result = ctr_rsa_rsassa_pkcs1_v15_sign(&ctx, RSA_PRIVATE, GetRsaHashType(sig_type), 0, hash, sign);
+	
+	rsa_free(&ctx);
+	return rsa_result;
+}
 
 /**
 *  Hacked from rsa.c, polarssl doesn't like generating signatures when only D and N are present

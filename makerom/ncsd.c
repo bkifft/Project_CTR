@@ -10,7 +10,6 @@
 #include "cardinfo.h"
 #include "titleid.h"
 
-
 const int NCCH0_OFFSET = 0x4000;
 const int CCI_BLOCK_SIZE = 0x200;
 
@@ -288,15 +287,15 @@ int ProcessCiaForCci(cci_settings *set)
 
 int ImportCciNcch(cci_settings *set)
 {
+	if(set->rsf->SystemControlInfo.SaveDataSize)
+		GetSaveDataSizeFromString(&set->romInfo.saveSize,set->rsf->SystemControlInfo.SaveDataSize,"CCI");
+
 	if(set->content.dataType == infile_ncch)
 		return ImportNcchForCci(set);
 	else if(set->content.dataType == infile_cia)
 		return ProcessCiaForCci(set);
 	else
-		fprintf(stderr,"[CCI ERROR] Unrecognised input data type\n");
-	
-	if(set->rsf->SystemControlInfo.SaveDataSize)
-		GetSaveDataSizeFromString(&set->romInfo.saveSize,set->rsf->SystemControlInfo.SaveDataSize,"CCI");
+		fprintf(stderr,"[CCI ERROR] Unrecognised input data type\n");	
 	
 	return FAILED_TO_IMPORT_FILE;
 }
@@ -594,7 +593,7 @@ int GenCciHdr(cci_settings *set)
 	SetCciNcchInfo(hdr,set);
 	
 	// Sign Header
-	ctr_sig(&hdr->magic,sizeof(cci_hdr)-RSA_2048_KEY_SIZE,hdr->signature,set->keys->rsa.cciCfaPub,set->keys->rsa.cciCfaPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
+	RsaSignVerify(&hdr->magic,sizeof(cci_hdr)-RSA_2048_KEY_SIZE,hdr->signature,set->keys->rsa.cciCfaPub,set->keys->rsa.cciCfaPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
 	
 	return 0;
 }

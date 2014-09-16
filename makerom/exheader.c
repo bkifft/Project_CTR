@@ -53,16 +53,16 @@ int get_ExHeaderARM9AccessControlInfo(exhdr_ARM9AccessControlInfo *arm9, rsf_set
 /* ExHeader Signature Functions */
 int SignAccessDesc(access_descriptor *acexDesc, keys_struct *keys)
 {
-	u8 *AccessDesc = (u8*) &acexDesc->ncchRsaPubKey;
-	u8 *Signature = (u8*) &acexDesc->signature;
-	return ctr_sig(AccessDesc,0x300,Signature,keys->rsa.acexPub,keys->rsa.acexPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
+	u8 *data = (u8*) &acexDesc->ncchRsaPubKey;
+	u8 *sign = (u8*) &acexDesc->signature;
+	return RsaSignVerify(data,0x300,sign,keys->rsa.acexPub,keys->rsa.acexPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
 }
 
 int CheckAccessDescSignature(access_descriptor *acexDesc, keys_struct *keys)
 {
-	u8 *AccessDesc = (u8*) &acexDesc->ncchRsaPubKey;
-	u8 *Signature = (u8*) &acexDesc->signature;
-	return ctr_sig(AccessDesc,0x300,Signature,keys->rsa.acexPub,NULL,RSA_2048_SHA256,CTR_RSA_VERIFY);
+	u8 *data = (u8*) &acexDesc->ncchRsaPubKey;
+	u8 *sign = (u8*) &acexDesc->signature;
+	return RsaSignVerify(data,0x300,sign,keys->rsa.acexPub,NULL,RSA_2048_SHA256,CTR_RSA_VERIFY);
 }
 
 /* ExHeader Build Functions */
