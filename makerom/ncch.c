@@ -34,22 +34,22 @@ bool IsValidProductCode(char *ProductCode, bool FreeProductCode);
 // Code
 int SignCFA(ncch_hdr *hdr, keys_struct *keys)
 {
-	return ctr_sig(GetNcchHdrData(hdr),GetNcchHdrDataLen(hdr),GetNcchHdrSig(hdr),keys->rsa.cciCfaPub,keys->rsa.cciCfaPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
+	return RsaSignVerify(GetNcchHdrData(hdr),GetNcchHdrDataLen(hdr),GetNcchHdrSig(hdr),keys->rsa.cciCfaPub,keys->rsa.cciCfaPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
 }
 
 int CheckCFASignature(ncch_hdr *hdr, keys_struct *keys)
 {
-	return ctr_sig(GetNcchHdrData(hdr),GetNcchHdrDataLen(hdr),GetNcchHdrSig(hdr),keys->rsa.cciCfaPub,NULL,RSA_2048_SHA256,CTR_RSA_VERIFY);
+	return RsaSignVerify(GetNcchHdrData(hdr),GetNcchHdrDataLen(hdr),GetNcchHdrSig(hdr),keys->rsa.cciCfaPub,NULL,RSA_2048_SHA256,CTR_RSA_VERIFY);
 }
 
 int SignCXI(ncch_hdr *hdr, keys_struct *keys)
 {
-	return ctr_sig(GetNcchHdrData(hdr),GetNcchHdrDataLen(hdr),GetNcchHdrSig(hdr),keys->rsa.cxiHdrPub,keys->rsa.cxiHdrPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
+	return RsaSignVerify(GetNcchHdrData(hdr),GetNcchHdrDataLen(hdr),GetNcchHdrSig(hdr),keys->rsa.cxiHdrPub,keys->rsa.cxiHdrPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
 }
 
 int CheckCXISignature(ncch_hdr *hdr, u8 *pubk)
 {
-	int result = ctr_sig(GetNcchHdrData(hdr),GetNcchHdrDataLen(hdr),GetNcchHdrSig(hdr),pubk,NULL,RSA_2048_SHA256,CTR_RSA_VERIFY);
+	int result = RsaSignVerify(GetNcchHdrData(hdr),GetNcchHdrDataLen(hdr),GetNcchHdrSig(hdr),pubk,NULL,RSA_2048_SHA256,CTR_RSA_VERIFY);
 	return result;
 }
 
@@ -500,13 +500,13 @@ int FinaliseNcch(ncch_settings *set)
 
 	// Taking Hashes
 	if(set->cryptoDetails.exhdrSize)
-		ctr_sha(exhdr,set->cryptoDetails.exhdrSize,hdr->exhdrHash,CTR_SHA_256);
+		ShaCalc(exhdr,set->cryptoDetails.exhdrSize,hdr->exhdrHash,CTR_SHA_256);
 	if(set->cryptoDetails.logoSize)
-		ctr_sha(logo,set->cryptoDetails.logoSize,hdr->logoHash,CTR_SHA_256);
+		ShaCalc(logo,set->cryptoDetails.logoSize,hdr->logoHash,CTR_SHA_256);
 	if(set->cryptoDetails.exefsHashDataSize)
-		ctr_sha(exefs,set->cryptoDetails.exefsHashDataSize,hdr->exefsHash,CTR_SHA_256);
+		ShaCalc(exefs,set->cryptoDetails.exefsHashDataSize,hdr->exefsHash,CTR_SHA_256);
 	if(set->cryptoDetails.romfsHashDataSize)
-		ctr_sha(romfs,set->cryptoDetails.romfsHashDataSize,hdr->romfsHash,CTR_SHA_256);
+		ShaCalc(romfs,set->cryptoDetails.romfsHashDataSize,hdr->romfsHash,CTR_SHA_256);
 
 	// Signing NCCH
 	int sig_result = Good;
@@ -1048,6 +1048,6 @@ void CryptNcchRegion(u8 *buffer, u64 size, u64 src_pos, u64 titleId, u8 key[16],
 {
 	u8 ctr[0x10];
 	GetNcchAesCounter(ctr,titleId,type);	
-	AesCtr(key,ctr,buffer,buffer,size,src_pos);
+	AesCtrCrypt(key,ctr,buffer,buffer,size,src_pos);
 	return;
 }

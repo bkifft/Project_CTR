@@ -17,7 +17,6 @@ const int CIA_ALIGN_SIZE = 0x40;
 const int CIA_CONTENT_ALIGN = 0x10;
 
 // Private Prototypes
-void InitCiaSettings(cia_settings *set);
 void FreeCiaSettings(cia_settings *set);
 int GetCiaSettings(cia_settings *ciaset, user_settings *usrset);
 
@@ -53,7 +52,6 @@ int build_CIA(user_settings *usrset)
 	}
 
 	// Get Settings
-	InitCiaSettings(ciaset);
 	result = GetCiaSettings(ciaset,usrset);
 	if(result) goto finish;
 
@@ -94,11 +92,6 @@ finish:
 	FreeCiaSettings(ciaset);
 
 	return result;
-}
-
-void InitCiaSettings(cia_settings *set)
-{
-	memset(set,0,sizeof(cia_settings));
 }
 
 void FreeCiaSettings(cia_settings *set)
@@ -198,8 +191,7 @@ int GetSettingsFromUsrset(cia_settings *ciaset, user_settings *usrset)
 		
 	ciaset->tik.formatVersion = 1;
 
-	int result = GenCertChildIssuer(ciaset->tik.issuer,ciaset->keys->certs.xsCert);
-	if(result) return result;
+	GenCertChildIssuer(ciaset->tik.issuer,ciaset->keys->certs.xsCert);
 	
 	// Tmd Stuff
 	if(usrset->cia.contentId[0] > MAX_U32)
@@ -209,7 +201,7 @@ int GetSettingsFromUsrset(cia_settings *ciaset, user_settings *usrset)
 
 	ciaset->tmd.formatVersion = 1;
 	ciaset->tmd.accessRights = 0;
-	result = GenCertChildIssuer(ciaset->tmd.issuer,ciaset->keys->certs.cpCert);
+	GenCertChildIssuer(ciaset->tmd.issuer,ciaset->keys->certs.cpCert);
 	return 0;
 }
 
@@ -293,14 +285,16 @@ int GetTmdDataFromNcch(cia_settings *ciaset, u8 *ncch, ncch_info *ncch_ctx, u8 *
 		
 	if(IsPatch(GetTidCategory(ciaset->common.titleId))||ciaset->content.IsCfa) 
 		ciaset->tmd.savedataSize = 0;
-	else if(ciaset->content.keyNotFound && ciaset->rsf->SystemControlInfo.SaveDataSize){ // if it's a title which can have save data, but save data size could not be read from exhdr
+	else if(!ciaset->content.keyNotFound) 
+		ciaset->tmd.savedataSize = (u32)(GetSaveDataSize_frm_exhdr(exhdr) & MAX_U32);
+	else if(ciaset->rsf->SystemControlInfo.SaveDataSize){ // if it's a title which can have save data, but save data size could not be read from exhdr
 		u64 size = 0;
 		GetSaveDataSizeFromString(&size,ciaset->rsf->SystemControlInfo.SaveDataSize,"CIA");
 		ciaset->tmd.savedataSize = (u32)(size & MAX_U32);
 	}
-	else 
-		ciaset->tmd.savedataSize = (u32)(GetSaveDataSize_frm_exhdr(exhdr) & MAX_U32);
-			
+	else
+		ciaset->tmd.savedataSize = 0;
+		
 	if(ciaset->content.IsCfa||ciaset->content.keyNotFound){
 		if(ciaset->common.titleVersion[VER_MAJOR] == MAX_U16){ // '-major' wasn't set
 			if(ciaset->content.IsCfa){ // Is a CFA and can be decrypted
@@ -569,7 +563,7 @@ u16 SetupVersion(u16 major, u16 minor, u16 micro)
 void GetContentHashes(cia_settings *ciaset)
 {
 	for(int i = 0; i < ciaset->content.count; i++)
-		ctr_sha(ciaset->ciaSections.content.buffer+ciaset->content.offset[i],ciaset->content.size[i],ciaset->content.hash[i],CTR_SHA_256);
+		ShaCalc(ciaset->ciaSections.content.buffer+ciaset->content.offset[i],ciaset->content.size[i],ciaset->content.hash[i],CTR_SHA_256);
 }
 
 void EncryptContent(cia_settings *ciaset)
@@ -653,7 +647,7 @@ int CryptContent(u8 *input, u8 *output, u64 size, u8 *title_key, u16 index, u8 m
 	iv[0] = (index >> 8) & 0xff;
 	iv[1] = index & 0xff;
 	//Crypting content
-	AesCbc(title_key,iv,input,output,size,mode);
+	AesCbcCrypt(title_key,iv,input,output,size,mode);
 	return 0;
 }
 

@@ -62,7 +62,7 @@ int SetupTMDHeader(tmd_hdr *hdr, tmd_content_info_record *info_record, cia_setti
 	u32_to_u8(hdr->accessRights,ciaset->tmd.accessRights,BE);
 	u16_to_u8(hdr->titleVersion,ciaset->tmd.version,BE);
 	u16_to_u8(hdr->contentCount,ciaset->content.count,BE);
-	ctr_sha(info_record,sizeof(tmd_content_info_record)*64,hdr->infoRecordHash,CTR_SHA_256);
+	ShaCalc(info_record,sizeof(tmd_content_info_record)*64,hdr->infoRecordHash,CTR_SHA_256);
 	return 0;
 }
 
@@ -70,7 +70,8 @@ int SignTMDHeader(tmd_hdr *hdr, tmd_signature *sig, keys_struct *keys)
 {
 	clrmem(sig,sizeof(tmd_signature));
 	u32_to_u8(sig->sigType,RSA_2048_SHA256,BE);
-	return ctr_sig((u8*)hdr,sizeof(tmd_hdr),sig->data,keys->rsa.cpPub,keys->rsa.cpPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
+	
+	return RsaSignVerify((u8*)hdr,sizeof(tmd_hdr),sig->data,keys->rsa.cpPub,keys->rsa.cpPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
 }
 
 int SetupTMDInfoRecord(tmd_content_info_record *info_record, u8 *content_record, u16 ContentCount)
@@ -78,7 +79,7 @@ int SetupTMDInfoRecord(tmd_content_info_record *info_record, u8 *content_record,
 	clrmem(info_record,sizeof(tmd_content_info_record)*0x40);
 	u16_to_u8(info_record->contentIndexOffset,0x0,BE);
 	u16_to_u8(info_record->contentCommandCount,ContentCount,BE);
-	ctr_sha(content_record,sizeof(tmd_content_chunk)*ContentCount,info_record->contentChunkHash,CTR_SHA_256);
+	ShaCalc(content_record,sizeof(tmd_content_chunk)*ContentCount,info_record->contentChunkHash,CTR_SHA_256);
 	return 0;
 }
 

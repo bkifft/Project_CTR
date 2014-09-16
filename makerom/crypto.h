@@ -14,25 +14,26 @@ typedef enum
 	RSA_4096_SHA256 = 0x00010003,
 	RSA_2048_SHA256 = 0x00010004,
 	ECC_SHA256 = 0x00010005
-} sig_types;
-
-typedef enum
-{
-	RSA_2048 = 0,
-	RSA_4096 = 1,
-	ECC = 2,
 } ctr_sig_types;
 
 typedef enum
 {
-	CTR_RSA_VERIFY = 0,
-	CTR_RSA_SIGN = 1,
-} ctr_rsa_functions;
+	CTR_RSA_VERIFY,
+	CTR_RSA_SIGN,
+} ctr_rsa_mode;
 
 typedef enum
 {
-	CTR_SHA_1 = 1,
-	CTR_SHA_256 = 256,
+	RSA_4096,
+	RSA_2048,
+	ECC,
+	INVALID_SIG_TYPE,
+} sig_types;
+
+typedef enum
+{
+	CTR_SHA_1,
+	CTR_SHA_256,
 } ctr_sha_modes;
 
 typedef enum
@@ -46,42 +47,22 @@ typedef enum
 {
 	ENC,
 	DEC
-} aescbcmode;
+} aes_mode;
 
-typedef enum
-{
-	RSAKEY_INVALID,
-	RSAKEY_PRIV,
-	RSAKEY_PUB
-} rsakeytype;
-
-typedef struct
-{
-	rsa_context rsa;
-} ctr_rsa_context;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 // SHA
 bool VerifySha256(void *data, u64 size, u8 hash[32]);
-void ctr_sha(void *data, u64 size, u8 *hash, int mode);
+void ShaCalc(void *data, u64 size, u8 *hash, int mode);
 // AES
-void AesCtr(u8 *key, u8 *ctr, u8 *input, u8 *output, u64 length, u64 offset);
-void AesCbc(u8 *key, u8 *iv, u8 *input, u8 *output, u64 length, u8 mode);
+void AesCtrCrypt(u8 *key, u8 *ctr, u8 *input, u8 *output, u64 length, u64 offset);
+void AesCbcCrypt(u8 *key, u8 *iv, u8 *input, u8 *output, u64 length, u8 mode);
 // RSA
-void ctr_rsa_free(ctr_rsa_context* ctx);
-int ctr_rsa_init(ctr_rsa_context* ctx, u8 *modulus, u8 *private_exp, u8 *exponent, u8 rsa_type, u8 mode);
-int ctr_rsa(u8 *hash, u8 *signature, u8 *modulus, u8 *private_exp, u32 type, u8 mode);
-int ctr_rsa_rsassa_pkcs1_v15_sign( rsa_context *ctx,
-                               int mode,
-                               int hash_id,
-                               unsigned int hashlen,
-                               const unsigned char *hash,
-                               unsigned char *sig );
+int RsaSignVerify(void *data, u64 len, u8 *sign, u8 *mod, u8 *priv_exp, u32 sig_type, u8 rsa_mode);
 
-// Signature Functions
-int ctr_sig(void *data, u64 size, u8 *signature, u8 *modulus, u8 *private_exp, u32 type, u8 mode);
+
 					
 #ifdef __cplusplus
 }
