@@ -577,7 +577,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 	}
 	
 	// Other Setting
-	else if(strcmp(argv[i],"-content") == 0){
+	else if(strcmp(argv[i],"-content") == 0 || strcmp(argv[i],"-i") == 0){
 		if(ParamNum != 1){
 			PrintArgReqParam(argv[i],1);
 			return USR_ARG_REQ_PARAM;
