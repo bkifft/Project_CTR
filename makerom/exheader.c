@@ -126,23 +126,20 @@ int get_ExHeaderSettingsFromNcchset(exheader_settings *exhdrset, ncch_settings *
 	exhdrset->exHdr = (extended_hdr*)ncchset->sections.exhdr.buffer;
 	exhdrset->acexDesc = (access_descriptor*)ncchset->sections.acexDesc.buffer;
 
-	/* Set Code Info if Code Section was built not imported */
-	if(ncchset->options.IsBuildingCodeSection){
-		/* BSS Size */
-		u32_to_u8(exhdrset->exHdr->codeSetInfo.bssSize,ncchset->codeDetails.bssSize,LE);
-		/* Data */
-		u32_to_u8(exhdrset->exHdr->codeSetInfo.data.address,ncchset->codeDetails.rwAddress,LE);
-		u32_to_u8(exhdrset->exHdr->codeSetInfo.data.codeSize,ncchset->codeDetails.rwSize,LE);
-		u32_to_u8(exhdrset->exHdr->codeSetInfo.data.numMaxPages,ncchset->codeDetails.rwMaxPages,LE);
-		/* RO */
-		u32_to_u8(exhdrset->exHdr->codeSetInfo.rodata.address,ncchset->codeDetails.roAddress,LE);
-		u32_to_u8(exhdrset->exHdr->codeSetInfo.rodata.codeSize,ncchset->codeDetails.roSize,LE);
-		u32_to_u8(exhdrset->exHdr->codeSetInfo.rodata.numMaxPages,ncchset->codeDetails.roMaxPages,LE);
-		/* Text */
-		u32_to_u8(exhdrset->exHdr->codeSetInfo.text.address,ncchset->codeDetails.textAddress,LE);
-		u32_to_u8(exhdrset->exHdr->codeSetInfo.text.codeSize,ncchset->codeDetails.textSize,LE);
-		u32_to_u8(exhdrset->exHdr->codeSetInfo.text.numMaxPages,ncchset->codeDetails.textMaxPages,LE);
-	}
+	/* BSS Size */
+	u32_to_u8(exhdrset->exHdr->codeSetInfo.bssSize,ncchset->codeDetails.bssSize,LE);
+	/* Data */
+	u32_to_u8(exhdrset->exHdr->codeSetInfo.data.address,ncchset->codeDetails.rwAddress,LE);
+	u32_to_u8(exhdrset->exHdr->codeSetInfo.data.codeSize,ncchset->codeDetails.rwSize,LE);
+	u32_to_u8(exhdrset->exHdr->codeSetInfo.data.numMaxPages,ncchset->codeDetails.rwMaxPages,LE);
+	/* RO */
+	u32_to_u8(exhdrset->exHdr->codeSetInfo.rodata.address,ncchset->codeDetails.roAddress,LE);
+	u32_to_u8(exhdrset->exHdr->codeSetInfo.rodata.codeSize,ncchset->codeDetails.roSize,LE);
+	u32_to_u8(exhdrset->exHdr->codeSetInfo.rodata.numMaxPages,ncchset->codeDetails.roMaxPages,LE);
+	/* Text */
+	u32_to_u8(exhdrset->exHdr->codeSetInfo.text.address,ncchset->codeDetails.textAddress,LE);
+	u32_to_u8(exhdrset->exHdr->codeSetInfo.text.codeSize,ncchset->codeDetails.textSize,LE);
+	u32_to_u8(exhdrset->exHdr->codeSetInfo.text.numMaxPages,ncchset->codeDetails.textMaxPages,LE);
 
 	/* Set Simple Flags */
 	if(ncchset->options.CompressCode)

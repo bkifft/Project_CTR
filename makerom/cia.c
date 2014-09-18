@@ -175,7 +175,7 @@ int GetSettingsFromUsrset(cia_settings *ciaset, user_settings *usrset)
 	}
 
 	// Ticket Data
-	ciaset->tik.ticketId = u64GetRand();
+	ciaset->tik.ticketId = u64GetRand() & 0x0004FFFFFFFFFFFF;
 	ciaset->tik.deviceId = usrset->cia.deviceId;
 	ciaset->tik.eshopAccId = usrset->cia.eshopAccId;
 	ciaset->tik.licenceType = lic_Permanent;
@@ -235,9 +235,10 @@ int GetSettingsFromNcch0(cia_settings *ciaset, u32 ncch0_offset)
 	GetNcchInfo(info,hdr);
 
 	/* Verify Ncch0 (Sig&Hash Checks) */
-	int result = VerifyNcch(ncch0,ciaset->keys,false,true);
+	ciaset->content.keyFound = true;
+	int result = VerifyNcch(ncch0, ciaset->keys, false, ciaset->verbose == false);
 	if(result == UNABLE_TO_LOAD_NCCH_KEY){
-		ciaset->content.keyNotFound = true;
+		ciaset->content.keyFound = false;
 		if(!ciaset->content.IsCfa){
 			fprintf(stderr,"[CIA WARNING] CXI AES Key could not be loaded\n");
 			fprintf(stderr,"      Meta Region, SaveDataSize, Remaster Version cannot be obtained\n");
@@ -254,7 +255,7 @@ int GetSettingsFromNcch0(cia_settings *ciaset, u32 ncch0_offset)
 
 	/* Getting ncch key */
 	u8 *ncchkey = NULL;
-	if(!ciaset->content.keyNotFound && IsNcchEncrypted(hdr)){
+	if(ciaset->content.keyFound && IsNcchEncrypted(hdr)){
 		SetNcchKeys(ciaset->keys,hdr);
 		ncchkey = ciaset->keys->aes.ncchKey0;
 		if(ciaset->verbose){
@@ -278,90 +279,116 @@ finish:
 
 int GetTmdDataFromNcch(cia_settings *ciaset, u8 *ncch, ncch_info *ncch_ctx, u8 *key)
 {
-	extended_hdr *exhdr = malloc(sizeof(extended_hdr));
-	memcpy(exhdr,ncch+ncch_ctx->exhdrOffset,sizeof(extended_hdr));
-	if(key != NULL)
-		CryptNcchRegion((u8*)exhdr,sizeof(extended_hdr),0,ncch_ctx->titleId,key,ncch_exhdr);
+	int result = 0;
+	extended_hdr *exhdr = NULL;
+
+	if(!ciaset->content.IsCfa && ciaset->content.keyFound){
+		exhdr = malloc(sizeof(extended_hdr));
+		memcpy(exhdr,ncch+ncch_ctx->exhdrOffset,sizeof(extended_hdr));
+		if(key != NULL)
+			CryptNcchRegion((u8*)exhdr,sizeof(extended_hdr),0,ncch_ctx->titleId,key,ncch_exhdr);
+	}
 		
-	if(IsPatch(GetTidCategory(ciaset->common.titleId))||ciaset->content.IsCfa) 
+	// If this title is a Patch or a CFA SaveData size cannot be set in TMD
+	if( IsPatch(GetTidCategory(ciaset->common.titleId)) || ciaset->content.IsCfa ) 
 		ciaset->tmd.savedataSize = 0;
-	else if(!ciaset->content.keyNotFound) 
+	// Otherwise read Savedata size from exheader, but only first word of savesize is read
+	else if(ciaset->content.keyFound) 
 		ciaset->tmd.savedataSize = (u32)(GetSaveDataSize_frm_exhdr(exhdr) & MAX_U32);
-	else if(ciaset->rsf->SystemControlInfo.SaveDataSize){ // if it's a title which can have save data, but save data size could not be read from exhdr
+	// if it's a title which can have save data, but save data size could not be read from exhdr
+	else if(ciaset->rsf->SystemControlInfo.SaveDataSize){
 		u64 size = 0;
 		GetSaveDataSizeFromString(&size,ciaset->rsf->SystemControlInfo.SaveDataSize,"CIA");
 		ciaset->tmd.savedataSize = (u32)(size & MAX_U32);
 	}
+	// the user has neglected to provide any means of determining the savedata size
 	else
 		ciaset->tmd.savedataSize = 0;
 		
-	if(ciaset->content.IsCfa||ciaset->content.keyNotFound){
+	// Process title version
+	// If this is a CFA, the -major must be set, since CFAs don't have an exheader
+	if(ciaset->content.IsCfa){
 		if(ciaset->common.titleVersion[VER_MAJOR] == MAX_U16){ // '-major' wasn't set
-			if(ciaset->content.IsCfa){ // Is a CFA and can be decrypted
-				fprintf(stderr,"[CIA ERROR] Invalid major version. Use \"-major\" option.\n");
-				return CIA_BAD_VERSION;
-			}
-			else // CXI which cannot be decrypted
-				ciaset->common.titleVersion[VER_MAJOR] = 0;
+			fprintf(stderr,"[CIA ERROR] Invalid major version. Use \"-major\" option.\n");
+			result = CIA_BAD_VERSION;
+			goto cleanup;
 		}
 	}
-	else{ // Is a CXI and can be decrypted
+	// Otherwise this is a CXI, if it can be decrypted, -major cannot be set and must be read from exheader
+	else if(ciaset->content.keyFound){
 		if(ciaset->common.titleVersion[VER_MAJOR] != MAX_U16){ // '-major' was set
 			fprintf(stderr,"[CIA ERROR] Option \"-major\" cannot be applied for cxi.\n");
-			return CIA_BAD_VERSION;
+			result = CIA_BAD_VERSION;
+			goto cleanup;
 		}
 		// Setting remaster ver
 		ciaset->common.titleVersion[VER_MAJOR] = GetRemasterVersion_frm_exhdr(exhdr);
 	}
 
+	// CXI which cannot be decrypted
+	else{
+		if(ciaset->common.titleVersion[VER_MAJOR] == MAX_U16) // '-major' wasn't set
+			ciaset->common.titleVersion[VER_MAJOR] = 0;
+	}
+	
+	// Calculate u16 title version
 	ciaset->tmd.version = ciaset->tik.version = SetupVersion(ciaset->common.titleVersion[VER_MAJOR],ciaset->common.titleVersion[VER_MINOR],ciaset->common.titleVersion[VER_MICRO]);
 
+cleanup:
 	free(exhdr);
-	return 0;
+	return result;
 }
 
 int GetMetaRegion(cia_settings *ciaset, u8 *ncch, ncch_info *info, u8 *key)
 {
-	if(ciaset->content.IsCfa || ciaset->content.keyNotFound) 
+	extended_hdr *exhdr;
+	exefs_hdr *exefsHdr;
+	cia_metadata *hdr;
+	u32 icon_size, icon_offset;
+	
+	// Do not proceed if this is a CFA or can't be decrypted
+	if(ciaset->content.IsCfa || !ciaset->content.keyFound) 
 		return 0;
 
-	extended_hdr *exhdr = malloc(sizeof(extended_hdr));
+	// Obtain (&decrypt) exheader
+	exhdr = malloc(sizeof(extended_hdr));
 	memcpy(exhdr,ncch+info->exhdrOffset,sizeof(extended_hdr));
 	if(key != NULL)
 		CryptNcchRegion((u8*)exhdr,sizeof(extended_hdr),0,info->titleId,key,ncch_exhdr);
 
-	exefs_hdr *exefsHdr = malloc(sizeof(exefs_hdr));
+	// Obtain (&decrypt) exefs header
+	exefsHdr = malloc(sizeof(exefs_hdr));
 	memcpy(exefsHdr,ncch+info->exefsOffset,sizeof(exefs_hdr));
 	if(key != NULL)
 		CryptNcchRegion((u8*)exefsHdr,sizeof(exefs_hdr),0,info->titleId,key,ncch_exefs);
 
-	u32 icon_size = 0;
-	u32 icon_offset = 0;
-	for(int i = 0; i < MAX_EXEFS_SECTIONS; i++){
-		if(strncmp(exefsHdr->fileHdr[i].name,"icon",8) == 0){
-			icon_size = u8_to_u32(exefsHdr->fileHdr[i].size,LE);
-			icon_offset = u8_to_u32(exefsHdr->fileHdr[i].offset,LE) + sizeof(exefs_hdr);
-		}
-	}
+	// Only continue if icon exists
+	if(!DoesExeFsSectionExist("icon",(u8*)exefsHdr))
+		goto cleanup;
+		
+	icon_size = GetExeFsSectionSize("icon",(u8*)exefsHdr);
+	icon_offset = GetExeFsSectionOffset("icon",(u8*)exefsHdr);
 	
+	// Allocating memory for Meta region
 	ciaset->ciaSections.meta.size = sizeof(cia_metadata) + icon_size;
-	ciaset->ciaSections.meta.buffer = malloc(ciaset->ciaSections.meta.size);
+	ciaset->ciaSections.meta.buffer = calloc(1,ciaset->ciaSections.meta.size);
 	if(!ciaset->ciaSections.meta.buffer){
 		fprintf(stderr,"[CIA ERROR] Not enough memory\n");
 		return MEM_ERROR; 
 	}
-	cia_metadata *hdr = (cia_metadata*)ciaset->ciaSections.meta.buffer;
-	memset(hdr,0,sizeof(cia_metadata));
+
+	// Writing Dependency List & Core Version to Meta region
+	hdr = (cia_metadata*)ciaset->ciaSections.meta.buffer;
 	GetDependencyList_frm_exhdr(hdr->dependencyList,exhdr);
 	GetCoreVersion_frm_exhdr(hdr->coreVersion,exhdr);
-	if(icon_size > 0){
-		u8 *IconDestPos = (ciaset->ciaSections.meta.buffer + sizeof(cia_metadata));
-		memcpy(IconDestPos,ncch+info->exefsOffset+icon_offset,icon_size);
-		if(key != NULL)
-			CryptNcchRegion(IconDestPos,icon_size,icon_offset,info->titleId,key,ncch_exefs);
-		//memdump(stdout,"Icon: ",IconDestPos,0x10);
-	}
+	
+	// Writing Icon data to Meta region
+	u8 *iconPos = (ciaset->ciaSections.meta.buffer + sizeof(cia_metadata));
+	memcpy(iconPos,ncch+info->exefsOffset+icon_offset,icon_size);
+	if(key != NULL)
+		CryptNcchRegion(iconPos,icon_size,icon_offset,info->titleId,key,ncch_exefs);
 
+cleanup:
 	free(exefsHdr);
 	free(exhdr);
 	return 0;
