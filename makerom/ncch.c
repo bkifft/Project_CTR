@@ -1011,6 +1011,8 @@ bool SetNcchKeys(keys_struct *keys, ncch_hdr *hdr)
 
 int GetNcchInfo(ncch_info *info, ncch_hdr *hdr)
 {
+	clrmem(info, sizeof(ncch_info));
+
 	info->titleId = u8_to_u64(hdr->titleId,LE);
 	info->programId = u8_to_u64(hdr->programId,LE);
 

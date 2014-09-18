@@ -66,7 +66,7 @@ typedef struct
 		bool encryptCia;
 		bool includeUpdateNcch; // for cci -> cia conversions
 
-		bool keyNotFound;
+		bool keyFound;
 
 		FILE **filePtrs;
 		u64 fileSize[CIA_MAX_CONTENT];
