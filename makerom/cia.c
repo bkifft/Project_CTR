@@ -235,6 +235,7 @@ int GetSettingsFromNcch0(cia_settings *ciaset, u32 ncch0_offset)
 	GetNcchInfo(info,hdr);
 
 	/* Verify Ncch0 (Sig&Hash Checks) */
+	ciaset->content.keyFound = true;
 	int result = VerifyNcch(ncch0, ciaset->keys, false, ciaset->verbose == false);
 	if(result == UNABLE_TO_LOAD_NCCH_KEY){
 		ciaset->content.keyFound = false;
