@@ -175,7 +175,7 @@ int GetSettingsFromUsrset(cia_settings *ciaset, user_settings *usrset)
 	}
 
 	// Ticket Data
-	ciaset->tik.ticketId = u64GetRand() & 0x0004FFFFFFFFFFFF;
+	ciaset->tik.ticketId = 0x0004000000000000 | (u64GetRand() & 0x0000FFFFFFFFFFFF);
 	ciaset->tik.deviceId = usrset->cia.deviceId;
 	ciaset->tik.eshopAccId = usrset->cia.eshopAccId;
 	ciaset->tik.licenceType = lic_Permanent;
@@ -253,7 +253,7 @@ int GetSettingsFromNcch0(cia_settings *ciaset, u32 ncch0_offset)
 	ciaset->common.titleId = u8_to_u64(hdr->titleId,LE);
 
 
-	/* Getting ncch key */
+	/* Getting NCCH key */
 	u8 *ncchkey = NULL;
 	if(ciaset->content.keyFound && IsNcchEncrypted(hdr)){
 		SetNcchKeys(ciaset->keys,hdr);
@@ -265,11 +265,11 @@ int GetSettingsFromNcch0(cia_settings *ciaset, u32 ncch0_offset)
 		}
 	}
 
-	/* Get TMD Data from ncch */
-	result = GetTmdDataFromNcch(ciaset,ncch0,info,ncchkey); // Data For TMD
+	/* Get TMD Data from NCCH */
+	result = GetTmdDataFromNcch(ciaset,ncch0,info,ncchkey);
 	if(result) goto finish;
-	/* Get META Region from ncch */
-	result = GetMetaRegion(ciaset,ncch0,info,ncchkey); // Meta Region
+	/* Get Meta Region from NCCH */
+	result = GetMetaRegion(ciaset,ncch0,info,ncchkey);
 	/* Finish */
 finish:
 	/* Return */
@@ -387,7 +387,7 @@ int GetMetaRegion(cia_settings *ciaset, u8 *ncch, ncch_info *info, u8 *key)
 	memcpy(iconPos,ncch+info->exefsOffset+icon_offset,icon_size);
 	if(key != NULL)
 		CryptNcchRegion(iconPos,icon_size,icon_offset,info->titleId,key,ncch_exefs);
-
+		
 cleanup:
 	free(exefsHdr);
 	free(exhdr);
