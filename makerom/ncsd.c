@@ -13,6 +13,8 @@
 const int NCCH0_OFFSET = 0x4000;
 const int CCI_BLOCK_SIZE = 0x200;
 
+const char MEDIA_SIZE_STR[10][6] = {"128MB","256MB","512MB","1GB","2GB","4GB","8GB","16GB","32GB"};
+
 void ImportCciSettings(cci_settings *set, user_settings *usrset);
 void FreeCciSettings(cci_settings *set);
 int ImportCciNcch(cci_settings *set);
@@ -46,13 +48,13 @@ int build_CCI(user_settings *usrset)
 		goto finish;
 	}
 	
-	if(CheckRomConfig(set)){
-		result = CCI_CONFIG_FAIL;
+	if(GenCardInfoHdr(set)){
+		result = GEN_HDR_FAIL;
 		goto finish;
 	}
 	
-	if(GenCardInfoHdr(set)){
-		result = GEN_HDR_FAIL;
+	if(CheckRomConfig(set)){
+		result = CCI_CONFIG_FAIL;
 		goto finish;
 	}
 	
@@ -165,63 +167,6 @@ bool CanCiaBeCci(u64 titleId, u16 count, tmd_content_chunk *content)
 	return true;
 }
 
-void GenRsfInputFromTmd(tmd_hdr *tmd, tmd_content_chunk *info, cci_settings *set)
-{
-	if(!set->rsf->CardInfo.MediaSize){
-		set->rsf->CardInfo.MediaSize = calloc(20,sizeof(char));
-		u64 contentSize = NCCH0_OFFSET;
-		u16 contentNum = GetTmdContentCount(tmd);
-		for(int i = 0; i < contentNum; i++)
-			contentSize += GetTmdContentSize(info[i]);
-		
-		if(contentSize < (u64)128*MB)
-			strcpy(set->rsf->CardInfo.MediaSize,"128MB");
-		else if(contentSize < (u64)256*MB)
-			strcpy(set->rsf->CardInfo.MediaSize,"256MB");
-		else if(contentSize < (u64)512*MB)
-			strcpy(set->rsf->CardInfo.MediaSize,"512MB");
-		else if(contentSize < (u64)1*GB)
-			strcpy(set->rsf->CardInfo.MediaSize,"1GB");
-		else if(contentSize < (u64)2*GB)
-			strcpy(set->rsf->CardInfo.MediaSize,"2GB");
-		else if(contentSize < (u64)4*GB)
-			strcpy(set->rsf->CardInfo.MediaSize,"4GB");
-		else if(contentSize < (u64)8*GB)
-			strcpy(set->rsf->CardInfo.MediaSize,"8GB");
-		else{
-			free(set->rsf->CardInfo.MediaSize);
-			set->rsf->CardInfo.MediaSize = NULL;
-		}
-		
-		if(set->options.verbose && set->rsf->CardInfo.MediaSize)
-			printf("[CCI] Auto generating RSF setting \"CardInfo/MediaSize: %s\" \n",set->rsf->CardInfo.MediaSize);
-	}
-	
-	if(!set->rsf->CardInfo.MediaType){
-		set->rsf->CardInfo.MediaType = calloc(20,sizeof(char));
-		if(set->romInfo.saveSize < (u64)1*MB)
-			strcpy(set->rsf->CardInfo.MediaType,"Card1");
-		else
-			strcpy(set->rsf->CardInfo.MediaType,"Card2");
-			
-		if(set->options.verbose)
-			printf("[CCI] Auto generating RSF setting \"CardInfo/MediaType: %s\" \n",set->rsf->CardInfo.MediaType);
-	}
-	
-	if(!set->rsf->CardInfo.CardDevice){
-		set->rsf->CardInfo.CardDevice = calloc(20,sizeof(char));
-		if(set->romInfo.saveSize < (u64)1*MB && set->romInfo.saveSize > 0)
-			strcpy(set->rsf->CardInfo.CardDevice,"NorFlash");
-		else
-			strcpy(set->rsf->CardInfo.CardDevice,"None");
-			
-		if(set->options.verbose)
-			printf("[CCI] Auto generating RSF setting \"CardInfo/CardDevice: %s\" \n",set->rsf->CardInfo.CardDevice);
-	}
-	
-	return;
-}
-
 int ProcessCiaForCci(cci_settings *set)
 {
 	if(!IsCia(set->content.data)){
@@ -247,9 +192,7 @@ int ProcessCiaForCci(cci_settings *set)
 		fprintf(stderr,"[CCI ERROR] This CIA cannot be converted to CCI\n");
 		return INCOMPAT_CIA;
 	}
-	
-	GenRsfInputFromTmd(tmd,contentInfo,set);
-	
+		
 	bool canDecrypt;
 	u8 titleKey[AES_128_KEY_SIZE];
 	canDecrypt = GetTikTitleKey(titleKey,tik,set->keys);
@@ -285,19 +228,37 @@ int ProcessCiaForCci(cci_settings *set)
 	return 0;
 }
 
-int ImportCciNcch(cci_settings *set)
+void GetTitleSaveSize(cci_settings *set)
 {
 	if(set->rsf->SystemControlInfo.SaveDataSize)
 		GetSaveDataSizeFromString(&set->romInfo.saveSize,set->rsf->SystemControlInfo.SaveDataSize,"CCI");
+		
+	// Adjusting save size
+		
+	if(set->romInfo.saveSize <= (u64)128*KB)
+		set->romInfo.saveSize = (u64)128*KB;
+	else if(set->romInfo.saveSize <= (u64)512*KB)
+		set->romInfo.saveSize = (u64)512*KB;
+	else
+		set->romInfo.saveSize = align(set->romInfo.saveSize,MB);
+}
+
+int ImportCciNcch(cci_settings *set)
+{
+	int ret = 0;
 
 	if(set->content.dataType == infile_ncch)
-		return ImportNcchForCci(set);
+		ret = ImportNcchForCci(set);
 	else if(set->content.dataType == infile_cia)
-		return ProcessCiaForCci(set);
-	else
+		ret = ProcessCiaForCci(set);
+	else{
 		fprintf(stderr,"[CCI ERROR] Unrecognised input data type\n");	
+		return FAILED_TO_IMPORT_FILE;
+	}
 	
-	return FAILED_TO_IMPORT_FILE;
+	GetTitleSaveSize(set);
+	
+	return ret;
 }
 
 int ProcessCverDataForCci(cci_settings *set)
@@ -399,12 +360,34 @@ int ProcessNcchForCci(cci_settings *set)
 	return 0;
 }
 
+void SetCciNcchInfo(cci_hdr *hdr, cci_settings *set)
+{
+	u64 ncchSize,ncchOffset;
+	
+	ncchOffset = NCCH0_OFFSET;
+	
+	for(int i = 0; i < CCI_MAX_CONTENT; i++){
+		if(set->content.active[i]){
+			set->content.cOffset[i] = ncchOffset;
+			ncchSize = align(set->content.dSize[i],set->romInfo.blockSize);
+			
+			u32_to_u8(hdr->offset_sizeTable[i].offset,(ncchOffset/set->romInfo.blockSize),LE);
+			u32_to_u8(hdr->offset_sizeTable[i].size,(ncchSize/set->romInfo.blockSize),LE);
+			u64_to_u8(hdr->ncchIdTable[i],set->content.titleId[i],LE);
+			
+			ncchOffset += ncchSize;
+		}
+	}
+	
+	set->romInfo.usedSize = ncchOffset;
+	
+	return;
+}
+
 int SetMediaSize(u8 *mediaSize, cci_settings *set)
 {	
 	char *str = set->rsf->CardInfo.MediaSize;
-	if(!str) 
-		set->romInfo.mediaSize = (u64)GB*2;
-	else{
+	if(str){
 		if(strcasecmp(str,"128MB") == 0) set->romInfo.mediaSize = (u64)MB*128;
 		else if(strcasecmp(str,"256MB") == 0) set->romInfo.mediaSize = (u64)MB*256;
 		else if(strcasecmp(str,"512MB") == 0) set->romInfo.mediaSize = (u64)MB*512;
@@ -416,6 +399,31 @@ int SetMediaSize(u8 *mediaSize, cci_settings *set)
 		//else if(strcasecmp(str,"32GB") == 0) set->romInfo.mediaSize = (u64)GB*32;
 		else {
 			fprintf(stderr,"[CCI ERROR] Invalid MediaSize: %s\n",str);
+			return INVALID_RSF_OPT;
+		}
+	}
+	else{
+		u64 dataSize = set->romInfo.usedSize + (set->romInfo.saveSize >= MB ? set->romInfo.saveSize : 0);
+		if(dataSize < (u64)MB*128)
+			set->romInfo.mediaSize = (u64)MB*128;
+		else if(dataSize < (u64)MB*256)
+			set->romInfo.mediaSize = (u64)MB*256;
+		else if(dataSize < (u64)MB*512)
+			set->romInfo.mediaSize = (u64)MB*512;
+		else if(dataSize < (u64)GB*1)
+			set->romInfo.mediaSize = (u64)GB*1;
+		else if(dataSize < (u64)GB*2)
+			set->romInfo.mediaSize = (u64)GB*2;
+		else if(dataSize < (u64)GB*4)
+			set->romInfo.mediaSize = (u64)GB*4;
+		else if(dataSize < (u64)GB*8)
+			set->romInfo.mediaSize = (u64)GB*8;
+		//else if(dataSize < (u64)GB*16)
+		//	set->romInfo.mediaSize = (u64)GB*16;
+		//else if(dataSize < (u64)GB*32)
+		//	set->romInfo.mediaSize = (u64)GB*32;
+		else {
+			fprintf(stderr,"[CCI ERROR] NCCH Partitions are too large\n");
 			return INVALID_RSF_OPT;
 		}
 	}
@@ -446,9 +454,7 @@ int SetMediaType(u8 *flag, cci_settings *set)
 {
 	char *str = set->rsf->CardInfo.MediaType;
 
-	if(!str) 
-		*flag = mediatype_CARD1;
-	else{
+	if(str){
 		if(strcasecmp(str,"Card1") == 0) 
 			*flag = mediatype_CARD1;
 		else if(strcasecmp(str,"Card2") == 0)
@@ -457,6 +463,12 @@ int SetMediaType(u8 *flag, cci_settings *set)
 			fprintf(stderr,"[CCI ERROR] Invalid MediaType: %s\n",str);
 			return INVALID_RSF_OPT;
 		}
+	}
+	else{
+		if(set->romInfo.saveSize >= (u64)1*MB)
+			*flag = mediatype_CARD2;
+		else
+			*flag = mediatype_CARD1;
 	}
 	
 	return 0;
@@ -488,9 +500,7 @@ int SetCardDevice(u8 *flags, u64 saveSize, rsf_settings *rsf)
 
 	/* CardDevice */
 	u8 cardDevice = 0;
-	if(!rsf->CardInfo.CardDevice) 
-		cardDevice = carddevice_NONE;
-	else{
+	if(rsf->CardInfo.CardDevice){
 		if(strcmp(rsf->CardInfo.CardDevice,"NorFlash") == 0)
 			cardDevice = carddevice_NOR_FLASH;
 		else if(strcmp(rsf->CardInfo.CardDevice,"None") == 0) 
@@ -501,6 +511,12 @@ int SetCardDevice(u8 *flags, u64 saveSize, rsf_settings *rsf)
 			fprintf(stderr,"[CCI ERROR] Invalid CardDevice: %s\n",rsf->CardInfo.CardDevice);
 			return INVALID_RSF_OPT;
 		}
+	}
+	else{
+		if(saveSize == 0 || saveSize >= (u64)1*MB)
+			cardDevice = carddevice_NONE;
+		else
+			cardDevice = carddevice_NOR_FLASH;
 	}
 	
 	if(flags[cciflag_MEDIA_TYPE] == mediatype_CARD1){
@@ -544,31 +560,6 @@ int SetCciFlags(u8 *flags, cci_settings *set)
 	return 0;
 }
 
-void SetCciNcchInfo(cci_hdr *hdr, cci_settings *set)
-{
-	u64 ncchSize,ncchOffset;
-	
-	ncchOffset = NCCH0_OFFSET;
-	
-	for(int i = 0; i < CCI_MAX_CONTENT; i++){
-		if(set->content.active[i]){
-			set->content.cOffset[i] = ncchOffset;
-			ncchSize = align(set->content.dSize[i],set->romInfo.blockSize);
-			
-			u32_to_u8(hdr->offset_sizeTable[i].offset,(ncchOffset/set->romInfo.blockSize),LE);
-			u32_to_u8(hdr->offset_sizeTable[i].size,(ncchSize/set->romInfo.blockSize),LE);
-			u64_to_u8(hdr->ncchIdTable[i],set->content.titleId[i],LE);
-			
-			ncchOffset += ncchSize;
-		}
-	}
-	
-	set->romInfo.usedSize = ncchOffset;
-	
-	return;
-}
-
-
 int GenCciHdr(cci_settings *set)
 {
 	set->headers.ccihdr.size = sizeof(cci_hdr);
@@ -586,11 +577,12 @@ int GenCciHdr(cci_settings *set)
 	u64_to_u8(hdr->titleId,set->content.titleId[0],LE);
 	
 	
+	SetCciNcchInfo(hdr,set);
 	if(SetMediaSize(hdr->mediaSize,set))
 		return GEN_HDR_FAIL;
 	if(SetCciFlags(hdr->flags,set))
 		return GEN_HDR_FAIL;
-	SetCciNcchInfo(hdr,set);
+	
 	
 	// Sign Header
 	RsaSignVerify(&hdr->magic,sizeof(cci_hdr)-RSA_2048_KEY_SIZE,hdr->signature,set->keys->rsa.cciCfaPub,set->keys->rsa.cciCfaPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
@@ -598,20 +590,31 @@ int GenCciHdr(cci_settings *set)
 	return 0;
 }
 
-int CheckRomConfig(cci_settings *set)
+char* GetMediaSizeStr(u64 mediaSize)
 {
+	//MEDIA_SIZE_STR
+	switch(mediaSize){
+		case (u64)MB*128: return (char*)MEDIA_SIZE_STR[0];
+		case (u64)MB*256: return (char*)MEDIA_SIZE_STR[1];
+		case (u64)MB*512: return (char*)MEDIA_SIZE_STR[2];
+		case (u64)GB*1: return (char*)MEDIA_SIZE_STR[3];
+		case (u64)GB*2: return (char*)MEDIA_SIZE_STR[4];
+		case (u64)GB*4: return (char*)MEDIA_SIZE_STR[5];
+		case (u64)GB*8: return (char*)MEDIA_SIZE_STR[6];
+		default: return 0;
+	}
+}
+
+int CheckRomConfig(cci_settings *set)
+{		
 	u64 cciUsedSize;
 	if(set->romInfo.mediaType == mediatype_CARD2)
 		cciUsedSize = set->romInfo.card2SaveOffset + set->romInfo.saveSize;
 	else
 		cciUsedSize = set->romInfo.usedSize;
 		
-	if(cciUsedSize > set->romInfo.mediaSize){
-		char *str = set->rsf->CardInfo.MediaSize;
-		if(!str)
-			str = "2GB";
-			
-		fprintf(stderr,"[CCI ERROR] MediaSize '%s' is insufficient for the CCI data\n",str);
+	if(cciUsedSize > set->romInfo.mediaSize){			
+		fprintf(stderr,"[CCI ERROR] MediaSize '%s' is insufficient for the CCI data\n",GetMediaSizeStr(set->romInfo.mediaSize));
 		return CCI_CONFIG_FAIL;
 	}
 	return 0;

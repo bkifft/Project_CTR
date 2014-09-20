@@ -21,7 +21,7 @@ CC = gcc
 # MAKEROM Build Settings
 MAKEROM_BUILD_FLAGS = #-DDEBUG
 VER_MAJOR = 0
-VER_MINOR = 12
+VER_MINOR = 13
 OUTPUT = makerom
 
 main: build

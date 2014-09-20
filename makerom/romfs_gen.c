@@ -5,6 +5,7 @@
 
 const int ROMFS_BLOCK_SIZE = 0x1000;
 const unsigned int ROMFS_UNUSED_ENTRY = 0xffffffff;
+const fs_romfs_char ROMFS_EMPTY_PATH[2] = {0x0000, 0x0000};
 
 // Build
 bool IsFileWanted(fs_file *file, void *filter_criteria);
@@ -18,7 +19,7 @@ int PopulateRomfs(romfs_buildctx *ctx);
 void BuildRomfsHeader(romfs_buildctx *ctx);
 void BuildIvfcHeader(romfs_buildctx *ctx);
 void GenIvfcHashTree(romfs_buildctx *ctx);
-u32 CalcPathHash(u32 parent,wchar_t * path,u32 start,u32 length);
+u32 CalcPathHash(u32 parent, fs_romfs_char* path, u32 start, u32 length);
 
 
 int PrepareBuildRomFsBinary(ncch_settings *ncchset, romfs_buildctx *ctx)
@@ -30,7 +31,7 @@ int PrepareBuildRomFsBinary(ncch_settings *ncchset, romfs_buildctx *ctx)
 	char *cwd = calloc(CWD_MAX_LEN,sizeof(char));
 	getcwd(cwd,CWD_MAX_LEN);
 
-	char *dir = ncchset->rsfSet->Rom.HostRoot;
+	char *dir = ncchset->rsfSet->RomFs.RootPath;
 
 	fs_char *fs_path;
 	fs_romfs_char *path;
@@ -399,18 +400,15 @@ int AddDirToRomfs(romfs_buildctx *ctx, fs_dir *fs, u32 parent, u32 sibling)
 	romfs_direntry *entry = (romfs_direntry*)(ctx->dirTable + ctx->u_dirTableLen);
 	
 	u32_to_u8(entry->parentoffset,parent,LE);
-	u32_to_u8(entry->siblingoffset,sibling,LE);
-	
-	//u32 uTableIndex = GetDirUTableIndex(ctx,fs);
+	u32_to_u8(entry->siblingoffset,sibling,LE);	
 	u32_to_u8(entry->weirdoffset,0xffffffff,LE);
-	//ctx->dirUTable[uTableIndex] = ctx->u_dirTableLen;
 
 	u32 Currentdir = ctx->u_dirTableLen;
 	
 	if(Currentdir == 0)
 	{
 		u32_to_u8(entry->namesize,0,LE);
-		AddDirHashKey(ctx,parent,L"",ctx->u_dirTableLen);
+		AddDirHashKey(ctx,parent,(fs_romfs_char*)ROMFS_EMPTY_PATH,ctx->u_dirTableLen);
 		ctx->u_dirTableLen += sizeof(romfs_direntry);
 	}
 	else
@@ -464,7 +462,7 @@ int AddDirToRomfs(romfs_buildctx *ctx, fs_dir *fs, u32 parent, u32 sibling)
 			AddDirToRomfs(ctx,&dir[i],Currentdir,dir_sibling);
 			if(dir_sibling != ROMFS_UNUSED_ENTRY)
 			{
-				dir_sibling = ctx->u_dirTableLen;//修复同目录文件夹偏移
+				dir_sibling = ctx->u_dirTableLen;//修复同目录文件夹偏移 (Repair the same directory folder offset)
 				u32_to_u8(temp_entry->siblingoffset,dir_sibling,LE);
 			}
 		}
@@ -515,15 +513,13 @@ void GenIvfcHashTree(romfs_buildctx *ctx)
 	return;
 }
 
-u32 CalcPathHash(u32 parent, fs_romfs_char * path, u32 start, u32 length)
+u32 CalcPathHash(u32 parent, fs_romfs_char* path, u32 start, u32 length)
 {
 	u32 hash = parent ^ 123456789;
-	u32 index = 0;
-	while(index < length)
+	for( u32 index = 0; index < length; index++ )
 	{
 		hash = (u32)((hash >> 5) | (hash << 27));//ror
 		hash ^= (u16)path[start + index];
-		index++;
 	}
 	return hash;
 }
