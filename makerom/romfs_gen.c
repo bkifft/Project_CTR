@@ -18,7 +18,7 @@ int PopulateRomfs(romfs_buildctx *ctx);
 void BuildRomfsHeader(romfs_buildctx *ctx);
 void BuildIvfcHeader(romfs_buildctx *ctx);
 void GenIvfcHashTree(romfs_buildctx *ctx);
-u32 CalcPathHash(u32 parent,wchar_t * path,u32 start,u32 length);
+u32 CalcPathHash(u32 parent, fs_romfs_char* path, u32 start, u32 length);
 
 
 int PrepareBuildRomFsBinary(ncch_settings *ncchset, romfs_buildctx *ctx)
