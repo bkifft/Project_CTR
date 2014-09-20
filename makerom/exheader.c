@@ -990,7 +990,7 @@ int SetARM11KernelDescOtherCapabilities(ARM11KernelCapabilityDescriptor *desc, r
 			fprintf(stderr,"[EXHEADER ERROR] Invalid memory type: \"%s\"\n",rsf->AccessControlInfo.MemoryType);
 			return EXHDR_BAD_RSF_OPT;
 		}
-		otherCapabilities = (otherCapabilities & 0xfffff0ff) | (memType & 7) << 8;
+		otherCapabilities = (otherCapabilities & 0xfffff0ff) | (memType & 0xf) << 8;
 	}
 
 	if(otherCapabilities){
