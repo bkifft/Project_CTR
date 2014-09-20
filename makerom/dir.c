@@ -3,8 +3,6 @@
 #include "utf.h"
 
 /* This is mainly a FS interface for ROMFS generation */
-
-
 int fs_InitDir(u16 *path, u32 pathlen, fs_dir *dir);
 int fs_ManageDirSlot(fs_dir *dir);
 int fs_ManageFileSlot(fs_dir *dir);
@@ -14,6 +12,13 @@ void fs_FreeEntry(fs_entry *entry);
 bool fs_EntryIsDirNav(fs_entry *entry);
 int fs_AddDir(fs_entry *entry, fs_dir *dir);
 int fs_AddFile(fs_entry *entry, fs_dir *dir);
+
+int fs_u16StrLen(fs_romfs_char *str)
+{
+	int i;
+	for( i = 0; str[i] != 0x0; i++ );
+	return i;
+}
 
 int fs_InitDir(u16 *path, u32 pathlen, fs_dir *dir)
 {

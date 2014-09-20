@@ -329,9 +329,9 @@ u32 GetDirUTableIndex(romfs_buildctx *ctx, fs_dir *dir)
 	return ret;
 }
 
-void AddDirHashKey(romfs_buildctx *ctx,u32 parent,wchar_t * path,u32 dirOffset)
+void AddDirHashKey(romfs_buildctx *ctx, u32 parent, fs_romfs_char* path, u32 dirOffset)
 {
-	u32 hash = CalcPathHash(parent,path,0,wcslen(path));
+	u32 hash = CalcPathHash(parent,path,0,fs_u16StrLen(path));
 	u32 index = hash % ctx->m_dirUTableEntry;
 	if(ctx->dirUTable[index] == 0xffffffff) ctx->dirUTable[index] = dirOffset;
 	else
@@ -352,9 +352,9 @@ void AddDirHashKey(romfs_buildctx *ctx,u32 parent,wchar_t * path,u32 dirOffset)
 	}
 }
 
-void AddFileHashKey(romfs_buildctx *ctx,u32 parent,wchar_t * path,u32 fileOffset)
+void AddFileHashKey(romfs_buildctx *ctx,u32 parent, fs_romfs_char *path, u32 fileOffset)
 {
-	u32 hash = CalcPathHash(parent,path,0,wcslen(path));
+	u32 hash = CalcPathHash(parent,path,0,fs_u16StrLen(path));
 	u32 index = hash % ctx->m_fileUTableEntry;
 	if(ctx->fileUTable[index] == 0xffffffff) ctx->fileUTable[index] = fileOffset;
 	else
@@ -532,7 +532,7 @@ void GenIvfcHashTree(romfs_buildctx *ctx)
 	return;
 }
 
-u32 CalcPathHash(u32 parent,wchar_t * path,u32 start,u32 length)
+u32 CalcPathHash(u32 parent, fs_romfs_char * path, u32 start, u32 length)
 {
 	u32 hash = parent ^ 123456789;
 	u32 index = 0;
