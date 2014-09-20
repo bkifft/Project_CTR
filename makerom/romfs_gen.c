@@ -315,20 +315,6 @@ void BuildRomfsHeader(romfs_buildctx *ctx)
 	return;
 }
 
-u32 GetFileUTableIndex(romfs_buildctx *ctx, fs_file *file)
-{
-	u32 ret = ctx->u_fileUTableEntry;
-	ctx->u_fileUTableEntry++;
-	return ret;
-}
-
-u32 GetDirUTableIndex(romfs_buildctx *ctx, fs_dir *dir)
-{
-	u32 ret = ctx->u_dirUTableEntry;
-	ctx->u_dirUTableEntry++;
-	return ret;
-}
-
 void AddDirHashKey(romfs_buildctx *ctx, u32 parent, fs_romfs_char* path, u32 dirOffset)
 {
 	u32 hash = CalcPathHash(parent,path,0,fs_u16StrLen(path));
@@ -380,11 +366,8 @@ int AddFileToRomfs(romfs_buildctx *ctx, fs_file *file, u32 parent, u32 sibling)
 	romfs_fileentry *entry = (romfs_fileentry*)(ctx->fileTable + ctx->u_fileTableLen);
 	
 	u32_to_u8(entry->parentdiroffset,parent,LE);
-	u32_to_u8(entry->siblingoffset,sibling,LE);
-	
-	//u32 uTableIndex = GetFileUTableIndex(ctx,file);
+	u32_to_u8(entry->siblingoffset,sibling,LE);	
 	u32_to_u8(entry->weirdoffset,0xffffffff,LE);
-	//ctx->fileUTable[uTableIndex] = ctx->u_fileTableLen;
 	
 	// Import Name
 	u32_to_u8(entry->namesize,file->name_len,LE);
