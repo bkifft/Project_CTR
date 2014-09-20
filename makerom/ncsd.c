@@ -181,12 +181,6 @@ int ProcessCiaForCci(cci_settings *set)
 	
 	u16 contentCount = GetTmdContentCount(tmd);
 	set->romInfo.saveSize = GetTmdSaveSize(tmd);
-	if(set->romInfo.saveSize > 0 && set->romInfo.saveSize < (u64)(128*KB))
-		set->romInfo.saveSize = (u64)(128*KB);
-	else if(set->romInfo.saveSize > (u64)(128*KB) && set->romInfo.saveSize < (u64)(512*KB))
-		set->romInfo.saveSize = (u64)(512*KB);
-	else if(set->romInfo.saveSize > (u64)(512*KB))
-		set->romInfo.saveSize = align(set->romInfo.saveSize,MB);
 	
 	if(!CanCiaBeCci(GetTmdTitleId(tmd),contentCount,contentInfo)){
 		fprintf(stderr,"[CCI ERROR] This CIA cannot be converted to CCI\n");
@@ -234,14 +228,11 @@ void GetTitleSaveSize(cci_settings *set)
 		GetSaveDataSizeFromString(&set->romInfo.saveSize,set->rsf->SystemControlInfo.SaveDataSize,"CCI");
 		
 	// Adjusting save size
-		
-	if(set->romInfo.saveSize == 0)
-		set->romInfo.saveSize == 0;
-	else if(set->romInfo.saveSize <= (u64)128*KB)
-		set->romInfo.saveSize = (u64)128*KB;
-	else if(set->romInfo.saveSize <= (u64)512*KB)
-		set->romInfo.saveSize = (u64)512*KB;
-	else
+	if(set->romInfo.saveSize > 0 && set->romInfo.saveSize < (u64)(128*KB))
+		set->romInfo.saveSize = (u64)(128*KB);
+	else if(set->romInfo.saveSize > (u64)(128*KB) && set->romInfo.saveSize < (u64)(512*KB))
+		set->romInfo.saveSize = (u64)(512*KB);
+	else if(set->romInfo.saveSize > (u64)(512*KB))
 		set->romInfo.saveSize = align(set->romInfo.saveSize,MB);
 }
 
