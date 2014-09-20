@@ -4,7 +4,7 @@
 typedef enum
 {
 	COMMON_HEADER_KEY_NOT_FOUND = -10,
-	EXHDR_BAD_YAML_OPT = -11,
+	EXHDR_BAD_RSF_OPT = -11,
 	CANNOT_SIGN_ACCESSDESC = -12
 } exheader_errors;
 

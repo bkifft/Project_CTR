@@ -84,8 +84,6 @@ typedef struct
 		bool PermitMainFunctionArgument;
 		bool CanShareDeviceMemory;
 		bool UseOtherVariationSaveData;
-		bool UseExtSaveData;
-		bool UseExtendedSaveDataAccessControl;
 		bool RunnableOnSleep;
 		bool SpecialMemoryArrange;
 		

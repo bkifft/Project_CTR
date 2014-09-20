@@ -117,7 +117,7 @@ typedef struct
 typedef struct
 {
 	u8 extSavedataId[8];
-	u8 systemSavedataId[8];
+	u8 systemSavedataId[2][4];
 	u8 storageAccessableUniqueIds[8];
 	u8 accessInfo[7];
 	u8 otherAttributes;
@@ -140,7 +140,7 @@ typedef struct
 typedef struct
 {
 	u16 num;
-	u32 *Data;
+	u32 *data;
 } ARM11KernelCapabilityDescriptor;
 
 typedef enum
