@@ -235,7 +235,9 @@ void GetTitleSaveSize(cci_settings *set)
 		
 	// Adjusting save size
 		
-	if(set->romInfo.saveSize <= (u64)128*KB)
+	if(set->romInfo.saveSize == 0)
+		set->romInfo.saveSize == 0;
+	else if(set->romInfo.saveSize <= (u64)128*KB)
 		set->romInfo.saveSize = (u64)128*KB;
 	else if(set->romInfo.saveSize <= (u64)512*KB)
 		set->romInfo.saveSize = (u64)512*KB;
