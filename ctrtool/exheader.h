@@ -109,6 +109,7 @@ typedef struct
 	settings* usersettings;
 	u8 partitionid[8];
 	u8 programid[8];
+	u8 hash[32];
 	u8 counter[16];
 	u8 key[16];
 	u32 offset;
@@ -134,6 +135,7 @@ void exheader_set_size(exheader_context* ctx, u32 size);
 void exheader_set_partitionid(exheader_context* ctx, u8 partitionid[8]);
 void exheader_set_counter(exheader_context* ctx, u8 counter[16]);
 void exheader_set_programid(exheader_context* ctx, u8 programid[8]);
+void exheader_set_hash(exheader_context* ctx, u8 hash[32]);
 void exheader_set_encrypted(exheader_context* ctx, u32 encrypted);
 void exheader_set_key(exheader_context* ctx, u8 key[16]);
 void exheader_set_usersettings(exheader_context* ctx, settings* usersettings);
@@ -143,6 +145,7 @@ int exheader_process(exheader_context* ctx, u32 actions);
 const char* exheader_getvalidstring(int valid);
 void exheader_print(exheader_context* ctx);
 void exheader_verify(exheader_context* ctx);
+int exheader_hash_valid(exheader_context* ctx);
 int exheader_programid_valid(exheader_context* ctx);
 void exheader_determine_key(exheader_context* ctx, u32 actions);
 
