@@ -328,6 +328,7 @@ void ncch_process(ncch_context* ctx, u32 actions)
 	exheader_set_usersettings(&ctx->exheader, ctx->usersettings);
 	exheader_set_partitionid(&ctx->exheader, ctx->header.partitionid);
 	exheader_set_programid(&ctx->exheader, ctx->header.programid);
+	exheader_set_hash(&ctx->exheader, ctx->header.extendedheaderhash);
 	exheader_set_counter(&ctx->exheader, exheadercounter);
 	exheader_set_key(&ctx->exheader, ctx->key);
 	exheader_set_encrypted(&ctx->exheader, ctx->encrypted);
@@ -361,7 +362,7 @@ void ncch_process(ncch_context* ctx, u32 actions)
 
 	if (result && ncch_get_exheader_size(ctx))
 	{
-		if (!exheader_programid_valid(&ctx->exheader))
+		if (!exheader_hash_valid(&ctx->exheader))
 			return;
 
 		result = exheader_process(&ctx->exheader, actions);

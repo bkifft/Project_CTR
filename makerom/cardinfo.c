@@ -139,8 +139,12 @@ int SetCardInfoBitmask(cardinfo_hdr *hdr, cci_settings *set)
 	}
 	
 	str = set->rsf->CardInfo.CryptoType;
-	if(!str) 
-		bitmask |= 0;//(3*0x40);
+	if(!str) {
+		if(set->options.useExternalSdkCardInfo)
+			bitmask |= (3*0x40);
+		else
+			bitmask |= 0;
+	}
 	else{
 		int val = strtol(str,NULL,10);
 		if(val < 0 || val > 3) {

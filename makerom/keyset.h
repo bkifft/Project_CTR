@@ -26,6 +26,7 @@ typedef enum
 	pki_DEVELOPMENT,
 	pki_PRODUCTION,
 	pki_CUSTOM,
+	pki_GATEWAY3DS
 } pki_keyset;
 
 typedef enum

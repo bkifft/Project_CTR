@@ -153,17 +153,13 @@ u32 GetSigHashLen(u32 sig_type)
 {
 	switch(sig_type){
 		case RSA_4096_SHA1:
-			return 0x14;
-		case RSA_4096_SHA256:
-			return 0x20;
 		case RSA_2048_SHA1:
-			return 0x14;
-		case RSA_2048_SHA256:
-			return 0x20;
 		case ECC_SHA1:
-			return 0x14;
+			return SHA_1_LEN;
+		case RSA_4096_SHA256:
+		case RSA_2048_SHA256:
 		case ECC_SHA256:
-			return 0x20;
+			return SHA_256_LEN;
 	}
 	return 0;
 }

@@ -42,6 +42,11 @@ void exheader_set_programid(exheader_context* ctx, u8 programid[8])
 	memcpy(ctx->programid, programid, 8);
 }
 
+void exheader_set_hash(exheader_context* ctx, u8 hash[32])
+{
+	memcpy(ctx->hash, hash, 32);
+}
+
 void exheader_set_counter(exheader_context* ctx, u8 counter[16])
 {
 	memcpy(ctx->counter, counter, 16);
@@ -92,6 +97,19 @@ void exheader_read(exheader_context* ctx, u32 actions)
 
 		ctx->haveread = 1;
 	}
+}
+
+int exheader_hash_valid(exheader_context* ctx)
+{
+	u8 hash[32];
+	ctr_sha_256((u8*)&ctx->header, 0x400, hash);
+
+	if(memcmp(ctx->hash,hash,0x20)){
+		fprintf(stderr, "Error, exheader hash mismatch. Wrong key?\n");
+		return 0;
+	}
+	
+	return 1;
 }
 
 int exheader_programid_valid(exheader_context* ctx)

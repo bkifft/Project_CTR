@@ -1,5 +1,16 @@
 #include "lib.h"
 
+void GET_Option(ctr_yaml_context *ctx, rsf_settings *rsf);
+void GET_AccessControlInfo(ctr_yaml_context *ctx, rsf_settings *rsf);
+void GET_SystemControlInfo(ctr_yaml_context *ctx, rsf_settings *rsf);
+void GET_BasicInfo(ctr_yaml_context *ctx, rsf_settings *rsf);
+void GET_RomFs(ctr_yaml_context *ctx, rsf_settings *rsf);
+void GET_ExeFs(ctr_yaml_context *ctx, rsf_settings *rsf);
+void GET_PlainRegion(ctr_yaml_context *ctx, rsf_settings *rsf);
+void GET_TitleInfo(ctr_yaml_context *ctx, rsf_settings *rsf);
+void GET_CardInfo(ctr_yaml_context *ctx, rsf_settings *rsf);
+void GET_CommonHeaderKey(ctr_yaml_context *ctx, rsf_settings *rsf);
+
 void EvaluateRSF(rsf_settings *rsf, ctr_yaml_context *ctx)
 {
 	u32 start_level = ctx->Level-1;
@@ -11,7 +22,7 @@ void EvaluateRSF(rsf_settings *rsf, ctr_yaml_context *ctx)
 	else if(cmpYamlValue("AccessControlInfo",ctx)) {FinishEvent(ctx); GET_AccessControlInfo(ctx,rsf); goto GET_NextGroup;}
 	else if(cmpYamlValue("SystemControlInfo",ctx)) {FinishEvent(ctx); GET_SystemControlInfo(ctx,rsf); goto GET_NextGroup;}
 	else if(cmpYamlValue("BasicInfo",ctx)) {FinishEvent(ctx); GET_BasicInfo(ctx,rsf); goto GET_NextGroup;}
-	else if(cmpYamlValue("Rom",ctx)) {FinishEvent(ctx); GET_Rom(ctx,rsf); goto GET_NextGroup;}
+	else if(cmpYamlValue("RomFs",ctx)) {FinishEvent(ctx); GET_RomFs(ctx,rsf); goto GET_NextGroup;}
 	else if(cmpYamlValue("ExeFs",ctx)) {FinishEvent(ctx); GET_ExeFs(ctx,rsf); goto GET_NextGroup;}
 	else if(cmpYamlValue("PlainRegion",ctx)) {FinishEvent(ctx); GET_PlainRegion(ctx,rsf); goto GET_NextGroup;}
 	else if(cmpYamlValue("TitleInfo",ctx)) {FinishEvent(ctx); GET_TitleInfo(ctx,rsf); goto GET_NextGroup;}
@@ -53,13 +64,11 @@ void GET_Option(ctr_yaml_context *ctx, rsf_settings *rsf)
 		// Handle childs
 		if(cmpYamlValue("AllowUnalignedSection",ctx)) SetBoolYAMLValue(&rsf->Option.AllowUnalignedSection,"AllowUnalignedSection",ctx);
 		else if(cmpYamlValue("MediaFootPadding",ctx)) SetBoolYAMLValue(&rsf->Option.MediaFootPadding,"MediaFootPadding",ctx);
-		//else if(cmpYamlValue("NoPadding",ctx)) SetBoolYAMLValue(&rsf->Option.NoPadding,"NoPadding",ctx);
 		else if(cmpYamlValue("EnableCrypt",ctx)) SetBoolYAMLValue(&rsf->Option.EnableCrypt,"EnableCrypt",ctx);
 		else if(cmpYamlValue("EnableCompress",ctx)) SetBoolYAMLValue(&rsf->Option.EnableCompress,"EnableCompress",ctx);
 		else if(cmpYamlValue("FreeProductCode",ctx)) SetBoolYAMLValue(&rsf->Option.FreeProductCode,"FreeProductCode",ctx);
 		else if(cmpYamlValue("UseOnSD",ctx)) SetBoolYAMLValue(&rsf->Option.UseOnSD,"UseOnSD",ctx);
 		else if(cmpYamlValue("PageSize",ctx)) SetSimpleYAMLValue(&rsf->Option.PageSize,"PageSize",ctx,0);
-		//else if(cmpYamlValue("AppendSystemCall",ctx)) rsf->Option.AppendSystemCallNum = SetYAMLSequence(&rsf->Option.AppendSystemCall,"AppendSystemCall",ctx);
 		else{
 			fprintf(stderr,"[RSF ERROR] Unrecognised key '%s'\n",GetYamlString(ctx));
 			ctx->error = YAML_UNKNOWN_KEY;
@@ -91,13 +100,10 @@ void GET_AccessControlInfo(ctr_yaml_context *ctx, rsf_settings *rsf)
 		else if(cmpYamlValue("PermitMainFunctionArgument",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.PermitMainFunctionArgument,"PermitMainFunctionArgument",ctx);
 		else if(cmpYamlValue("CanShareDeviceMemory",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.CanShareDeviceMemory,"CanShareDeviceMemory",ctx);
 		else if(cmpYamlValue("UseOtherVariationSaveData",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.UseOtherVariationSaveData,"UseOtherVariationSaveData",ctx);
-		else if(cmpYamlValue("UseExtSaveData",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.UseExtSaveData,"UseExtSaveData",ctx);
-		else if(cmpYamlValue("UseExtendedSaveDataAccessControl",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.UseExtendedSaveDataAccessControl,"UseExtendedSaveDataAccessControl",ctx);
 		else if(cmpYamlValue("RunnableOnSleep",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.RunnableOnSleep,"RunnableOnSleep",ctx);
 		else if(cmpYamlValue("SpecialMemoryArrange",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.SpecialMemoryArrange,"SpecialMemoryArrange",ctx);
 		
 		
-		//else if(cmpYamlValue("ProgramId",ctx)) SetSimpleYAMLValue(&rsf->AccessControlInfo.ProgramId,"ProgramId",ctx,0); 
 		else if(cmpYamlValue("IdealProcessor",ctx)) SetSimpleYAMLValue(&rsf->AccessControlInfo.IdealProcessor,"IdealProcessor",ctx,0); 
 		else if(cmpYamlValue("Priority",ctx)) SetSimpleYAMLValue(&rsf->AccessControlInfo.Priority,"Priority",ctx,0); 
 		else if(cmpYamlValue("MemoryType",ctx)) SetSimpleYAMLValue(&rsf->AccessControlInfo.MemoryType,"MemoryType",ctx,0); 
@@ -112,7 +118,6 @@ void GET_AccessControlInfo(ctr_yaml_context *ctx, rsf_settings *rsf)
 		else if(cmpYamlValue("ExtSaveDataId",ctx)) SetSimpleYAMLValue(&rsf->AccessControlInfo.ExtSaveDataId,"ExtSaveDataId",ctx,0); 
 		else if(cmpYamlValue("AffinityMask",ctx)) SetSimpleYAMLValue(&rsf->AccessControlInfo.AffinityMask,"AffinityMask",ctx,0); 
 		else if(cmpYamlValue("DescVersion",ctx)) SetSimpleYAMLValue(&rsf->AccessControlInfo.DescVersion,"DescVersion",ctx,0); 
-		//else if(cmpYamlValue("CryptoKey",ctx)) SetSimpleYAMLValue(&rsf->AccessControlInfo.CryptoKey,"CryptoKey",ctx,0); 
 		else if(cmpYamlValue("ResourceLimitCategory",ctx)) SetSimpleYAMLValue(&rsf->AccessControlInfo.ResourceLimitCategory,"ResourceLimitCategory",ctx,0); 		
 		else if(cmpYamlValue("ReleaseKernelMajor",ctx)) SetSimpleYAMLValue(&rsf->AccessControlInfo.ReleaseKernelMajor,"ReleaseKernelMajor",ctx,0);
 		else if(cmpYamlValue("ReleaseKernelMinor",ctx)) SetSimpleYAMLValue(&rsf->AccessControlInfo.ReleaseKernelMinor,"ReleaseKernelMinor",ctx,0); 
@@ -126,7 +131,6 @@ void GET_AccessControlInfo(ctr_yaml_context *ctx, rsf_settings *rsf)
 		else if(cmpYamlValue("InterruptNumbers",ctx)) rsf->AccessControlInfo.InterruptNumbersNum = SetYAMLSequence(&rsf->AccessControlInfo.InterruptNumbers,"InterruptNumbers",ctx);
 		else if(cmpYamlValue("SystemCallAccess",ctx)) rsf->AccessControlInfo.SystemCallAccessNum = SetYAMLSequenceFromMapping(&rsf->AccessControlInfo.SystemCallAccess,"SystemCallAccess",ctx,false);
 		else if(cmpYamlValue("ServiceAccessControl",ctx)) rsf->AccessControlInfo.ServiceAccessControlNum = SetYAMLSequence(&rsf->AccessControlInfo.ServiceAccessControl,"ServiceAccessControl",ctx);
-		//else if(cmpYamlValue("StorageId",ctx)) rsf->AccessControlInfo.StorageIdNum = SetYAMLSequence(&rsf->AccessControlInfo.StorageId,"StorageId",ctx);
 		else if(cmpYamlValue("AccessibleSaveDataIds",ctx)) rsf->AccessControlInfo.AccessibleSaveDataIdsNum = SetYAMLSequence(&rsf->AccessControlInfo.AccessibleSaveDataIds,"AccessibleSaveDataIds",ctx);
 
 		else{
@@ -187,8 +191,6 @@ void GET_BasicInfo(ctr_yaml_context *ctx, rsf_settings *rsf)
 		else if(cmpYamlValue("ProductCode",ctx)) SetSimpleYAMLValue(&rsf->BasicInfo.ProductCode,"ProductCode",ctx,0);
 		else if(cmpYamlValue("ContentType",ctx)) SetSimpleYAMLValue(&rsf->BasicInfo.ContentType,"ContentType",ctx,0);
 		else if(cmpYamlValue("Logo",ctx)) SetSimpleYAMLValue(&rsf->BasicInfo.Logo,"Logo",ctx,0);
-		//else if(cmpYamlValue("BackupMemoryType",ctx)) SetSimpleYAMLValue(&rsf->BasicInfo.BackupMemoryType,"BackupMemoryType",ctx,0);
-		//else if(cmpYamlValue("InitialCode",ctx)) SetSimpleYAMLValue(&rsf->BasicInfo.InitialCode,"InitialCode",ctx,0);
 		else{
 			fprintf(stderr,"[RSF ERROR] Unrecognised key '%s'\n",GetYamlString(ctx));
 			ctx->error = YAML_UNKNOWN_KEY;
@@ -202,7 +204,7 @@ void GET_BasicInfo(ctr_yaml_context *ctx, rsf_settings *rsf)
 	FinishEvent(ctx);
 }
 
-void GET_Rom(ctr_yaml_context *ctx, rsf_settings *rsf)
+void GET_RomFs(ctr_yaml_context *ctx, rsf_settings *rsf)
 {
 	/* Checking That Group is in a map */
 	if(!CheckMappingEvent(ctx)) return;
@@ -213,13 +215,12 @@ void GET_Rom(ctr_yaml_context *ctx, rsf_settings *rsf)
 		if(ctx->error || ctx->done) return;
 		// Handle childs
 		
-		if(cmpYamlValue("HostRoot",ctx)) SetSimpleYAMLValue(&rsf->Rom.HostRoot,"HostRoot",ctx,0);
-		//else if(cmpYamlValue("Padding",ctx)) SetSimpleYAMLValue(&rsf->Rom.Padding,"Padding",ctx,0);
+		if(cmpYamlValue("RootPath",ctx)) SetSimpleYAMLValue(&rsf->RomFs.RootPath,"RootPath",ctx,0);
 		
-		else if(cmpYamlValue("DefaultReject",ctx)) rsf->Rom.DefaultRejectNum = SetYAMLSequence(&rsf->Rom.DefaultReject,"DefaultReject",ctx);
-		else if(cmpYamlValue("Reject",ctx)) rsf->Rom.RejectNum = SetYAMLSequence(&rsf->Rom.Reject,"Reject",ctx);
-		else if(cmpYamlValue("Include",ctx)) rsf->Rom.IncludeNum = SetYAMLSequence(&rsf->Rom.Include,"Include",ctx);
-		else if(cmpYamlValue("File",ctx)) rsf->Rom.FileNum = SetYAMLSequence(&rsf->Rom.File,"File",ctx);
+		else if(cmpYamlValue("DefaultReject",ctx)) rsf->RomFs.DefaultRejectNum = SetYAMLSequence(&rsf->RomFs.DefaultReject,"DefaultReject",ctx);
+		else if(cmpYamlValue("Reject",ctx)) rsf->RomFs.RejectNum = SetYAMLSequence(&rsf->RomFs.Reject,"Reject",ctx);
+		else if(cmpYamlValue("Include",ctx)) rsf->RomFs.IncludeNum = SetYAMLSequence(&rsf->RomFs.Include,"Include",ctx);
+		else if(cmpYamlValue("File",ctx)) rsf->RomFs.FileNum = SetYAMLSequence(&rsf->RomFs.File,"File",ctx);
 		
 		else{
 			fprintf(stderr,"[RSF ERROR] Unrecognised key '%s'\n",GetYamlString(ctx));
@@ -279,12 +280,10 @@ void GET_TitleInfo(ctr_yaml_context *ctx, rsf_settings *rsf)
 		// Handle childs
 		
 		if(cmpYamlValue("Category",ctx)) SetSimpleYAMLValue(&rsf->TitleInfo.Category,"Category",ctx,0);
-		//else if(cmpYamlValue("Platform",ctx)) SetSimpleYAMLValue(&rsf->TitleInfo.Platform,"Platform",ctx,0);
 		else if(cmpYamlValue("UniqueId",ctx)) SetSimpleYAMLValue(&rsf->TitleInfo.UniqueId,"UniqueId",ctx,0);
 		else if(cmpYamlValue("Version",ctx)) SetSimpleYAMLValue(&rsf->TitleInfo.Version,"Version",ctx,0);
 		else if(cmpYamlValue("ContentsIndex",ctx)) SetSimpleYAMLValue(&rsf->TitleInfo.ContentsIndex,"ContentsIndex",ctx,0);
 		else if(cmpYamlValue("Variation",ctx)) SetSimpleYAMLValue(&rsf->TitleInfo.Variation,"Variation",ctx,0);
-		//else if(cmpYamlValue("Use",ctx)) SetSimpleYAMLValue(&rsf->TitleInfo.Use,"Use",ctx,0);
 		else if(cmpYamlValue("ChildIndex",ctx)) SetSimpleYAMLValue(&rsf->TitleInfo.ChildIndex,"ChildIndex",ctx,0);
 		else if(cmpYamlValue("DemoIndex",ctx)) SetSimpleYAMLValue(&rsf->TitleInfo.DemoIndex,"DemoIndex",ctx,0);
 		else if(cmpYamlValue("TargetCategory",ctx)) SetSimpleYAMLValue(&rsf->TitleInfo.TargetCategory,"TargetCategory",ctx,0);
@@ -377,15 +376,8 @@ void free_RsfSettings(rsf_settings *set)
 {
 	//Option
 	free(set->Option.PageSize);
-	/*
-	for(u32 i = 0; i < set->Option.AppendSystemCallNum; i++){
-		free(set->Option.AppendSystemCall[i]);
-	}
-	free(set->Option.AppendSystemCall);
-	*/
 
 	//AccessControlInfo
-	//free(set->AccessControlInfo.ProgramId);
 	free(set->AccessControlInfo.IdealProcessor);
 	free(set->AccessControlInfo.Priority);
 	free(set->AccessControlInfo.MemoryType);
@@ -401,7 +393,6 @@ void free_RsfSettings(rsf_settings *set)
 	free(set->AccessControlInfo.SystemMode);	
 	free(set->AccessControlInfo.AffinityMask);
 	free(set->AccessControlInfo.DescVersion);
-	//free(set->AccessControlInfo.CryptoKey);
 	free(set->AccessControlInfo.ResourceLimitCategory);
 	free(set->AccessControlInfo.ReleaseKernelMajor);
 	free(set->AccessControlInfo.ReleaseKernelMinor);
@@ -441,11 +432,6 @@ void free_RsfSettings(rsf_settings *set)
 		free(set->AccessControlInfo.ServiceAccessControl[i]);
 	}
 	free(set->AccessControlInfo.ServiceAccessControl);
-	
-	for(u32 i = 0; i < set->AccessControlInfo.StorageIdNum; i++){
-		free(set->AccessControlInfo.StorageId[i]);
-	}
-	free(set->AccessControlInfo.StorageId);
 
 	for(u32 i = 0; i < set->AccessControlInfo.AccessibleSaveDataIdsNum; i++){
 		free(set->AccessControlInfo.AccessibleSaveDataIds[i]);
@@ -470,32 +456,29 @@ void free_RsfSettings(rsf_settings *set)
 	free(set->BasicInfo.ProductCode);
 	free(set->BasicInfo.ContentType);
 	free(set->BasicInfo.Logo);
-	//free(set->BasicInfo.BackupMemoryType);
-	//free(set->BasicInfo.InitialCode);
 	
 	//Rom
-	free(set->Rom.HostRoot);
-	//free(set->Rom.Padding);
+	free(set->RomFs.RootPath);
 	
-	for(u32 i = 0; i < set->Rom.DefaultRejectNum; i++){
-		free(set->Rom.DefaultReject[i]);
+	for(u32 i = 0; i < set->RomFs.DefaultRejectNum; i++){
+		free(set->RomFs.DefaultReject[i]);
 	}
-	free(set->Rom.DefaultReject);
+	free(set->RomFs.DefaultReject);
 	
-	for(u32 i = 0; i < set->Rom.RejectNum; i++){
-		free(set->Rom.Reject[i]);
+	for(u32 i = 0; i < set->RomFs.RejectNum; i++){
+		free(set->RomFs.Reject[i]);
 	}
-	free(set->Rom.Reject);
+	free(set->RomFs.Reject);
 	
-	for(u32 i = 0; i < set->Rom.IncludeNum; i++){
-		free(set->Rom.Include[i]);
+	for(u32 i = 0; i < set->RomFs.IncludeNum; i++){
+		free(set->RomFs.Include[i]);
 	}
-	free(set->Rom.Include);
+	free(set->RomFs.Include);
 	
-	for(u32 i = 0; i < set->Rom.FileNum; i++){
-		free(set->Rom.File[i]);
+	for(u32 i = 0; i < set->RomFs.FileNum; i++){
+		free(set->RomFs.File[i]);
 	}
-	free(set->Rom.File);
+	free(set->RomFs.File);
 	
 	//ExeFs
 	for(u32 i = 0; i < set->ExeFs.TextNum; i++){
@@ -520,13 +503,11 @@ void free_RsfSettings(rsf_settings *set)
 	free(set->PlainRegion);
 	
 	//TitleInfo
-	//free(set->TitleInfo.Platform);
 	free(set->TitleInfo.Category);
 	free(set->TitleInfo.UniqueId);
 	free(set->TitleInfo.Version);
 	free(set->TitleInfo.ContentsIndex);
 	free(set->TitleInfo.Variation);
-	//free(set->TitleInfo.Use);
 	free(set->TitleInfo.ChildIndex);
 	free(set->TitleInfo.DemoIndex);
 	free(set->TitleInfo.TargetCategory);

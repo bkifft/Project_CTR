@@ -63,9 +63,7 @@ typedef struct
 {	
 	struct{
 		// Booleans
-		// Booleans
 		bool MediaFootPadding;
-		//bool NoPadding; // DELETE
 		bool AllowUnalignedSection;
 		bool EnableCrypt;
 		bool EnableCompress;
@@ -74,10 +72,6 @@ typedef struct
 
 		// Strings
 		char *PageSize;
-		
-		// String Collections
-		//u32 AppendSystemCallNum; // DELETE
-		//char **AppendSystemCall; // DELETE
 	} Option;
 	
 	struct{
@@ -90,13 +84,10 @@ typedef struct
 		bool PermitMainFunctionArgument;
 		bool CanShareDeviceMemory;
 		bool UseOtherVariationSaveData;
-		bool UseExtSaveData;
-		bool UseExtendedSaveDataAccessControl;
 		bool RunnableOnSleep;
 		bool SpecialMemoryArrange;
 		
 		// Strings
-		//char *ProgramId; // DELETE
 		char *IdealProcessor;
 		char *Priority;
 		char *MemoryType;
@@ -112,7 +103,6 @@ typedef struct
 		char *AffinityMask;
 		// Strings From DESC
 		char *DescVersion;
-		//char *CryptoKey; // DELETE
 		char *ResourceLimitCategory;
 		char *ReleaseKernelMajor;
 		char *ReleaseKernelMinor;
@@ -133,8 +123,6 @@ typedef struct
 		char **SystemCallAccess;
 		u32 ServiceAccessControlNum;
 		char **ServiceAccessControl;
-		u32 StorageIdNum; // DELETE
-		char **StorageId; // DELETE
 		u32 AccessibleSaveDataIdsNum;
 		char **AccessibleSaveDataIds;
 	} AccessControlInfo;
@@ -159,14 +147,11 @@ typedef struct
 		char *ProductCode;
 		char *ContentType;
 		char *Logo;
-		//char *BackupMemoryType;// Delete
-		//char *InitialCode;// Delete
 	} BasicInfo;
 	
 	struct{
 		// Strings
-		char *HostRoot;
-		//char *Padding; // DELETE
+		char *RootPath;
 		
 		// String Collections
 		u32 DefaultRejectNum;
@@ -177,7 +162,7 @@ typedef struct
 		char **Include;
 		u32 FileNum;
 		char **File;
-	} Rom;
+	} RomFs;
 	
 	struct{
 		u32 TextNum;
@@ -193,13 +178,11 @@ typedef struct
 	
 	struct{
 		// Strings
-		//char *Platform; // DELETE
 		char *Category;
 		char *UniqueId;
 		char *Version;
 		char *ContentsIndex;
 		char *Variation;
-		//char *Use; // DELETE
 		char *ChildIndex;
 		char *DemoIndex;
 		char *TargetCategory;

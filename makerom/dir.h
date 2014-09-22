@@ -41,7 +41,7 @@ typedef struct
 
 typedef struct
 {
-	u16 *name;
+	fs_romfs_char *name;
 	u32 name_len;
 	
 	void *dir; // treated as type 'fs_dir'. This officially type 'void' to prevent self referencing problems

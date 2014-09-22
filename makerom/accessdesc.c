@@ -307,12 +307,22 @@ void accessdesc_GetPresetSigData(u8 **accessDescSig, u8 **cxiPubk, u8 **cxiPvtk,
 					*cxiPubk = (u8*)app_fw1D_prod_hdrpub;
 					*cxiPvtk = NULL;
 				}
+				if(keys->keyset == pki_GATEWAY3DS){
+					*accessDescSig = (u8*)app_fw1D_prod_acexsig;
+					*cxiPubk = (u8*)app_fw1D_prod_hdrpub;
+					*cxiPvtk = (u8*)app_fw1D_prod_hdrpub;
+				}
 				break;
 			case 0x1E:
 				if(keys->keyset == pki_PRODUCTION){
 					*accessDescSig = (u8*)app_fw1E_prod_acexsig;
 					*cxiPubk = (u8*)app_fw1E_prod_hdrpub;
 					*cxiPvtk = NULL;
+				}
+				if(keys->keyset == pki_GATEWAY3DS){
+					*accessDescSig = (u8*)app_fw1E_prod_acexsig;
+					*cxiPubk = (u8*)app_fw1E_prod_hdrpub;
+					*cxiPvtk = (u8*)app_fw1E_prod_hdrpub;
 				}
 				break;
 			case 0x20:
@@ -321,10 +331,15 @@ void accessdesc_GetPresetSigData(u8 **accessDescSig, u8 **cxiPubk, u8 **cxiPvtk,
 					*cxiPubk = (u8*)app_fw20_dev_hdrpub;
 					*cxiPvtk = NULL;
 				}
-				else if(keys->keyset == pki_PRODUCTION){
+				if(keys->keyset == pki_PRODUCTION){
 					*accessDescSig = (u8*)app_fw20_prod_acexsig;
 					*cxiPubk = (u8*)app_fw20_prod_hdrpub;
 					*cxiPvtk = NULL;
+				}
+				if(keys->keyset == pki_GATEWAY3DS){
+					*accessDescSig = (u8*)app_fw20_prod_acexsig;
+					*cxiPubk = (u8*)app_fw20_prod_hdrpub;
+					*cxiPvtk = (u8*)app_fw20_prod_hdrpub;
 				}
 				break;
 			case 0x21:
@@ -338,6 +353,11 @@ void accessdesc_GetPresetSigData(u8 **accessDescSig, u8 **cxiPubk, u8 **cxiPvtk,
 					*cxiPubk = (u8*)app_fw21_prod_hdrpub;
 					*cxiPvtk = NULL;
 				}
+				if(keys->keyset == pki_GATEWAY3DS){
+					*accessDescSig = (u8*)app_fw21_prod_acexsig;
+					*cxiPubk = (u8*)app_fw21_prod_hdrpub;
+					*cxiPvtk = (u8*)app_fw21_prod_hdrpub;
+				}
 				break;
 			case 0x23:
 				if(keys->keyset == pki_DEVELOPMENT){
@@ -350,12 +370,22 @@ void accessdesc_GetPresetSigData(u8 **accessDescSig, u8 **cxiPubk, u8 **cxiPvtk,
 					*cxiPubk = (u8*)app_fw23_prod_hdrpub;
 					*cxiPvtk = NULL;
 				}
+				if(keys->keyset == pki_GATEWAY3DS){
+					*accessDescSig = (u8*)app_fw23_prod_acexsig;
+					*cxiPubk = (u8*)app_fw23_prod_hdrpub;
+					*cxiPvtk = (u8*)app_fw23_prod_hdrpub;
+				}
 				break;
 			case 0x27:
 				if(keys->keyset == pki_PRODUCTION){
 					*accessDescSig = (u8*)app_fw27_prod_acexsig;
 					*cxiPubk = (u8*)app_fw27_prod_hdrpub;
 					*cxiPvtk = NULL;
+				}
+				if(keys->keyset == pki_GATEWAY3DS){
+					*accessDescSig = (u8*)app_fw27_prod_acexsig;
+					*cxiPubk = (u8*)app_fw27_prod_hdrpub;
+					*cxiPvtk = (u8*)app_fw27_prod_hdrpub;
 				}
 				break;
 			
@@ -369,12 +399,22 @@ void accessdesc_GetPresetSigData(u8 **accessDescSig, u8 **cxiPubk, u8 **cxiPvtk,
 					*cxiPubk = (u8*)ecapp_fw20_prod_hdrpub;
 					*cxiPvtk = NULL;
 				}
+				if(keys->keyset == pki_GATEWAY3DS){
+					*accessDescSig = (u8*)ecapp_fw20_prod_acexsig;
+					*cxiPubk = (u8*)ecapp_fw20_prod_hdrpub;
+					*cxiPvtk = (u8*)ecapp_fw20_prod_hdrpub;
+				}
 				break;
 			case 0x23:
 				if(keys->keyset == pki_PRODUCTION){
 					*accessDescSig = (u8*)ecapp_fw23_prod_acexsig;
 					*cxiPubk = (u8*)ecapp_fw23_prod_hdrpub;
 					*cxiPvtk = NULL;
+				}
+				if(keys->keyset == pki_GATEWAY3DS){
+					*accessDescSig = (u8*)ecapp_fw23_prod_acexsig;
+					*cxiPubk = (u8*)ecapp_fw23_prod_hdrpub;
+					*cxiPvtk = (u8*)ecapp_fw23_prod_hdrpub;
 				}
 				break;
 		}

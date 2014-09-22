@@ -175,7 +175,7 @@ int GetBasicOptions(ncch_settings *ncchset, user_settings *usrset)
 	ncchset->options.FreeProductCode = ncchset->rsfSet->Option.FreeProductCode;
 	ncchset->options.IsCfa = (usrset->ncch.ncchType == CFA);
 	ncchset->options.IsBuildingCodeSection = (usrset->ncch.elfPath != NULL);
-	ncchset->options.UseRomFS = ((ncchset->rsfSet->Rom.HostRoot && strlen(ncchset->rsfSet->Rom.HostRoot) > 0) || usrset->ncch.romfsPath);
+	ncchset->options.UseRomFS = ((ncchset->rsfSet->RomFs.RootPath && strlen(ncchset->rsfSet->RomFs.RootPath) > 0) || usrset->ncch.romfsPath);
 	ncchset->options.useSecCrypto = usrset->ncch.useSecCrypto;
 	ncchset->options.keyXID = usrset->ncch.keyXID;
 	
