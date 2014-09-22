@@ -38,6 +38,12 @@ typedef enum
 
 typedef enum
 {
+	SHA_1_LEN = 0x14,
+	SHA_256_LEN = 0x20,
+} sha_hash_len;
+
+typedef enum
+{
 	RSA_4096_PUBK = 0,
 	RSA_2048_PUBK,
 	ECC_PUBK
