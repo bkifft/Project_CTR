@@ -177,12 +177,14 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 		}
 		if(strcasecmp(argv[i+1],"test") == 0 || strcasecmp(argv[i+1],"t") == 0)
 			set->common.keys.keyset = pki_TEST;
+		//else if(strcasecmp(argv[i+1],"beta") == 0 || strcasecmp(argv[i+1],"b") == 0)
+		//	set->common.keys.keyset = pki_BETA;
 		else if(strcasecmp(argv[i+1],"debug") == 0 || strcasecmp(argv[i+1],"development") == 0 || strcasecmp(argv[i+1],"d") == 0)
 			set->common.keys.keyset = pki_DEVELOPMENT;
 		else if(strcasecmp(argv[i+1],"retail") == 0 || strcasecmp(argv[i+1],"production") == 0 || strcasecmp(argv[i+1],"p") == 0)
 			set->common.keys.keyset = pki_PRODUCTION;
-		else if(strcasecmp(argv[i+1],"gw") == 0 || strcasecmp(argv[i+1],"gateway3ds") == 0 || strcasecmp(argv[i+1],"g") == 0)
-			set->common.keys.keyset = pki_GATEWAY3DS;
+		//else if(strcasecmp(argv[i+1],"custom") == 0 || strcasecmp(argv[i+1],"c") == 0)
+		//	set->common.keys.keyset = pki_CUSTOM;
 		else{
 			fprintf(stderr,"[SETTING ERROR] Unrecognised target '%s'\n",argv[i+1]);
 			return USR_BAD_ARG;
@@ -866,11 +868,10 @@ void DisplayHelp(char *app_name)
 	printf(" -v                                 Verbose output\n");
 	printf(" -DNAME=VALUE                       Substitute values in RSF file\n");
 	printf("KEY OPTIONS:\n");
-	printf(" -target        <t|d|p|g>           Target for crypto, defaults to 't'\n");
+	printf(" -target        <t|d|p>             Target for crypto, defaults to 't'\n");
 	printf("                                    't' Test(false) Keys & prod Certs\n");
 	printf("                                    'd' Development Keys & Certs\n");
 	printf("                                    'p' Production Keys & Certs\n");
-	printf("                                    'g' Production Keys & Certs for GW3DS only\n");
 	printf(" -ckeyid        <index>             Override the automatic common key selection\n");
 	printf(" -ncchseckey    <index>             Ncch keyX index ('0'=1.0+, '1'=7.0+)\n");
 	printf(" -showkeys                          Display the loaded key chain\n");

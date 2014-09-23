@@ -170,31 +170,6 @@ int LoadKeysFromResources(keys_struct *keys)
 		SetTikCert(keys,(u8*)xsC_ppki_cert);
 		SetTmdCert(keys,(u8*)cpB_ppki_cert);
 	}
-	else if(keys->keyset == pki_GATEWAY3DS){
-		keys->keysetLoaded = true;
-		/* AES Keys */
-		// CIA
-		if(keys->aes.currentCommonKey > 0xff)
-			SetCurrentCommonKey(keys,0);
-	
-		// NCCH
-		SetNormalKey(keys,(u8*)dev_fixed_ncch_key[0]);
-		SetSystemFixedKey(keys,(u8*)dev_fixed_ncch_key[0]);
-
-		/* RSA Keys */
-		// CIA
-		SetTIK_RsaKey(keys,(u8*)xsC_ppki_rsa_priv,(u8*)xsC_ppki_rsa_pub);
-		SetTMD_RsaKey(keys,(u8*)cpB_ppki_rsa_priv,(u8*)cpB_ppki_rsa_pub);
-		// CCI/CFA
-		Set_CCI_CFA_RsaKey(keys,(u8*)prod_ncsd_cfa_priv,(u8*)prod_ncsd_cfa_pub);
-		// CXI
-		SetAccessDesc_RsaKey(keys,(u8*)prod_acex_priv,(u8*)prod_acex_pub);
-	
-		/* Certs */
-		SetCaCert(keys,(u8*)ca3_ppki_cert);
-		SetTikCert(keys,(u8*)xsC_ppki_cert);
-		SetTmdCert(keys,(u8*)cpB_ppki_cert);
-	}
 	return 0;
 }
 
