@@ -389,8 +389,7 @@ void free_RsfSettings(rsf_settings *set)
 	free(set->AccessControlInfo.OtherUserSaveDataId1);
 	free(set->AccessControlInfo.OtherUserSaveDataId2);
 	free(set->AccessControlInfo.OtherUserSaveDataId3);
-	free(set->AccessControlInfo.ExtSaveDataId);
-	free(set->AccessControlInfo.SystemMode);	
+	free(set->AccessControlInfo.ExtSaveDataId);	
 	free(set->AccessControlInfo.AffinityMask);
 	free(set->AccessControlInfo.DescVersion);
 	free(set->AccessControlInfo.ResourceLimitCategory);
