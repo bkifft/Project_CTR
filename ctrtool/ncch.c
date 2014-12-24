@@ -589,6 +589,8 @@ void ncch_print(ncch_context* ctx)
 		fprintf(stdout, " > Crypto key:          %s\n", programid_is_system(header->programid)? "Fixed":"Zeros");
 	else if (header->flags[3] & 1)
 		fprintf(stdout, " > Crypto key:          Secure2\n");
+	else if (header->flags[3] & 10)
+		fprintf(stdout, " > Crypto key:          secure3 (New 3DS)\n");
 	else
 		fprintf(stdout, " > Crypto key:          Secure\n");
 	fprintf(stdout, " > Form type:           %s\n", formtypetostring(header->flags[5]));
