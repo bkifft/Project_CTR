@@ -1,0 +1,272 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{21926330-F5A5-4643-AD32-D4F167CE226B}</ProjectGuid>
+    <Keyword>MakeFileProj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <NMakeBuildCommandLine>make</NMakeBuildCommandLine>
+    <NMakeOutput>makerom.exe</NMakeOutput>
+    <NMakeCleanCommandLine>make clean</NMakeCleanCommandLine>
+    <NMakeReBuildCommandLine>make rebuild</NMakeReBuildCommandLine>
+    <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <NMakeBuildCommandLine>make</NMakeBuildCommandLine>
+    <NMakeOutput>makerom.exe</NMakeOutput>
+    <NMakeCleanCommandLine>make clean</NMakeCleanCommandLine>
+    <NMakeReBuildCommandLine>make rebuild</NMakeReBuildCommandLine>
+    <NMakePreprocessorDefinitions>WIN32;NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <Text Include="readme.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="accessdesc.h" />
+    <ClInclude Include="blz.h" />
+    <ClInclude Include="cardinfo.h" />
+    <ClInclude Include="certs.h" />
+    <ClInclude Include="cia.h" />
+    <ClInclude Include="cia_build.h" />
+    <ClInclude Include="cia_read.h" />
+    <ClInclude Include="crr.h" />
+    <ClInclude Include="crypto.h" />
+    <ClInclude Include="ctr_utils.h" />
+    <ClInclude Include="desc\dev_sigdata.h" />
+    <ClInclude Include="desc\presets.h" />
+    <ClInclude Include="desc\prod_sigdata.h" />
+    <ClInclude Include="dir.h" />
+    <ClInclude Include="elf.h" />
+    <ClInclude Include="elf_hdr.h" />
+    <ClInclude Include="exefs.h" />
+    <ClInclude Include="exefs_build.h" />
+    <ClInclude Include="exefs_read.h" />
+    <ClInclude Include="exheader.h" />
+    <ClInclude Include="exheader_build.h" />
+    <ClInclude Include="exheader_read.h" />
+    <ClInclude Include="keyset.h" />
+    <ClInclude Include="lib.h" />
+    <ClInclude Include="libyaml\yaml.h" />
+    <ClInclude Include="libyaml\yaml_private.h" />
+    <ClInclude Include="ncch.h" />
+    <ClInclude Include="ncch_build.h" />
+    <ClInclude Include="ncch_logo.h" />
+    <ClInclude Include="ncch_read.h" />
+    <ClInclude Include="ncsd.h" />
+    <ClInclude Include="ncsd_build.h" />
+    <ClInclude Include="ncsd_read.h" />
+    <ClInclude Include="pki\dev.h" />
+    <ClInclude Include="pki\dev_legacy.h" />
+    <ClInclude Include="pki\prod.h" />
+    <ClInclude Include="pki\prod_legacy.h" />
+    <ClInclude Include="pki\test.h" />
+    <ClInclude Include="polarssl\aes.h" />
+    <ClInclude Include="polarssl\arc4.h" />
+    <ClInclude Include="polarssl\asn1.h" />
+    <ClInclude Include="polarssl\asn1write.h" />
+    <ClInclude Include="polarssl\base64.h" />
+    <ClInclude Include="polarssl\bignum.h" />
+    <ClInclude Include="polarssl\blowfish.h" />
+    <ClInclude Include="polarssl\bn_mul.h" />
+    <ClInclude Include="polarssl\camellia.h" />
+    <ClInclude Include="polarssl\certs.h" />
+    <ClInclude Include="polarssl\cipher.h" />
+    <ClInclude Include="polarssl\cipher_wrap.h" />
+    <ClInclude Include="polarssl\config.h" />
+    <ClInclude Include="polarssl\ctr_drbg.h" />
+    <ClInclude Include="polarssl\debug.h" />
+    <ClInclude Include="polarssl\des.h" />
+    <ClInclude Include="polarssl\dhm.h" />
+    <ClInclude Include="polarssl\entropy.h" />
+    <ClInclude Include="polarssl\entropy_poll.h" />
+    <ClInclude Include="polarssl\error.h" />
+    <ClInclude Include="polarssl\gcm.h" />
+    <ClInclude Include="polarssl\havege.h" />
+    <ClInclude Include="polarssl\md.h" />
+    <ClInclude Include="polarssl\md2.h" />
+    <ClInclude Include="polarssl\md4.h" />
+    <ClInclude Include="polarssl\md5.h" />
+    <ClInclude Include="polarssl\md_wrap.h" />
+    <ClInclude Include="polarssl\net.h" />
+    <ClInclude Include="polarssl\openssl.h" />
+    <ClInclude Include="polarssl\padlock.h" />
+    <ClInclude Include="polarssl\pbkdf2.h" />
+    <ClInclude Include="polarssl\pem.h" />
+    <ClInclude Include="polarssl\pkcs11.h" />
+    <ClInclude Include="polarssl\pkcs12.h" />
+    <ClInclude Include="polarssl\pkcs5.h" />
+    <ClInclude Include="polarssl\rsa.h" />
+    <ClInclude Include="polarssl\sha1.h" />
+    <ClInclude Include="polarssl\sha2.h" />
+    <ClInclude Include="polarssl\sha4.h" />
+    <ClInclude Include="polarssl\ssl.h" />
+    <ClInclude Include="polarssl\ssl_cache.h" />
+    <ClInclude Include="polarssl\timing.h" />
+    <ClInclude Include="polarssl\version.h" />
+    <ClInclude Include="polarssl\x509.h" />
+    <ClInclude Include="polarssl\x509write.h" />
+    <ClInclude Include="polarssl\xtea.h" />
+    <ClInclude Include="romfs.h" />
+    <ClInclude Include="romfs_gen.h" />
+    <ClInclude Include="romfs_import.h" />
+    <ClInclude Include="rsf_settings.h" />
+    <ClInclude Include="srl.h" />
+    <ClInclude Include="tik.h" />
+    <ClInclude Include="tik_build.h" />
+    <ClInclude Include="tik_read.h" />
+    <ClInclude Include="titleid.h" />
+    <ClInclude Include="tmd.h" />
+    <ClInclude Include="tmd_build.h" />
+    <ClInclude Include="tmd_read.h" />
+    <ClInclude Include="types.h" />
+    <ClInclude Include="user_settings.h" />
+    <ClInclude Include="utf.h" />
+    <ClInclude Include="utils.h" />
+    <ClInclude Include="yaml_parser.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="accessdesc.c" />
+    <ClCompile Include="blz.c" />
+    <ClCompile Include="cardinfo.c" />
+    <ClCompile Include="certs.c" />
+    <ClCompile Include="cia.c" />
+    <ClCompile Include="crypto.c" />
+    <ClCompile Include="ctr_utils.c" />
+    <ClCompile Include="dir.c" />
+    <ClCompile Include="elf.c" />
+    <ClCompile Include="exefs.c" />
+    <ClCompile Include="exheader.c" />
+    <ClCompile Include="keyset.c" />
+    <ClCompile Include="libyaml\api.c" />
+    <ClCompile Include="libyaml\dumper.c" />
+    <ClCompile Include="libyaml\emitter.c" />
+    <ClCompile Include="libyaml\loader.c" />
+    <ClCompile Include="libyaml\parser.c" />
+    <ClCompile Include="libyaml\reader.c" />
+    <ClCompile Include="libyaml\scanner.c" />
+    <ClCompile Include="libyaml\writer.c" />
+    <ClCompile Include="makerom.c" />
+    <ClCompile Include="ncch.c" />
+    <ClCompile Include="ncsd.c" />
+    <ClCompile Include="polarssl\arc4.c" />
+    <ClCompile Include="polarssl\asn1parse.c" />
+    <ClCompile Include="polarssl\asn1write.c" />
+    <ClCompile Include="polarssl\base64.c" />
+    <ClCompile Include="polarssl\bignum.c" />
+    <ClCompile Include="polarssl\blowfish.c" />
+    <ClCompile Include="polarssl\camellia.c" />
+    <ClCompile Include="polarssl\certs.c" />
+    <ClCompile Include="polarssl\cipher.c" />
+    <ClCompile Include="polarssl\cipher_wrap.c" />
+    <ClCompile Include="polarssl\ctr_drbg.c" />
+    <ClCompile Include="polarssl\debug.c" />
+    <ClCompile Include="polarssl\des.c" />
+    <ClCompile Include="polarssl\dhm.c" />
+    <ClCompile Include="polarssl\entropy.c" />
+    <ClCompile Include="polarssl\entropy_poll.c" />
+    <ClCompile Include="polarssl\error.c" />
+    <ClCompile Include="polarssl\gcm.c" />
+    <ClCompile Include="polarssl\havege.c" />
+    <ClCompile Include="polarssl\md.c" />
+    <ClCompile Include="polarssl\md2.c" />
+    <ClCompile Include="polarssl\md4.c" />
+    <ClCompile Include="polarssl\md5.c" />
+    <ClCompile Include="polarssl\md_wrap.c" />
+    <ClCompile Include="polarssl\net.c" />
+    <ClCompile Include="polarssl\padlock.c" />
+    <ClCompile Include="polarssl\pbkdf2.c" />
+    <ClCompile Include="polarssl\pem.c" />
+    <ClCompile Include="polarssl\pkcs11.c" />
+    <ClCompile Include="polarssl\pkcs12.c" />
+    <ClCompile Include="polarssl\pkcs5.c" />
+    <ClCompile Include="polarssl\rsa.c" />
+    <ClCompile Include="polarssl\sha1.c" />
+    <ClCompile Include="polarssl\sha2.c" />
+    <ClCompile Include="polarssl\sha4.c" />
+    <ClCompile Include="polarssl\ssl_cache.c" />
+    <ClCompile Include="polarssl\ssl_cli.c" />
+    <ClCompile Include="polarssl\ssl_srv.c" />
+    <ClCompile Include="polarssl\ssl_tls.c" />
+    <ClCompile Include="polarssl\timing.c" />
+    <ClCompile Include="polarssl\version.c" />
+    <ClCompile Include="polarssl\x509parse.c" />
+    <ClCompile Include="polarssl\x509write.c" />
+    <ClCompile Include="polarssl\xtea.c" />
+    <ClCompile Include="romfs.c" />
+    <ClCompile Include="romfs_gen.c" />
+    <ClCompile Include="romfs_import.c" />
+    <ClCompile Include="rsf_settings.c" />
+    <ClCompile Include="tik.c" />
+    <ClCompile Include="titleid.c" />
+    <ClCompile Include="tmd.c" />
+    <ClCompile Include="user_settings.c" />
+    <ClCompile Include="utf.c" />
+    <ClCompile Include="utils.c" />
+    <ClCompile Include="yaml_parser.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Makefile" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

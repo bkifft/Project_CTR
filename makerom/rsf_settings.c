@@ -102,12 +102,16 @@ void GET_AccessControlInfo(ctr_yaml_context *ctx, rsf_settings *rsf)
 		else if(cmpYamlValue("UseOtherVariationSaveData",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.UseOtherVariationSaveData,"UseOtherVariationSaveData",ctx);
 		else if(cmpYamlValue("RunnableOnSleep",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.RunnableOnSleep,"RunnableOnSleep",ctx);
 		else if(cmpYamlValue("SpecialMemoryArrange",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.SpecialMemoryArrange,"SpecialMemoryArrange",ctx);
-		
+		else if(cmpYamlValue("UseExtSaveData", ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.UseExtSaveData, "UseExtSaveData", ctx);
+		else if(cmpYamlValue("EnableL2Cache", ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.EnableL2Cache, "EnableL2Cache", ctx);
+
 		
 		else if(cmpYamlValue("IdealProcessor",ctx)) SetSimpleYAMLValue(&rsf->AccessControlInfo.IdealProcessor,"IdealProcessor",ctx,0); 
 		else if(cmpYamlValue("Priority",ctx)) SetSimpleYAMLValue(&rsf->AccessControlInfo.Priority,"Priority",ctx,0); 
 		else if(cmpYamlValue("MemoryType",ctx)) SetSimpleYAMLValue(&rsf->AccessControlInfo.MemoryType,"MemoryType",ctx,0); 
 		else if(cmpYamlValue("SystemMode",ctx)) SetSimpleYAMLValue(&rsf->AccessControlInfo.SystemMode,"SystemMode",ctx,0); 
+		else if(cmpYamlValue("SystemModeExt", ctx)) SetSimpleYAMLValue(&rsf->AccessControlInfo.SystemModeExt, "SystemModeExt", ctx, 0);
+		else if(cmpYamlValue("CpuSpeed", ctx)) SetSimpleYAMLValue(&rsf->AccessControlInfo.CpuSpeed, "CpuSpeed", ctx, 0);
 		else if(cmpYamlValue("CoreVersion",ctx)) SetSimpleYAMLValue(&rsf->AccessControlInfo.CoreVersion,"CoreVersion",ctx,0); 
 		else if(cmpYamlValue("HandleTableSize",ctx)) SetSimpleYAMLValue(&rsf->AccessControlInfo.HandleTableSize,"HandleTableSize",ctx,0); 
 		else if(cmpYamlValue("SystemSaveDataId1",ctx)) SetSimpleYAMLValue(&rsf->AccessControlInfo.SystemSaveDataId1,"SystemSaveDataId1",ctx,0); 
@@ -279,7 +283,8 @@ void GET_TitleInfo(ctr_yaml_context *ctx, rsf_settings *rsf)
 		if(ctx->error || ctx->done) return;
 		// Handle childs
 		
-		if(cmpYamlValue("Category",ctx)) SetSimpleYAMLValue(&rsf->TitleInfo.Category,"Category",ctx,0);
+		if (cmpYamlValue("Platform", ctx)) SetSimpleYAMLValue(&rsf->TitleInfo.Platform, "Platform", ctx, 0);
+		else if(cmpYamlValue("Category",ctx)) SetSimpleYAMLValue(&rsf->TitleInfo.Category,"Category",ctx,0);
 		else if(cmpYamlValue("UniqueId",ctx)) SetSimpleYAMLValue(&rsf->TitleInfo.UniqueId,"UniqueId",ctx,0);
 		else if(cmpYamlValue("Version",ctx)) SetSimpleYAMLValue(&rsf->TitleInfo.Version,"Version",ctx,0);
 		else if(cmpYamlValue("ContentsIndex",ctx)) SetSimpleYAMLValue(&rsf->TitleInfo.ContentsIndex,"ContentsIndex",ctx,0);
@@ -382,6 +387,8 @@ void free_RsfSettings(rsf_settings *set)
 	free(set->AccessControlInfo.Priority);
 	free(set->AccessControlInfo.MemoryType);
 	free(set->AccessControlInfo.SystemMode);
+	free(set->AccessControlInfo.SystemModeExt);
+	free(set->AccessControlInfo.CpuSpeed);
 	free(set->AccessControlInfo.CoreVersion);
 	free(set->AccessControlInfo.HandleTableSize);
 	free(set->AccessControlInfo.SystemSaveDataId1);
@@ -502,6 +509,7 @@ void free_RsfSettings(rsf_settings *set)
 	free(set->PlainRegion);
 	
 	//TitleInfo
+	free(set->TitleInfo.Platform);
 	free(set->TitleInfo.Category);
 	free(set->TitleInfo.UniqueId);
 	free(set->TitleInfo.Version);

@@ -50,13 +50,27 @@ typedef enum
 
 typedef enum
 {
-	content_Data = 0x1,
-	content_Executable = 0x2,
-	content_SystemUpdate = 0x4,
-	content_Manual = 0x8,
-	content_Child = (0x4|0x8),
-	content_Trial = 0x10
+	form_Unassigned,
+	form_SimpleContent,
+	form_ExecutableWithoutRomfs,
+	form_Executable
+};
+
+typedef enum
+{
+	content_Application,
+	content_SystemUpdate,
+	content_Manual,
+	content_Child,
+	content_Trial,
+	content_ExtendedSystemUpdate
 } ncch_content_bitmask;
+
+typedef enum
+{
+	platform_CTR = 0x1,
+	platform_SNAKE = 0x2
+} ncch_platform;
 
 typedef struct
 {

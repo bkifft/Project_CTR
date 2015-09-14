@@ -30,6 +30,12 @@ typedef enum
 
 typedef enum
 {
+	cpuspeed_268MHz,
+	cpuspeed_804MHz
+};
+
+typedef enum
+{
 	othcap_PERMIT_DEBUG = (1 << 0),
 	othcap_FORCE_DEBUG = (1 << 1),
 	othcap_CAN_USE_NON_ALPHABET_AND_NUMBER = (1 << 2),
@@ -127,13 +133,11 @@ typedef struct
 {
 	u8 programId[8];
 	u8 coreVersion[4];
-	u8 padding0[2];
-	u8 flag;
-	u8 priority;
+	u8 flag[4];
 	u8 resourceLimitDescriptor[16][2];
 	exhdr_StorageInfo storageInfo;
-	u8 serviceAccessControl[32][8]; // Those char[8] server names
-	u8 padding1[0x1f];
+	u8 serviceAccessControl[34][8]; // Those char[8] server names
+	u8 padding1[0xf];
 	u8 resourceLimitCategory;
 } exhdr_ARM11SystemLocalCapabilities;
 

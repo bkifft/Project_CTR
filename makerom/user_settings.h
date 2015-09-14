@@ -86,12 +86,16 @@ typedef struct
 		bool UseOtherVariationSaveData;
 		bool RunnableOnSleep;
 		bool SpecialMemoryArrange;
-		
+		bool UseExtSaveData;
+		bool EnableL2Cache;
+
 		// Strings
 		char *IdealProcessor;
 		char *Priority;
 		char *MemoryType;
 		char *SystemMode;
+		char *SystemModeExt;
+		char *CpuSpeed;
 		char *CoreVersion;
 		char *HandleTableSize;
 		char *SystemSaveDataId1;
@@ -178,6 +182,7 @@ typedef struct
 	
 	struct{
 		// Strings
+		char *Platform;
 		char *Category;
 		char *UniqueId;
 		char *Version;

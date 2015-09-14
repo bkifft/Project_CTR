@@ -626,28 +626,48 @@ int SetCommonHeaderBasicData(ncch_settings *set, ncch_hdr *hdr)
 	hdr->flags[ncchflag_CONTENT_BLOCK_SIZE] = GetCtrBlockSizeFlag(set->options.blockSize);
 
 	/* Setting ContentPlatform */
-	hdr->flags[ncchflag_CONTENT_PLATFORM] = 1; // CTR
+	if(set->rsfSet->TitleInfo.Platform){
+		if(strcasecmp(set->rsfSet->TitleInfo.Platform, "ctr") == 0)
+			hdr->flags[ncchflag_CONTENT_PLATFORM] = platform_CTR;
+		else if (strcasecmp(set->rsfSet->TitleInfo.Platform, "snake") == 0)
+			hdr->flags[ncchflag_CONTENT_PLATFORM] = platform_SNAKE;
+		else{
+			fprintf(stderr, "[NCCH ERROR] Invalid Platform '%s'\n", set->rsfSet->TitleInfo.Platform);
+			return NCCH_BAD_RSF_SET;
+		}
+	}
+	else
+		hdr->flags[ncchflag_CONTENT_PLATFORM] = platform_CTR;
 
 	/* Setting OtherFlag */
 	if(!set->options.UseRomFS) 
 		hdr->flags[ncchflag_OTHER_FLAG] |= otherflag_NoMountRomFs;
 
 
+	/* Setting FormType */
+	hdr->flags[ncchflag_CONTENT_TYPE] = form_Unassigned;
+	if(set->options.IsCfa)
+		hdr->flags[ncchflag_CONTENT_TYPE] = form_SimpleContent;
+	else if (set->options.UseRomFS)
+		hdr->flags[ncchflag_CONTENT_TYPE] = form_Executable;
+	else
+		hdr->flags[ncchflag_CONTENT_TYPE] = form_ExecutableWithoutRomfs;
+	
 	/* Setting ContentType */
-	hdr->flags[ncchflag_CONTENT_TYPE] = 0;
-	if(set->options.UseRomFS) hdr->flags[ncchflag_CONTENT_TYPE] |= content_Data;
-	if(!set->options.IsCfa) hdr->flags[ncchflag_CONTENT_TYPE] |= content_Executable;
 	if(set->rsfSet->BasicInfo.ContentType){
-		if(strcmp(set->rsfSet->BasicInfo.ContentType,"Application") == 0) hdr->flags[ncchflag_CONTENT_TYPE] |= 0;
-		else if(strcmp(set->rsfSet->BasicInfo.ContentType,"SystemUpdate") == 0) hdr->flags[ncchflag_CONTENT_TYPE] |= content_SystemUpdate;
-		else if(strcmp(set->rsfSet->BasicInfo.ContentType,"Manual") == 0) hdr->flags[ncchflag_CONTENT_TYPE] |= content_Manual;
-		else if(strcmp(set->rsfSet->BasicInfo.ContentType,"Child") == 0) hdr->flags[ncchflag_CONTENT_TYPE] |= content_Child;
-		else if(strcmp(set->rsfSet->BasicInfo.ContentType,"Trial") == 0) hdr->flags[ncchflag_CONTENT_TYPE] |= content_Trial;
+		if(strcmp(set->rsfSet->BasicInfo.ContentType,"Application") == 0) hdr->flags[ncchflag_CONTENT_TYPE] |= (content_Application << 2);
+		else if(strcmp(set->rsfSet->BasicInfo.ContentType,"SystemUpdate") == 0) hdr->flags[ncchflag_CONTENT_TYPE] |= (content_SystemUpdate << 2);
+		else if(strcmp(set->rsfSet->BasicInfo.ContentType,"Manual") == 0) hdr->flags[ncchflag_CONTENT_TYPE] |= (content_Manual << 2);
+		else if(strcmp(set->rsfSet->BasicInfo.ContentType,"Child") == 0) hdr->flags[ncchflag_CONTENT_TYPE] |= (content_Child << 2);
+		else if(strcmp(set->rsfSet->BasicInfo.ContentType,"Trial") == 0) hdr->flags[ncchflag_CONTENT_TYPE] |= (content_Trial << 2);
+		else if (strcmp(set->rsfSet->BasicInfo.ContentType, "ExtendedSystemUpdate") == 0) hdr->flags[ncchflag_CONTENT_TYPE] |= (content_ExtendedSystemUpdate << 2);
 		else{
 			fprintf(stderr,"[NCCH ERROR] Invalid ContentType '%s'\n",set->rsfSet->BasicInfo.ContentType);
 			return NCCH_BAD_RSF_SET;
 		}
 	}
+	else 
+		hdr->flags[ncchflag_CONTENT_TYPE] |= (content_Application << 2);
 
 	return 0;
 }
@@ -663,7 +683,7 @@ bool IsValidProductCode(char *ProductCode, bool FreeProductCode)
 	if(strlen(ProductCode) < 10) 
 		return false;
 		
-	if(strncmp(ProductCode,"CTR",3) != 0) 
+	if(strncmp(ProductCode,"CTR",3) != 0 && strncmp(ProductCode, "KTR", 3) != 0)
 		return false;
 	
 	for(int i = 3; i < 10; i++){
@@ -946,12 +966,12 @@ bool IsNcch(FILE *fp, u8 *buf)
 
 bool IsCfa(ncch_hdr* hdr)
 {
-	return (((hdr->flags[ncchflag_CONTENT_TYPE] & content_Data) == content_Data) && ((hdr->flags[ncchflag_CONTENT_TYPE] & content_Executable) != content_Executable));
+	return (hdr->flags[ncchflag_CONTENT_TYPE] & 3) == form_SimpleContent;
 }
 
 bool IsUpdateCfa(ncch_hdr* hdr)
 {
-	return (((hdr->flags[ncchflag_CONTENT_TYPE] & content_SystemUpdate) == content_SystemUpdate) && ((hdr->flags[ncchflag_CONTENT_TYPE] & content_Child) != content_Child) && IsCfa(hdr));
+	return (hdr->flags[ncchflag_CONTENT_TYPE] >> 2) == content_SystemUpdate || (hdr->flags[ncchflag_CONTENT_TYPE] >> 2) == content_ExtendedSystemUpdate;
 }
 
 u32 GetNcchBlockSize(ncch_hdr* hdr)

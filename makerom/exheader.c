@@ -317,7 +317,34 @@ int SetARM11SystemLocalInfoFlags(exhdr_ARM11SystemLocalCapabilities *arm11, rsf_
 		return EXHDR_BAD_RSF_OPT;
 	}
 
-	/* Flag */
+	/* Flag[0] */
+	arm11->flag[0] |= rsf->AccessControlInfo.EnableL2Cache;
+
+	if (rsf->AccessControlInfo.CpuSpeed) {
+		if(strcasecmp(rsf->AccessControlInfo.CpuSpeed, "256mhz") == 0)
+			arm11->flag[0] |= cpuspeed_268MHz << 1;
+		else if(strcasecmp(rsf->AccessControlInfo.CpuSpeed, "804mhz") == 0)
+			arm11->flag[0] |= cpuspeed_804MHz << 1;
+		else {
+			fprintf(stderr, "[EXHEADER ERROR] Invalid cpu speed: 0x%s\n", rsf->AccessControlInfo.CpuSpeed);
+			return EXHDR_BAD_RSF_OPT;
+		}
+	}
+	else
+		arm11->flag[0] |= cpuspeed_268MHz << 1;
+
+	/* Flag[1] (SystemModeExt) */
+	u8 systemModeExt = 0;
+	if (rsf->AccessControlInfo.SystemModeExt) {
+		systemModeExt = strtol(rsf->AccessControlInfo.SystemModeExt, NULL, 0);
+		if (systemModeExt > 15) {
+			fprintf(stderr, "[EXHEADER ERROR] Unexpected SystemModeExt: 0x%x. Expected range: 0x0 - 0xf\n", systemModeExt);
+			return EXHDR_BAD_RSF_OPT;
+		}
+		arm11->flag[1] = systemModeExt & 0xf;
+	}
+
+	/* Flag[2] */
 	u8 affinityMask = 0;
 	u8 idealProcessor = 0;
 	u8 systemMode = 0;
@@ -343,9 +370,9 @@ int SetARM11SystemLocalInfoFlags(exhdr_ARM11SystemLocalCapabilities *arm11, rsf_
 			return EXHDR_BAD_RSF_OPT;
 		}
 	}
-	arm11->flag = (u8)(systemMode << 4 | affinityMask << 2 | idealProcessor);
+	arm11->flag[2] = (u8)(systemMode << 4 | affinityMask << 2 | idealProcessor);
 
-	/* Thread Priority */
+	/* flag[3] (Thread Priority) */
 	if(rsf->AccessControlInfo.Priority){
 		u8 priority = strtoul(rsf->AccessControlInfo.Priority,NULL,0);
 		if(GetAppType(rsf) == processtype_APPLICATION)
@@ -354,7 +381,7 @@ int SetARM11SystemLocalInfoFlags(exhdr_ARM11SystemLocalCapabilities *arm11, rsf_
 			fprintf(stderr,"[EXHEADER ERROR] Invalid Priority: %d\n",priority);
 			return EXHDR_BAD_RSF_OPT;
 		}
-		arm11->priority = priority;
+		arm11->flag[3] = priority;
 	}
 	else{
 		ErrorParamNotFound("AccessControlInfo/Priority");
@@ -479,8 +506,13 @@ void SetARM11StorageInfoSystemSaveDataId(exhdr_ARM11SystemLocalCapabilities *arm
 
 void SetARM11StorageInfoExtSaveDataId(exhdr_ARM11SystemLocalCapabilities *arm11, rsf_settings *rsf)
 {
-	if(rsf->AccessControlInfo.ExtSaveDataId)
-		u64_to_u8(arm11->storageInfo.extSavedataId, strtoull(rsf->AccessControlInfo.ExtSaveDataId,NULL,0), LE);
+	if (rsf->AccessControlInfo.UseExtSaveData || rsf->AccessControlInfo.ExtSaveDataId) {
+		if (rsf->AccessControlInfo.ExtSaveDataId)
+			u64_to_u8(arm11->storageInfo.extSavedataId, strtoull(rsf->AccessControlInfo.ExtSaveDataId, NULL, 0), LE);
+		else
+			u32_to_u8(arm11->storageInfo.extSavedataId, GetTidUniqueId(u8_to_u64(arm11->programId,LE)), LE);
+	}
+	
 }
 
 void SetARM11StorageInfoOtherUserSaveData(exhdr_ARM11SystemLocalCapabilities *arm11, rsf_settings *rsf)
@@ -506,6 +538,10 @@ bool CheckCondiditionsForNewAccessibleSaveDataIds(rsf_settings *rsf)
 {
 	if(rsf->AccessControlInfo.AccessibleSaveDataIdsNum > 6){
 		fprintf(stderr,"[EXHEADER ERROR] Too many UniqueId in \"AccessibleSaveDataIds\".\n");
+		return false;
+	}
+	if (rsf->AccessControlInfo.UseExtSaveData) {
+		fprintf(stderr, "[EXHEADER ERROR] UseExtSaveData must be false if AccessibleSaveDataIds is specified.\n");
 		return false;
 	}
 	if (rsf->AccessControlInfo.ExtSaveDataId){
@@ -561,8 +597,8 @@ void SetARM11StorageInfoAccessibleSaveDataIds(exhdr_ARM11SystemLocalCapabilities
 int SetARM11ServiceAccessControl(exhdr_ARM11SystemLocalCapabilities *arm11, rsf_settings *rsf)
 {
 	if(rsf->AccessControlInfo.ServiceAccessControl){
-		if(rsf->AccessControlInfo.ServiceAccessControlNum > 32){
-			fprintf(stderr,"[EXHEADER ERROR] Too Many Service Names, maximum is 32\n");
+		if(rsf->AccessControlInfo.ServiceAccessControlNum > 34){
+			fprintf(stderr,"[EXHEADER ERROR] Too Many Service Names, maximum is 34\n");
 			return EXHDR_BAD_RSF_OPT;
 		}
 		for(int i = 0; i < rsf->AccessControlInfo.ServiceAccessControlNum; i++){
