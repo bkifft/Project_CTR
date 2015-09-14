@@ -26,7 +26,7 @@ typedef struct
 	u8 partitionid[8];
 	u8 makercode[2];
 	u8 version[2];
-	u8 reserved0[4];
+	u8 seedcheck[4];
 	u8 programid[8];
 	u8 reserved1[0x10];
 	u8 logohash[0x20];

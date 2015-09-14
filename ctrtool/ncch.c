@@ -540,6 +540,17 @@ static const char* contenttypetostring(unsigned char flags)
 	case 2: return "Manual";
 	case 3: return "Child";
 	case 4: return "Trial";
+	case 5: return "Extended System Update";
+	default: return "Unknown";
+	}
+}
+
+static const char* contentplatformtostring(unsigned char platform)
+{
+	switch (platform)
+	{
+	case 1: return "CTR";
+	case 2: return "SNAKE";
 	default: return "Unknown";
 	}
 }
@@ -566,6 +577,7 @@ void ncch_print(ncch_context* ctx)
 	fprintf(stdout, "Partition id:           %016"PRIx64"\n", getle64(header->partitionid));
 	fprintf(stdout, "Maker code:             %04x\n", getle16(header->makercode));
 	fprintf(stdout, "Version:                %04x\n", getle16(header->version));
+	fprintf(stdout, "Title seed check:       %08x\n", getle32(header->seedcheck));
 	fprintf(stdout, "Program id:             %016"PRIx64"\n", getle64(header->programid));
 	if(ctx->logohashcheck == Unchecked)
 		memdump(stdout, "Logo hash:              ", header->logohash, 0x20);
@@ -587,16 +599,11 @@ void ncch_print(ncch_context* ctx)
 		fprintf(stdout, " > Crypto key:          None\n");
 	else if (header->flags[7] & 1)
 		fprintf(stdout, " > Crypto key:          %s\n", programid_is_system(header->programid)? "Fixed":"Zeros");
-	else if (header->flags[3] & 1)
-		fprintf(stdout, " > Crypto key:          Secure2\n");
-	else if (header->flags[3] & 10)
-		fprintf(stdout, " > Crypto key:          secure3 (New 3DS)\n");
 	else
-		fprintf(stdout, " > Crypto key:          Secure\n");
+		fprintf(stdout, " > Crypto key:          Secure (%d)%s\n", header->flags[3], header->flags[7] & 32? " (KeyY seeded)" : "");
 	fprintf(stdout, " > Form type:           %s\n", formtypetostring(header->flags[5]));
 	fprintf(stdout, " > Content type:        %s\n", contenttypetostring(header->flags[5]));
-	if (header->flags[4] & 1)
-		fprintf(stdout, " > Content platform:    CTR\n");
+	fprintf(stdout, " > Content platform:    %s\n", contentplatformtostring(header->flags[4]));
 	if (header->flags[7] & 2)
 		fprintf(stdout, " > No RomFS mount\n");
 
