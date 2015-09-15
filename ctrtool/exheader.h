@@ -57,15 +57,40 @@ typedef struct
 {
 	u8 programid[8];
 	u8 coreversion[4];
-	u8 reserved0[2];
-	u8 flag;
-	u8 priority;
+	u8 flag[4];
 	u8 resourcelimitdescriptor[0x10][2];
 	exheader_storageinfo storageinfo;
-	u8 serviceaccesscontrol[0x20][8];
-	u8 reserved[0x1f];
+	u8 serviceaccesscontrol[34][8];
+	u8 reserved[0xf];
 	u8 resourcelimitcategory;
 } exheader_arm11systemlocalcaps;
+
+typedef struct 
+{
+	u8 program_id[8];
+	u32 core_version;
+
+	// flag
+	u8 enable_l2_cache;
+	u8 use_additional_cores;
+	u8 new3ds_systemmode;
+	u8 ideal_processor;
+	u8 affinity_mask;
+	u8 old3ds_systemmode;
+	s8 priority;
+
+	// storageinfo
+	u64 extdata_id;
+	u32 other_user_saveid[3];
+	u8 use_other_variation_savedata;
+	u32 accessible_saveid[3];
+	u32 system_saveid[2];
+	u64 accessinfo;
+
+
+	char service_access_control[34][10];
+	u8 resource_limit_category;
+} exheader_arm11systemlocalcaps_deserialised;
 
 typedef struct
 {
@@ -115,6 +140,9 @@ typedef struct
 	u32 offset;
 	u32 size;
 	exheader_header header;
+
+	exheader_arm11systemlocalcaps_deserialised system_local_caps;
+
 	ctr_aes_context aes;
 	ctr_rsa_context rsa;
 	int compressedflag;
@@ -123,8 +151,14 @@ typedef struct
 	int validpriority;
 	int validaffinitymask;
 	int valididealprocessor;
+	int validold3dssystemmode;
+	int validnew3dssystemmode;
+	int validenablel2cache;
+	int validuseadditionalcores;
+	int validcoreversion;
 	int validsystemsaveID[2];
 	int validaccessinfo;
+	int validservicecontrol;
 	int validsignature;
 } exheader_context;
 
