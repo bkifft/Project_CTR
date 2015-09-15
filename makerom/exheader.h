@@ -32,7 +32,7 @@ typedef enum
 {
 	cpuspeed_268MHz,
 	cpuspeed_804MHz
-};
+} cpu_speed;
 
 typedef enum
 {

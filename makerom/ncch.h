@@ -54,7 +54,7 @@ typedef enum
 	form_SimpleContent,
 	form_ExecutableWithoutRomfs,
 	form_Executable
-};
+} ncch_form_type;
 
 typedef enum
 {
