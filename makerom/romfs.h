@@ -54,7 +54,7 @@ typedef struct
 	u8 siblingoffset[4];
 	u8 childoffset[4];
 	u8 fileoffset[4];
-	u8 weirdoffset[4]; // this one is weird. it always points to a dir entry, but seems unrelated to the romfs structure.
+	u8 hashoffset[4];
 	u8 namesize[4];
 	//u8 name[ROMFS_MAXNAMESIZE];
 } romfs_direntry; //sizeof(romfs_direntry)  = 0x18
@@ -65,7 +65,7 @@ typedef struct
 	u8 siblingoffset[4];
 	u8 dataoffset[8];
 	u8 datasize[8];
-	u8 weirdoffset[4]; // this one is also weird. it always points to a file entry, but seems unrelated to the romfs structure.
+	u8 hashoffset[4];
 	u8 namesize[4];
 	//u8 name[ROMFS_MAXNAMESIZE];
 } romfs_fileentry; //sizeof(romfs_fileentry)  = 0x20
@@ -86,18 +86,18 @@ typedef struct
 	
 	fs_dir *fs;
 	
-	u32 *dirUTable;
-	u32 m_dirUTableEntry;
-	u32 u_dirUTableEntry;
+	u32 *dirHashTable;
+	u32 m_dirHashTable;
+	u32 u_dirHashTable;
 	
 	u8 *dirTable;
 	u32 dirNum;
 	u32 m_dirTableLen;
 	u32 u_dirTableLen;
 	
-	u32 *fileUTable;
-	u32 m_fileUTableEntry;
-	u32 u_fileUTableEntry;
+	u32 *fileHashTable;
+	u32 m_fileHashTable;
+	u32 u_fileHashTable;
 	
 	u8 *fileTable;
 	u32 fileNum;
@@ -112,16 +112,5 @@ typedef struct
 	ivfc_level level[4];
 } romfs_buildctx;
 
-/*
-typedef struct
-{
-	u8 *output;
-	u64 romfsSize;
-	u64 romfsHeaderSize;
-
-	bool ImportRomfsBinary;
-	FILE *romfsBinary;
-} romfs_buildctx;
-*/
 int SetupRomFs(ncch_settings *ncchset, romfs_buildctx *ctx);
 int BuildRomFs(romfs_buildctx *ctx);
