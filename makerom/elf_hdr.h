@@ -91,20 +91,25 @@ typedef struct
 #define SHT_REL		 9		/* Relocation entries, no addends */
 #define SHT_SHLIB	 10		/* Reserved */
 #define SHT_DYNSYM	 11		/* Dynamic linker symbol table */
-#define	SHT_NUM		 12		/* Number of defined types.  */
-#define SHT_LOOS	 0x60000000	/* Start OS-specific */
-#define SHT_LOSUNW	 0x6ffffffb	/* Sun-specific low bound.  */
-#define SHT_SUNW_COMDAT  0x6ffffffb
-#define SHT_SUNW_syminfo 0x6ffffffc
-#define SHT_GNU_verdef	 0x6ffffffd	/* titleVersion definition section.  */
-#define SHT_GNU_verneed	 0x6ffffffe	/* titleVersion needs section.  */
-#define SHT_GNU_versym	 0x6fffffff	/* titleVersion symbol table.  */
-#define SHT_HISUNW	 0x6fffffff	/* Sun-specific high bound.  */
-#define SHT_HIOS	 0x6fffffff	/* End OS-specific type */
-#define SHT_LOPROC	 0x70000000	/* Start of processor-specific */
-#define SHT_HIPROC	 0x7fffffff	/* End of processor-specific */
-#define SHT_LOUSER	 0x80000000	/* Start of application-specific */
-#define SHT_HIUSER	 0x8fffffff	/* End of application-specific */
+#define	SHT_UNKNOWN12		12
+#define	SHT_UNKNOWN13		13
+#define	SHT_INIT_ARRAY		14
+#define	SHT_FINI_ARRAY		15
+#define	SHT_PREINIT_ARRAY	16
+#define	SHT_GROUP		17
+#define	SHT_SYMTAB_SHNDX	18
+#define	SHT_NUM			19
+
+#define	SHF_WRITE		0x01		/* sh_flags */
+#define	SHF_ALLOC		0x02
+#define	SHF_EXECINSTR		0x04
+#define	SHF_MERGE		0x10
+#define	SHF_STRINGS		0x20
+#define	SHF_INFO_LINK		0x40
+#define	SHF_LINK_ORDER		0x80
+#define	SHF_OS_NONCONFORMING	0x100
+#define	SHF_GROUP		0x200
+#define	SHF_TLS			0x400
 
 
 typedef struct
@@ -150,6 +155,11 @@ typedef struct
 #define PT_HIOS		0x6fffffff	/* End of OS-specific */
 #define PT_LOPROC	0x70000000	/* Start of processor-specific */
 #define PT_HIPROC	0x7fffffff	/* End of processor-specific */
+
+#define	PF_R		0x4		/* p_flags */
+#define	PF_W		0x2
+#define	PF_X		0x1
+
 
 typedef struct
 {
