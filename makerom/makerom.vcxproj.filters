@@ -443,61 +443,10 @@
     <ClCompile Include="libyaml\writer.c">
       <Filter>Source Files\libyaml</Filter>
     </ClCompile>
-    <ClCompile Include="polarssl\arc4.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\asn1parse.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\asn1write.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
     <ClCompile Include="polarssl\base64.c">
       <Filter>Source Files\polarssl</Filter>
     </ClCompile>
     <ClCompile Include="polarssl\bignum.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\blowfish.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\camellia.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\certs.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\cipher.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\cipher_wrap.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\ctr_drbg.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\debug.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\des.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\dhm.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\entropy.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\entropy_poll.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\error.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\gcm.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\havege.c">
       <Filter>Source Files\polarssl</Filter>
     </ClCompile>
     <ClCompile Include="polarssl\md.c">
@@ -506,34 +455,7 @@
     <ClCompile Include="polarssl\md_wrap.c">
       <Filter>Source Files\polarssl</Filter>
     </ClCompile>
-    <ClCompile Include="polarssl\md2.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\md4.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
     <ClCompile Include="polarssl\md5.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\net.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\padlock.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\pbkdf2.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\pem.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\pkcs5.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\pkcs11.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\pkcs12.c">
       <Filter>Source Files\polarssl</Filter>
     </ClCompile>
     <ClCompile Include="polarssl\rsa.c">
@@ -546,33 +468,6 @@
       <Filter>Source Files\polarssl</Filter>
     </ClCompile>
     <ClCompile Include="polarssl\sha4.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\ssl_cache.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\ssl_cli.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\ssl_srv.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\ssl_tls.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\timing.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\version.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\x509parse.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\x509write.c">
-      <Filter>Source Files\polarssl</Filter>
-    </ClCompile>
-    <ClCompile Include="polarssl\xtea.c">
       <Filter>Source Files\polarssl</Filter>
     </ClCompile>
   </ItemGroup>

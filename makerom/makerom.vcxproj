@@ -39,7 +39,7 @@
     <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>Makefile</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
@@ -76,7 +76,15 @@
     <NMakeReBuildCommandLine>make rebuild</NMakeReBuildCommandLine>
     <NMakePreprocessorDefinitions>WIN32;NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
   </PropertyGroup>
-  <ItemDefinitionGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>C:\Program Files\mingw-w64\x86_64-4.9.2-win32-seh-rt_v4-rev2\mingw64\x86_64-w64-mingw32\include;$(IncludePath)</IncludePath>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <EnablePREfast>true</EnablePREfast>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
@@ -208,50 +216,15 @@
     <ClCompile Include="makerom.c" />
     <ClCompile Include="ncch.c" />
     <ClCompile Include="ncsd.c" />
-    <ClCompile Include="polarssl\arc4.c" />
-    <ClCompile Include="polarssl\asn1parse.c" />
-    <ClCompile Include="polarssl\asn1write.c" />
     <ClCompile Include="polarssl\base64.c" />
     <ClCompile Include="polarssl\bignum.c" />
-    <ClCompile Include="polarssl\blowfish.c" />
-    <ClCompile Include="polarssl\camellia.c" />
-    <ClCompile Include="polarssl\certs.c" />
-    <ClCompile Include="polarssl\cipher.c" />
-    <ClCompile Include="polarssl\cipher_wrap.c" />
-    <ClCompile Include="polarssl\ctr_drbg.c" />
-    <ClCompile Include="polarssl\debug.c" />
-    <ClCompile Include="polarssl\des.c" />
-    <ClCompile Include="polarssl\dhm.c" />
-    <ClCompile Include="polarssl\entropy.c" />
-    <ClCompile Include="polarssl\entropy_poll.c" />
-    <ClCompile Include="polarssl\error.c" />
-    <ClCompile Include="polarssl\gcm.c" />
-    <ClCompile Include="polarssl\havege.c" />
     <ClCompile Include="polarssl\md.c" />
-    <ClCompile Include="polarssl\md2.c" />
-    <ClCompile Include="polarssl\md4.c" />
     <ClCompile Include="polarssl\md5.c" />
     <ClCompile Include="polarssl\md_wrap.c" />
-    <ClCompile Include="polarssl\net.c" />
-    <ClCompile Include="polarssl\padlock.c" />
-    <ClCompile Include="polarssl\pbkdf2.c" />
-    <ClCompile Include="polarssl\pem.c" />
-    <ClCompile Include="polarssl\pkcs11.c" />
-    <ClCompile Include="polarssl\pkcs12.c" />
-    <ClCompile Include="polarssl\pkcs5.c" />
     <ClCompile Include="polarssl\rsa.c" />
     <ClCompile Include="polarssl\sha1.c" />
     <ClCompile Include="polarssl\sha2.c" />
     <ClCompile Include="polarssl\sha4.c" />
-    <ClCompile Include="polarssl\ssl_cache.c" />
-    <ClCompile Include="polarssl\ssl_cli.c" />
-    <ClCompile Include="polarssl\ssl_srv.c" />
-    <ClCompile Include="polarssl\ssl_tls.c" />
-    <ClCompile Include="polarssl\timing.c" />
-    <ClCompile Include="polarssl\version.c" />
-    <ClCompile Include="polarssl\x509parse.c" />
-    <ClCompile Include="polarssl\x509write.c" />
-    <ClCompile Include="polarssl\xtea.c" />
     <ClCompile Include="romfs.c" />
     <ClCompile Include="romfs_gen.c" />
     <ClCompile Include="romfs_import.c" />
