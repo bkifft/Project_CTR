@@ -117,16 +117,16 @@ finish:
 			fprintf(stderr, "[ELF ERROR] Not ELF File\n");
 			break;
 		case (NOT_ARM_ELF) :
-			fprintf(stderr, "[ELF ERROR] Not ELF File\n");
+			fprintf(stderr, "[ELF ERROR] Not ARM ELF\n");
 			break;
 		case (NON_EXECUTABLE_ELF) :
-			fprintf(stderr, "[ELF ERROR] Not ELF File\n");
+			fprintf(stderr, "[ELF ERROR] Not Executeable ELF\n");
 			break;
 		case (NOT_FIND_TEXT_SEGMENT) :
-			fprintf(stderr, "[ELF ERROR] Not ELF File\n");
+			fprintf(stderr, "[ELF ERROR] Failed to retrieve text sections from ELF\n");
 			break;
 		case (NOT_FIND_DATA_SEGMENT) :
-			fprintf(stderr, "[ELF ERROR] Not ELF File\n");
+			fprintf(stderr, "[ELF ERROR] Failed to retrieve data sections from ELF\n");
 			break;
 		default:
 			fprintf(stderr, "[ELF ERROR] Failed to process ELF file (%d)\n", result);
