@@ -110,13 +110,26 @@ int BuildExeFsCode(ncch_settings *set)
 	if(result) goto finish;
 
 finish:
-	if(result){
-		if(result == NOT_ELF_FILE) fprintf(stderr,"[ELF ERROR] Not ELF File\n");
-		else if(result == NOT_ARM_ELF) fprintf(stderr,"[ELF ERROR] Not ARM ELF\n");
-		else if(result == NON_EXECUTABLE_ELF) fprintf(stderr,"[ELF ERROR] Not Executeable ELF\n");
-		else if(result == NOT_FIND_TEXT_SEGMENT) fprintf(stderr,"[ELF ERROR] Failed to retrieve text sections from ELF\n");
-		else if(result == NOT_FIND_DATA_SEGMENT) fprintf(stderr,"[ELF ERROR] Failed to retrieve data sections from ELF\n");
-		else fprintf(stderr,"[ELF ERROR] Failed to process ELF file (%d)\n",result);
+	switch (result) {
+		case (0) :
+			break;
+		case (NOT_ELF_FILE) :
+			fprintf(stderr, "[ELF ERROR] Not ELF File\n");
+			break;
+		case (NOT_ARM_ELF) :
+			fprintf(stderr, "[ELF ERROR] Not ELF File\n");
+			break;
+		case (NON_EXECUTABLE_ELF) :
+			fprintf(stderr, "[ELF ERROR] Not ELF File\n");
+			break;
+		case (NOT_FIND_TEXT_SEGMENT) :
+			fprintf(stderr, "[ELF ERROR] Not ELF File\n");
+			break;
+		case (NOT_FIND_DATA_SEGMENT) :
+			fprintf(stderr, "[ELF ERROR] Not ELF File\n");
+			break;
+		default:
+			fprintf(stderr, "[ELF ERROR] Failed to process ELF file (%d)\n", result);
 	}
 	for(int i = 0; i < elf->activeSegments; i++)
 		free(elf->segments[i].sections);
@@ -735,30 +748,22 @@ u16 GetElfSectionIndexFromName(char *name, elf_context *elf, u8 *elfFile)
 
 bool IsBss(elf_section_entry *section)
 {
-	if(section->type == 8 && section->flags == 3)
-		return true;
-	return false;
+	return (section->type == SHT_NOBITS && section->flags == (SHF_WRITE | SHF_ALLOC));
 }
 
 bool IsData(elf_section_entry *section)
 {
-	if(section->type == 1 && section->flags == 3)
-		return true;
-	return false;
+	return (section->type == SHT_PROGBITS && section->flags == (SHF_WRITE | SHF_ALLOC));
 }
 
 bool IsRoData(elf_section_entry *section)
 {
-	if(section->type == 1 && section->flags == 2)
-		return true;
-	return false;
+	return (section->type == SHT_PROGBITS && section->flags == SHF_ALLOC);
 }
 
 bool IsText(elf_section_entry *section)
 {
-	if(section->type == 1 && section->flags == 6)
-		return true;
-	return false;
+	return (section->type == SHT_PROGBITS && section->flags == (SHF_ALLOC | SHF_EXECINSTR));
 }
 
 /* ProgramHeader Functions */
@@ -908,108 +913,99 @@ u64 GetELFProgramEntryAlignment(u16 index, elf_context *elf, u8 *elfFile)
 	return 0;
 }
 
+void InitSegment(elf_segment *segment)
+{
+	memset(segment, 0, sizeof(elf_segment));
+
+	segment->sectionNumMax = 10;
+	segment->sectionNum = 0;
+	segment->sections = calloc(segment->sectionNumMax, sizeof(elf_section_entry));
+}
+
+void AddSegmentSection(elf_segment *segment, elf_section_entry *section)
+{
+	if (segment->sectionNum < segment->sectionNumMax)
+		memcpy(&segment->sections[segment->sectionNum], section, sizeof(elf_section_entry));
+	else {
+		segment->sectionNumMax *= 2;
+		elf_section_entry *tmp = calloc(segment->sectionNumMax, sizeof(elf_section_entry));
+		for (int k = 0; k < segment->sectionNum; k++)
+			memcpy(&tmp[k], &segment->sections[k], sizeof(elf_section_entry));
+		free(segment->sections);
+		segment->sections = tmp;
+		memcpy(&segment->sections[segment->sectionNum], section, sizeof(elf_section_entry));
+	}
+
+	segment->sectionNum++;
+}
 
 int CreateElfSegments(elf_context *elf, u8 *elfFile)
 {
-	int num = 0;
 	// Interate through Each Program Header
 	elf->activeSegments = 0;
 	elf->segments = calloc(elf->programTableEntryCount,sizeof(elf_segment));
-	elf_segment *segment = malloc(sizeof(elf_segment)); // Temporary Buffer
-	for (int i = 0; i < elf->programTableEntryCount; i++){
-		if (elf->programHeaders[i].sizeInMemory != 0 && elf->programHeaders[i].type == 1){
-			memset(segment,0,sizeof(elf_segment));
 
-			bool foundFirstSection = false;
-			u32 size = 0;
-			u32 vAddr = elf->programHeaders[i].virtualAddress;
- 			u32 memorySize = elf->programHeaders[i].sizeInMemory;
-			//printf("Segment Size in memory: 0x%x\n",memorySize);
-			//printf("Segment Alignment:      0x%x\n",elf->programHeaders[i].alignment);
-			
-			u16 SectionInfoCapacity = 10;
-			segment->sectionNum = 0;
-			segment->sections = calloc(SectionInfoCapacity,sizeof(elf_section_entry));
+	elf_segment segment;
+
+	bool foundFirstSection = false;
+	int curr, prev;
+	u32 padding, size, sizeInMemory;
+
+	for (int i = 0; i < elf->programTableEntryCount; i++){
+		if (elf->programHeaders[i].sizeInMemory != 0 && elf->programHeaders[i].type == PF_X){
+			InitSegment(&segment);
+
+			foundFirstSection = false;
+			size = 0;
+			sizeInMemory = elf->programHeaders[i].sizeInMemory;
 
 			// Itterate Through Section Headers
-			for (int j = num; j < elf->sectionTableEntryCount; j++){
-				if (!foundFirstSection){
-					if (elf->sections[j].address != vAddr)
-                        continue;
-                    
-					while (j < (int)elf->sections[j].size && elf->sections[j].address == vAddr && !IsIgnoreSection(elf->sections[j]))
-                        j++;
+			for (curr = 0; curr < elf->sectionTableEntryCount && size != sizeInMemory; curr++){
+				// Skip irrelevant sections
+				if (IsIgnoreSection(elf->sections[curr]))
+					continue;
 
-					j--;
+				if (!foundFirstSection) {
+					if (elf->sections[curr].address != elf->programHeaders[i].virtualAddress)
+						continue;
 
 					foundFirstSection = true;
-					segment->vAddr = elf->sections[j].address;
-					segment->name = elf->sections[j].name;
-                }
+					segment.vAddr = elf->sections[curr].address;
+					segment.name = elf->sections[curr].name;
 
-				if(segment->sectionNum < SectionInfoCapacity)
-					memcpy(&segment->sections[segment->sectionNum],&elf->sections[j],sizeof(elf_section_entry));
-				else{
-					SectionInfoCapacity = SectionInfoCapacity*2;
-					elf_section_entry *tmp = calloc(SectionInfoCapacity,sizeof(elf_section_entry));
-					for(int k = 0; k < segment->sectionNum; k++)
-						memcpy(&tmp[k],&segment->sections[k],sizeof(elf_section_entry));
-					free(segment->sections);
-					segment->sections = tmp;
-					memcpy(&segment->sections[segment->sectionNum],&elf->sections[j],sizeof(elf_section_entry));
+					AddSegmentSection(&segment, &elf->sections[curr]);
+					size = elf->sections[curr].size;
 				}
-				segment->sectionNum++;
-
-				if(size == 0)
-					size += elf->sections[j].size;
-				else{
-					u32 padding = elf->sections[j].address - (elf->sections[j-1].address + elf->sections[j-1].size);
-					size += padding + elf->sections[j].size;
+				else {
+					AddSegmentSection(&segment, &elf->sections[curr]);
+					padding = elf->sections[curr].address - (elf->sections[prev].address + elf->sections[prev].size);
+					size += padding + elf->sections[curr].size;
 				}
-					
-				//printf("Section name: %s",elf->sections[j].name);
-				//printf(" 0x%lx",elf->sections[j].size);
-				//printf(" (Total Size: 0x%x)\n",size);
+				prev = curr;
 
-                if (size == memorySize)
-					break;
-
-				if (size > memorySize){
-					fprintf(stderr,"[ELF ERROR] Too large section size.\n Segment size = 0x%x\n Section Size = 0x%x\n", memorySize, size);
+				// Catch section parsing fails
+				if (size > sizeInMemory){
+					fprintf(stderr,"[ELF ERROR] Too large section size.\n Segment size = 0x%x\n Section Size = 0x%x\n", sizeInMemory, size);
 					return ELF_SEGMENT_SECTION_SIZE_MISMATCH;
 				}
             }
-			if(segment->sectionNum){
-				segment->header = &elf->programHeaders[i];
-				memcpy(&elf->segments[elf->activeSegments],segment,sizeof(elf_segment));
+			if(segment.sectionNum){
+				segment.header = &elf->programHeaders[i];
+				memcpy(&elf->segments[elf->activeSegments],&segment,sizeof(elf_segment));
 				elf->activeSegments++;
 			}
 			else{
-				free(segment->sections);
-				free(segment);
+				free(segment.sections);
 				fprintf(stderr,"[ELF ERROR] Program Header Has no corresponding Sections, ELF Cannot be proccessed\n");
 				return ELF_SEGMENTS_NOT_FOUND;
 			}
 		}
 	}
 
-	free(segment);
 	return 0;
 }
 
 bool IsIgnoreSection(elf_section_entry info)
 {
-	if (info.address)
-		return false;
-
-	if (info.type != 1 && info.type != 0)
-		return true;
-
-	char IgnoreSectionNames[7][20] = { ".debug_abbrev", ".debug_frame", ".debug_info", ".debug_line", ".debug_loc", ".debug_pubnames", ".comment" };
-	for (int i = 0; i < 7; i++){
-		if (strcmp(IgnoreSectionNames[i],info.name) == 0)
-			return true;
-	}
-	return false;
-
+	return (info.type != SHT_PROGBITS && info.type != SHT_NOBITS && info.type != SHT_INIT_ARRAY && info.type != SHT_FINI_ARRAY);
 }

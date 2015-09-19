@@ -45,6 +45,7 @@ typedef struct
 
 	elf_program_entry *header;
 	u32 sectionNum;
+	u32 sectionNumMax;
 	elf_section_entry *sections;
 } elf_segment;
 
