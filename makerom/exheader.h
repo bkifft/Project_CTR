@@ -45,6 +45,7 @@ typedef enum
 	othcap_CAN_SHARE_DEVICE_MEMORY = (1 << 6),
 	othcap_RUNNABLE_ON_SLEEP = (1 << 7),
 	othcap_SPECIAL_MEMORY_ARRANGE = (1 << 12),
+	othcap_CAN_ACCESS_CORE2 = (1 << 13),
 } other_capabilities_flags;
 
 typedef enum
