@@ -278,6 +278,7 @@ void exheader_print_arm11kernelcapabilities(exheader_context* ctx)
 			fprintf(stdout, " > Shared device mem:   %s\n", (descriptor&(1<<6))?"YES":"NO");
 			fprintf(stdout, " > Runnable on sleep:   %s\n", (descriptor&(1<<7))?"YES":"NO");
 			fprintf(stdout, " > Special memory:      %s\n", (descriptor&(1<<12))?"YES":"NO");
+			fprintf(stdout, " > Access Core 2:       %s\n", (descriptor&(1<<13))?"YES":"NO");
 			
 
 			switch(memorytype)
