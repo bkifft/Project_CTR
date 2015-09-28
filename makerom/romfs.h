@@ -86,18 +86,16 @@ typedef struct
 	
 	fs_dir *fs;
 	
-	u32 *dirHashTable;
+	u8 *dirHashTable;
 	u32 m_dirHashTable;
-	u32 u_dirHashTable;
 	
 	u8 *dirTable;
 	u32 dirNum;
 	u32 m_dirTableLen;
 	u32 u_dirTableLen;
 	
-	u32 *fileHashTable;
+	u8 *fileHashTable;
 	u32 m_fileHashTable;
-	u32 u_fileHashTable;
 	
 	u8 *fileTable;
 	u32 fileNum;
