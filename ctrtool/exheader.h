@@ -72,7 +72,7 @@ typedef struct
 
 	// flag
 	u8 enable_l2_cache;
-	u8 use_additional_cores;
+	u8 new3ds_cpu_speed;
 	u8 new3ds_systemmode;
 	u8 ideal_processor;
 	u8 affinity_mask;
@@ -154,7 +154,7 @@ typedef struct
 	int validold3dssystemmode;
 	int validnew3dssystemmode;
 	int validenablel2cache;
-	int validuseadditionalcores;
+	int validnew3dscpuspeed;
 	int validcoreversion;
 	int validsystemsaveID[2];
 	int validaccessinfo;
