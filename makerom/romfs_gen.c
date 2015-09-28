@@ -376,7 +376,7 @@ void AddDirToRomfs(romfs_buildctx *ctx, fs_dir *fs, u32 parent, u32 sibling)
 		u32_to_u8(entry->namesize,0,LE);
 
 		/* Get hash table index */
-		hashindex = GetFileHashTableIndex(ctx, parent, (fs_romfs_char*)ROMFS_EMPTY_PATH);
+		hashindex = GetDirHashTableIndex(ctx, parent, (fs_romfs_char*)ROMFS_EMPTY_PATH);
 
 		/* Increment used dir table length */
 		ctx->u_dirTableLen += sizeof(romfs_direntry);
@@ -390,7 +390,7 @@ void AddDirToRomfs(romfs_buildctx *ctx, fs_dir *fs, u32 parent, u32 sibling)
 		memcpy(name_pos,(u8*)fs->name,fs->name_len);
 
 		/* Get hash table index */
-		hashindex = GetFileHashTableIndex(ctx, parent, fs->name);
+		hashindex = GetDirHashTableIndex(ctx, parent, fs->name);
 
 		/* Increment used dir table length */
 		ctx->u_dirTableLen += sizeof(romfs_direntry) + (u32)align(fs->name_len,4);
