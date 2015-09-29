@@ -45,8 +45,6 @@ int BuildRomFs(romfs_buildctx *ctx)
 
 void FreeRomFsCtx(romfs_buildctx *ctx)
 {
-	if(ctx->romfsBinary)
-		fclose(ctx->romfsBinary);
 	if(ctx->fs){
 		fs_FreeFiles(ctx->fs);
 		fs_FreeDir(ctx->fs);	
