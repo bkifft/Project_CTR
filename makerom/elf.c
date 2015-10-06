@@ -955,8 +955,6 @@ int CreateElfSegments(elf_context *elf, u8 *elfFile)
 		if (elf->programHeaders[i].sizeInMemory != 0 && elf->programHeaders[i].type == PF_X){
 			InitSegment(&segment);
 
-			printf("new segment\n");
-
 			foundFirstSection = false;
 			size = 0;
 			sizeInMemory = elf->programHeaders[i].sizeInMemory;
@@ -972,9 +970,6 @@ int CreateElfSegments(elf_context *elf, u8 *elfFile)
 					if (elf->sections[curr].address != elf->programHeaders[i].virtualAddress)
 						continue;
 
-					printf("first section name: %s (vaddr = 0x%llx, size = 0x%llx)\n", elf->sections[curr].name, elf->sections[curr].address, elf->sections[curr].size);
-
-
 					foundFirstSection = true;
 					segment.vAddr = elf->sections[curr].address;
 					segment.name = elf->sections[curr].name;
@@ -983,9 +978,6 @@ int CreateElfSegments(elf_context *elf, u8 *elfFile)
 					size = elf->sections[curr].size;
 				}
 				else {
-
-					printf("follw section name: %s (vaddr = 0x%llx, size = 0x%llx)\n", elf->sections[curr].name, elf->sections[curr].address, elf->sections[curr].size);
-
 					AddSegmentSection(&segment, &elf->sections[curr]);
 					padding = elf->sections[curr].address - (elf->sections[prev].address + elf->sections[prev].size);
 					size += padding + elf->sections[curr].size;
@@ -1016,7 +1008,5 @@ int CreateElfSegments(elf_context *elf, u8 *elfFile)
 
 bool IsIgnoreSection(elf_section_entry info)
 {
-	printf("%s:0x%x,0x%x\n", info.name, info.type, info.flags);
-
 	return (info.type != SHT_PROGBITS && info.type != SHT_NOBITS && info.type != SHT_INIT_ARRAY && info.type != SHT_FINI_ARRAY && info.type != SHT_ARM_EXIDX);
 }
