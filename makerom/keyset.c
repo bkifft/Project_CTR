@@ -96,10 +96,8 @@ int LoadKeysFromResources(keys_struct *keys)
 			SetCurrentCommonKey(keys,0);
 	
 		// NCCH
-		keys->aes.normalKey = NULL;
-		keys->aes.systemFixedKey = NULL;
-		//SetNormalKey(keys,zeros_aesKey);
-		//SetSystemFixedKey(keys,(u8*)zeros_aesKey);
+		SetNormalKey(keys,zeros_aesKey);
+		SetSystemFixedKey(keys,zeros_aesKey);
 
 		/* RSA Keys */
 		keys->rsa.isFalseSign = true;		

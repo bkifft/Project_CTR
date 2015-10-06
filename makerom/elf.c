@@ -965,6 +965,7 @@ int CreateElfSegments(elf_context *elf, u8 *elfFile)
 				if (IsIgnoreSection(elf->sections[curr]))
 					continue;
 
+
 				if (!foundFirstSection) {
 					if (elf->sections[curr].address != elf->programHeaders[i].virtualAddress)
 						continue;
@@ -1007,5 +1008,5 @@ int CreateElfSegments(elf_context *elf, u8 *elfFile)
 
 bool IsIgnoreSection(elf_section_entry info)
 {
-	return (info.type != SHT_PROGBITS && info.type != SHT_NOBITS && info.type != SHT_INIT_ARRAY && info.type != SHT_FINI_ARRAY);
+	return (info.type != SHT_PROGBITS && info.type != SHT_NOBITS && info.type != SHT_INIT_ARRAY && info.type != SHT_FINI_ARRAY && info.type != SHT_ARM_EXIDX);
 }

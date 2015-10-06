@@ -79,26 +79,31 @@ typedef struct
 
 /* Legal values for sh_type (section type).  */
 
-#define SHT_NULL	 0		/* Section header table entry unused */
-#define SHT_PROGBITS	 1		/* Program data */
-#define SHT_SYMTAB	 2		/* Symbol table */
-#define SHT_STRTAB	 3		/* String table */
-#define SHT_RELA	 4		/* Relocation entries with addends */
-#define SHT_HASH	 5		/* Symbol hash table */
-#define SHT_DYNAMIC	 6		/* Dynamic linking information */
-#define SHT_NOTE	 7		/* Notes */
-#define SHT_NOBITS	 8		/* Program space with no data (bss) */
-#define SHT_REL		 9		/* Relocation entries, no addends */
-#define SHT_SHLIB	 10		/* Reserved */
-#define SHT_DYNSYM	 11		/* Dynamic linker symbol table */
+#define SHT_NULL			0		/* Section header table entry unused */
+#define SHT_PROGBITS		1		/* Program data */
+#define SHT_SYMTAB			2		/* Symbol table */
+#define SHT_STRTAB			3		/* String table */
+#define SHT_RELA			4		/* Relocation entries with addends */
+#define SHT_HASH			5		/* Symbol hash table */
+#define SHT_DYNAMIC			6		/* Dynamic linking information */
+#define SHT_NOTE			7		/* Notes */
+#define SHT_NOBITS			8		/* Program space with no data (bss) */
+#define SHT_REL				9		/* Relocation entries, no addends */
+#define SHT_SHLIB			10		/* Reserved */
+#define SHT_DYNSYM			11		/* Dynamic linker symbol table */
 #define	SHT_UNKNOWN12		12
 #define	SHT_UNKNOWN13		13
 #define	SHT_INIT_ARRAY		14
 #define	SHT_FINI_ARRAY		15
 #define	SHT_PREINIT_ARRAY	16
-#define	SHT_GROUP		17
+#define	SHT_GROUP			17
 #define	SHT_SYMTAB_SHNDX	18
-#define	SHT_NUM			19
+#define	SHT_NUM				19
+#define SHT_ARM_EXIDX		0x70000001 /* Exception Index table */
+#define SHT_ARM_PREEMPTMAP	0x70000002 /* BPABI DLL dynamic linking pre-emption map*/
+#define SHT_ARM_ATTRIBUTES	0x70000003 /* Object file compatibility attributes */
+#define SHT_ARM_DEBUGOVERLAY	0x70000004
+#define SHT_ARM_OVERLAYSECTION	0x70000005
 
 #define	SHF_WRITE		0x01		/* sh_flags */
 #define	SHF_ALLOC		0x02

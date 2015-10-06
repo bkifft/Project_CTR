@@ -49,8 +49,7 @@ int SignCXI(ncch_hdr *hdr, keys_struct *keys)
 
 int CheckCXISignature(ncch_hdr *hdr, u8 *pubk)
 {
-	int result = RsaSignVerify(GetNcchHdrData(hdr),GetNcchHdrDataLen(hdr),GetNcchHdrSig(hdr),pubk,NULL,RSA_2048_SHA256,CTR_RSA_VERIFY);
-	return result;
+	return RsaSignVerify(GetNcchHdrData(hdr), GetNcchHdrDataLen(hdr), GetNcchHdrSig(hdr), pubk, NULL, RSA_2048_SHA256, CTR_RSA_VERIFY);
 }
 
 // NCCH Build Functions

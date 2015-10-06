@@ -102,6 +102,7 @@ void GET_AccessControlInfo(ctr_yaml_context *ctx, rsf_settings *rsf)
 		else if(cmpYamlValue("UseOtherVariationSaveData",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.UseOtherVariationSaveData,"UseOtherVariationSaveData",ctx);
 		else if(cmpYamlValue("RunnableOnSleep",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.RunnableOnSleep,"RunnableOnSleep",ctx);
 		else if(cmpYamlValue("SpecialMemoryArrange",ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.SpecialMemoryArrange,"SpecialMemoryArrange",ctx);
+		else if(cmpYamlValue("CanAccessCore2", ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.CanAccessCore2, "CanAccessCore2", ctx);
 		else if(cmpYamlValue("UseExtSaveData", ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.UseExtSaveData, "UseExtSaveData", ctx);
 		else if(cmpYamlValue("EnableL2Cache", ctx)) SetBoolYAMLValue(&rsf->AccessControlInfo.EnableL2Cache, "EnableL2Cache", ctx);
 

@@ -136,7 +136,7 @@ void exheader_deserialise_arm11localcaps_permissions(exheader_arm11systemlocalca
 	caps->core_version = getle32(arm11->coreversion);
 
 	caps->enable_l2_cache = (arm11->flag[0] >> 0) & 1;
-	caps->use_additional_cores = (arm11->flag[0] >> 1) & 1;
+	caps->new3ds_cpu_speed = (arm11->flag[0] >> 1) & 1;
 	caps->new3ds_systemmode = (arm11->flag[1] >> 0) & 15;
 
 	caps->ideal_processor = (arm11->flag[2] >> 0) & 3;
@@ -278,6 +278,7 @@ void exheader_print_arm11kernelcapabilities(exheader_context* ctx)
 			fprintf(stdout, " > Shared device mem:   %s\n", (descriptor&(1<<6))?"YES":"NO");
 			fprintf(stdout, " > Runnable on sleep:   %s\n", (descriptor&(1<<7))?"YES":"NO");
 			fprintf(stdout, " > Special memory:      %s\n", (descriptor&(1<<12))?"YES":"NO");
+			fprintf(stdout, " > Access Core 2:       %s\n", (descriptor&(1<<13))?"YES":"NO");
 			
 
 			switch(memorytype)
@@ -504,7 +505,7 @@ void exheader_verify(exheader_context* ctx)
 	ctx->validold3dssystemmode = Good;
 	ctx->validnew3dssystemmode = Good;
 	ctx->validenablel2cache = Good;
-	ctx->validuseadditionalcores = Good;
+	ctx->validnew3dscpuspeed = Good;
 	ctx->validservicecontrol = Good;
 
 	for(i=0; i<8; i++)
@@ -532,6 +533,14 @@ void exheader_verify(exheader_context* ctx)
 
 	if (ctx->system_local_caps.new3ds_systemmode > accessdesc.new3ds_systemmode)
 		ctx->validnew3dssystemmode = Fail;
+
+	if (ctx->system_local_caps.enable_l2_cache != accessdesc.enable_l2_cache)
+		ctx->validenablel2cache = Fail;
+
+	if (ctx->system_local_caps.new3ds_cpu_speed != accessdesc.new3ds_cpu_speed)
+		ctx->validnew3dscpuspeed = Fail;
+
+
 
 
 	// Storage Info Verify
@@ -628,6 +637,8 @@ void exheader_print(exheader_context* ctx)
 	fprintf(stdout, "Core version:           0x%X\n", getle32(ctx->header.arm11systemlocalcaps.coreversion));
 	fprintf(stdout, "System mode:            %d %s\n", ctx->system_local_caps.old3ds_systemmode, exheader_getvalidstring(ctx->validold3dssystemmode));
 	fprintf(stdout, "System mode (New3DS):   %d %s\n", ctx->system_local_caps.new3ds_systemmode, exheader_getvalidstring(ctx->validnew3dssystemmode));
+	fprintf(stdout, "CPU Speed (New3DS):     %s %s\n", ctx->system_local_caps.new3ds_cpu_speed? "804MHz" : "268MHz", exheader_getvalidstring(ctx->validnew3dscpuspeed));
+	fprintf(stdout, "Enable L2 Cache:        %s %s\n", ctx->system_local_caps.enable_l2_cache ? "YES" : "NO", exheader_getvalidstring(ctx->validnew3dscpuspeed));
 	fprintf(stdout, "Ideal processor:        %d %s\n", ctx->system_local_caps.ideal_processor, exheader_getvalidstring(ctx->valididealprocessor));
 	fprintf(stdout, "Affinity mask:          %d %s\n", ctx->system_local_caps.affinity_mask, exheader_getvalidstring(ctx->validaffinitymask));
 	fprintf(stdout, "Main thread priority:   %d %s\n", ctx->system_local_caps.priority, exheader_getvalidstring(ctx->validpriority));

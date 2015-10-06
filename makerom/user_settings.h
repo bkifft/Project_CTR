@@ -86,6 +86,7 @@ typedef struct
 		bool UseOtherVariationSaveData;
 		bool RunnableOnSleep;
 		bool SpecialMemoryArrange;
+		bool CanAccessCore2;
 		bool UseExtSaveData;
 		bool EnableL2Cache;
 

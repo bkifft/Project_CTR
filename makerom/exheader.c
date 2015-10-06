@@ -1014,6 +1014,8 @@ int SetARM11KernelDescOtherCapabilities(ARM11KernelCapabilityDescriptor *desc, r
 		otherCapabilities |= othcap_RUNNABLE_ON_SLEEP;
 	if(rsf->AccessControlInfo.SpecialMemoryArrange)
 		otherCapabilities |= othcap_SPECIAL_MEMORY_ARRANGE;
+	if (rsf->AccessControlInfo.CanAccessCore2)
+		otherCapabilities |= othcap_CAN_ACCESS_CORE2;
 
 	if(rsf->AccessControlInfo.MemoryType){
 		if(strcasecmp(rsf->AccessControlInfo.MemoryType,"application") == 0)
