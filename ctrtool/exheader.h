@@ -6,6 +6,23 @@
 #include "ctr.h"
 #include "settings.h"
 
+typedef enum
+{
+	sysmode_64MB,
+	sysmode_UNK,
+	sysmode_96MB,
+	sysmode_80MB,
+	sysmode_72MB,
+	sysmode_32MB,
+} exheader_systemmode;
+
+typedef enum
+{
+	sysmode_ext_LEGACY,
+	sysmode_ext_124MB,
+	sysmode_ext_178MB,
+} exheader_systemmodeext;
+
 typedef struct
 {
 	u8 reserved[5];

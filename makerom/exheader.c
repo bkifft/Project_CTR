@@ -334,14 +334,21 @@ int SetARM11SystemLocalInfoFlags(exhdr_ARM11SystemLocalCapabilities *arm11, rsf_
 		arm11->flag[0] |= cpuspeed_268MHz << 1;
 
 	/* Flag[1] (SystemModeExt) */
-	u8 systemModeExt = 0;
 	if (rsf->AccessControlInfo.SystemModeExt) {
-		systemModeExt = strtol(rsf->AccessControlInfo.SystemModeExt, NULL, 0);
-		if (systemModeExt > 15) {
-			fprintf(stderr, "[EXHEADER ERROR] Unexpected SystemModeExt: 0x%x. Expected range: 0x0 - 0xf\n", systemModeExt);
+		if (strcasecmp(rsf->AccessControlInfo.SystemModeExt, "Legacy") == 0)
+			arm11->flag[1] = sysmode_ext_LEGACY;
+		else if (strcasecmp(rsf->AccessControlInfo.SystemModeExt, "124MB") == 0)
+			arm11->flag[1] = sysmode_ext_124MB;
+		else if (strcasecmp(rsf->AccessControlInfo.SystemModeExt, "178MB") == 0)
+			arm11->flag[1] = sysmode_ext_178MB;
+		
+		else {
+			fprintf(stderr, "[EXHEADER ERROR] Unexpected SystemModeExt: %s\n", rsf->AccessControlInfo.SystemModeExt);
 			return EXHDR_BAD_RSF_OPT;
 		}
-		arm11->flag[1] = systemModeExt & 0xf;
+	} 
+	else {
+		arm11->flag[1] = sysmode_ext_LEGACY;
 	}
 
 	/* Flag[2] */
@@ -364,11 +371,26 @@ int SetARM11SystemLocalInfoFlags(exhdr_ARM11SystemLocalCapabilities *arm11, rsf_
 		}
 	}
 	if(rsf->AccessControlInfo.SystemMode){
-		systemMode = strtol(rsf->AccessControlInfo.SystemMode,NULL,0);
-		if(systemMode > 15){
-			fprintf(stderr,"[EXHEADER ERROR] Unexpected SystemMode: 0x%x. Expected range: 0x0 - 0xf\n",systemMode);
+		if (strcasecmp(rsf->AccessControlInfo.SystemMode, "64MB") == 0 || strcasecmp(rsf->AccessControlInfo.SystemMode, "prod") == 0)
+			systemMode = sysmode_64MB;
+		//else if (strcasecmp(rsf->AccessControlInfo.SystemMode, "UNK") == 0 || strcasecmp(rsf->AccessControlInfo.SystemMode, "null") == 0)
+		//	systemMode = sysmode_UNK;
+		else if (strcasecmp(rsf->AccessControlInfo.SystemMode, "96MB") == 0 || strcasecmp(rsf->AccessControlInfo.SystemMode, "dev1") == 0)
+			systemMode = sysmode_96MB;
+		else if (strcasecmp(rsf->AccessControlInfo.SystemMode, "80MB") == 0 || strcasecmp(rsf->AccessControlInfo.SystemMode, "dev2") == 0)
+			systemMode = sysmode_80MB;
+		else if (strcasecmp(rsf->AccessControlInfo.SystemMode, "72MB") == 0 || strcasecmp(rsf->AccessControlInfo.SystemMode, "dev3") == 0)
+			systemMode = sysmode_72MB;
+		else if (strcasecmp(rsf->AccessControlInfo.SystemMode, "32MB") == 0 || strcasecmp(rsf->AccessControlInfo.SystemMode, "dev4") == 0)
+			systemMode = sysmode_32MB;
+
+		else {
+			fprintf(stderr, "[EXHEADER ERROR] Unexpected SystemMode: %s\n", rsf->AccessControlInfo.SystemMode);
 			return EXHDR_BAD_RSF_OPT;
 		}
+	}
+	else {
+		systemMode = sysmode_64MB;
 	}
 	arm11->flag[2] = (u8)(systemMode << 4 | affinityMask << 2 | idealProcessor);
 
