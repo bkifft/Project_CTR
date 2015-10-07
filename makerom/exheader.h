@@ -8,6 +8,23 @@ typedef enum
 
 typedef enum
 {
+	sysmode_64MB, // prod
+	sysmode_UNK, // null
+	sysmode_96MB, // dev1
+	sysmode_80MB, // dev2
+	sysmode_72MB, // dev3
+	sysmode_32MB, // dev4
+} system_mode;
+
+typedef enum
+{
+	sysmode_ext_LEGACY,
+	sysmode_ext_124MB, // snake Prod
+	sysmode_ext_178MB, // snake Dev1
+} system_mode_ext;
+
+typedef enum
+{
 	memtype_APPLICATION = 1,
     memtype_SYSTEM = 2,
     memtype_BASE = 3

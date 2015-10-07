@@ -583,6 +583,41 @@ const char* exheader_getvalidstring(int valid)
 		return "(FAIL)";
 }
 
+const char* exheader_getsystemmodestring(u8 systemmode)
+{
+	switch (systemmode)
+	{
+	case (sysmode_64MB) :
+		return "64MB";
+	case (sysmode_96MB) :
+		return "96MB";
+	case (sysmode_80MB) :
+		return "80MB";
+	case (sysmode_72MB) :
+		return "72MB";
+	case (sysmode_32MB) :
+		return "32MB";
+	default:
+		return "Unknown";
+	}
+}
+
+const char* exheader_getsystemmodeextstring(u8 systemmodeext, u8 systemmode)
+{
+	switch (systemmodeext)
+	{
+	case (sysmode_ext_LEGACY) :
+		return exheader_getsystemmodestring(systemmode);
+	case (sysmode_ext_124MB) :
+		return "124MB";
+	case (sysmode_ext_178MB) :
+		return "178MB";
+	default:
+		return "124MB";
+	}
+}
+
+
 void exheader_print(exheader_context* ctx)
 {
 	u32 i;
@@ -635,8 +670,8 @@ void exheader_print(exheader_context* ctx)
 
 	fprintf(stdout, "Program id:             %016"PRIx64" %s\n", getle64(ctx->header.arm11systemlocalcaps.programid), exheader_getvalidstring(ctx->validprogramid));
 	fprintf(stdout, "Core version:           0x%X\n", getle32(ctx->header.arm11systemlocalcaps.coreversion));
-	fprintf(stdout, "System mode:            %d %s\n", ctx->system_local_caps.old3ds_systemmode, exheader_getvalidstring(ctx->validold3dssystemmode));
-	fprintf(stdout, "System mode (New3DS):   %d %s\n", ctx->system_local_caps.new3ds_systemmode, exheader_getvalidstring(ctx->validnew3dssystemmode));
+	fprintf(stdout, "System mode:            %s %s\n", exheader_getsystemmodestring(ctx->system_local_caps.old3ds_systemmode), exheader_getvalidstring(ctx->validold3dssystemmode));
+	fprintf(stdout, "System mode (New3DS):   %s %s\n", exheader_getsystemmodeextstring(ctx->system_local_caps.new3ds_systemmode, ctx->system_local_caps.old3ds_systemmode), exheader_getvalidstring(ctx->validnew3dssystemmode));
 	fprintf(stdout, "CPU Speed (New3DS):     %s %s\n", ctx->system_local_caps.new3ds_cpu_speed? "804MHz" : "268MHz", exheader_getvalidstring(ctx->validnew3dscpuspeed));
 	fprintf(stdout, "Enable L2 Cache:        %s %s\n", ctx->system_local_caps.enable_l2_cache ? "YES" : "NO", exheader_getvalidstring(ctx->validnew3dscpuspeed));
 	fprintf(stdout, "Ideal processor:        %d %s\n", ctx->system_local_caps.ideal_processor, exheader_getvalidstring(ctx->valididealprocessor));
