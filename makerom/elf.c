@@ -5,6 +5,8 @@
 #include "elf.h"
 #include "blz.h"
 
+const char *SDK_PLAINREGION_SEGMENT_NAME = ".module_id";
+
 int ImportPlainRegionFromFile(ncch_settings *set);
 int ImportExeFsCodeBinaryFromFile(ncch_settings *set);
 
@@ -14,9 +16,7 @@ u32 SizeToPage(u32 memorySize, elf_context *elf);
 int GetBSSFromElf(elf_context *elf, u8 *elfFile, ncch_settings *set);
 int ImportPlainRegionFromElf(elf_context *elf, u8 *elfFile, ncch_settings *set);
 int CreateExeFsCode(elf_context *elf, u8 *elfFile, ncch_settings *set);
-int CreateCodeSegmentFromElf(code_segment *out, elf_context *elf, u8 *elfFile, char **names, u32 nameNum);
-elf_segment** GetContinuousSegments(u16 *ContinuousSegmentNum, elf_context *elf, char **names, u32 nameNum);
-elf_segment** GetSegments(u16 *SegmentNum, elf_context *elf, char **names, u32 nameNum);
+int CreateCodeSegmentFromElf(code_segment *out, elf_context *elf, u8 *elfFile, u64 segment_flags);
 
 // ELF Functions
 int GetElfContext(elf_context *elf, u8 *elfFile);
@@ -234,39 +234,28 @@ int GetBSSFromElf(elf_context *elf, u8 *elfFile, ncch_settings *set)
 
 int ImportPlainRegionFromElf(elf_context *elf, u8 *elfFile, ncch_settings *set) // Doesn't work same as N makerom
 {
-	if(!set->rsfSet->PlainRegionNum) return 0;
-	u16 *index = calloc(set->rsfSet->PlainRegionNum,sizeof(u16));
-
-	/* Getting index Values for each section */
-	for(int i = 0; i < set->rsfSet->PlainRegionNum; i++){
-		index[i] = GetElfSectionIndexFromName(set->rsfSet->PlainRegion[i],elf,elfFile);
-	}
-
-	// Eliminating Duplicated Sections
-	for(int i = set->rsfSet->PlainRegionNum - 1; i >= 0; i--){
-		for(int j = i-1; j >= 0; j--){
-			if(index[i] == index[j]) index[i] = 0;
+	u64 size = 0;
+	u64 offset = 0;
+	for (u16 i = 0; i < elf->activeSegments; i++) {
+		if (strcmp(elf->segments[i].name, SDK_PLAINREGION_SEGMENT_NAME) == 0) {
+			size = elf->segments[i].header->sizeInFile;
+			offset = elf->segments[i].header->offsetInFile;
+			break;
 		}
 	}
-
-	/* Calculating Total Size of Data */
-	u64 totalSize = 0;
-	for(int i = 0; i < set->rsfSet->PlainRegionNum; i++){
-		totalSize += elf->sections[index[i]].size;
-	}
 	
-	/* Creating Output Buffer */
-	set->sections.plainRegion.size = align(totalSize,set->options.blockSize);
-	set->sections.plainRegion.buffer = malloc(set->sections.plainRegion.size);
-	if(!set->sections.plainRegion.buffer) {fprintf(stderr,"[ELF ERROR] Not enough memory\n"); return MEM_ERROR;}
-	memset(set->sections.plainRegion.buffer,0,set->sections.plainRegion.size);
+	
+	if (size > 0) {
+		/* Creating Output Buffer */
+		set->sections.plainRegion.size = align(size, set->options.blockSize);
+		set->sections.plainRegion.buffer = malloc(set->sections.plainRegion.size);
+		if (!set->sections.plainRegion.buffer) { fprintf(stderr, "[ELF ERROR] Not enough memory\n"); return MEM_ERROR; }
+		memset(set->sections.plainRegion.buffer, 0, set->sections.plainRegion.size);
 
-	/* Storing Sections */
-	u64 pos = 0;
-	for(int i = 0; i < set->rsfSet->PlainRegionNum; i++){
-		memcpy((set->sections.plainRegion.buffer+pos),elf->sections[index[i]].ptr,elf->sections[index[i]].size);
-		pos += elf->sections[index[i]].size;
+		/* Copy Plain Region */
+		memcpy(set->sections.plainRegion.buffer, elfFile+offset, size);
 	}
+
 	return 0;
 }
 
@@ -280,11 +269,11 @@ int CreateExeFsCode(elf_context *elf, u8 *elfFile, ncch_settings *set)
 	code_segment rwdata;
 	memset(&rwdata,0,sizeof(code_segment));
 
-	int result = CreateCodeSegmentFromElf(&text,elf,elfFile,set->rsfSet->ExeFs.Text,set->rsfSet->ExeFs.TextNum);
+	int result = CreateCodeSegmentFromElf(&text,elf,elfFile,(PF_R|PF_X));
 	if(result) return result;
-	result = CreateCodeSegmentFromElf(&rodata,elf,elfFile,set->rsfSet->ExeFs.ReadOnly,set->rsfSet->ExeFs.ReadOnlyNum);
+	result = CreateCodeSegmentFromElf(&rodata,elf,elfFile,(PF_R));
 	if(result) return result;
-	result = CreateCodeSegmentFromElf(&rwdata,elf,elfFile,set->rsfSet->ExeFs.ReadWrite,set->rsfSet->ExeFs.ReadWriteNum);
+	result = CreateCodeSegmentFromElf(&rwdata,elf,elfFile,(PF_R | PF_W));
 	if(result) return result;
 
 	/* Checking the existence of essential ELF Segments */
@@ -336,129 +325,79 @@ int CreateExeFsCode(elf_context *elf, u8 *elfFile, ncch_settings *set)
 	return 0;
 }
 
-int CreateCodeSegmentFromElf(code_segment *out, elf_context *elf, u8 *elfFile, char **names, u32 nameNum)
+int CreateCodeSegmentFromElf(code_segment *out, elf_context *elf, u8 *elfFile, u64 segment_flags)
 {
-	u16 ContinuousSegmentNum = 0;
-	memset(out,0,sizeof(code_segment));
-	elf_segment **ContinuousSegments = GetContinuousSegments(&ContinuousSegmentNum,elf,names,nameNum);
-	if (ContinuousSegments == NULL){
-		if(!ContinuousSegmentNum){// Nothing Was Found
-			//printf("Nothing was found\n");
-			return 0;
+	memset(out, 0, sizeof(code_segment));
+
+	u16 seg_num = 0;
+	elf_segment **seg = calloc(elf->activeSegments, sizeof(elf_segment*));
+
+	for (u16 i = 0; i < elf->activeSegments; i++) {
+		// Skip SDK ELF plain region
+		if (strcmp(elf->segments[i].name, SDK_PLAINREGION_SEGMENT_NAME) == 0)
+			continue;
+
+		//printf("SegName: %s (flags: %x)\n", elf->segments[i].name, elf->segments[i].header->flags);
+		if ((elf->segments[i].header->flags & ~PF_CTRSDK) == segment_flags) {
+			if (seg_num == 0) {
+				seg[seg_num] = &elf->segments[i];
+				seg_num++;
+			}
+			else if (elf->segments[i].vAddr == (u32)align(seg[seg_num - 1]->vAddr, seg[seg_num-1]->header->alignment)) {
+				seg[seg_num] = &elf->segments[i];
+				seg_num++;
+			}
 		}
-		else // Error with found segments
-			return ELF_SEGMENTS_NOT_CONTINUOUS;
 	}
-	
+
+	/* Return if there are no applicable segment */
+	if (seg_num == 0)
+		return 0;
+
 	/* Getting Segment Size/Settings */
 	u32 vAddr = 0;
 	u32 memorySize = 0;
-	for(int i = 0; i < ContinuousSegmentNum; i++){
-		if (i==0){
-			vAddr = ContinuousSegments[i]->vAddr;
+	for (u16 i = 0; i < seg_num; i++) {
+		if (i == 0) {
+			vAddr = seg[i]->vAddr;
 		}
-		else{ // Add rounded size from previous segment
-			u32 padding = ContinuousSegments[i]->vAddr - (vAddr + memorySize);
+		else { // Add rounded size from previous segment
+			u32 padding = seg[i]->vAddr - (vAddr + memorySize);
 			memorySize += padding;
 		}
 
-		memorySize += ContinuousSegments[i]->header->sizeInMemory;
+		memorySize += seg[i]->header->sizeInMemory;
 
-		if(IsBss(&ContinuousSegments[i]->sections[ContinuousSegments[i]->sectionNum-1]))
-			memorySize -= ContinuousSegments[i]->sections[ContinuousSegments[i]->sectionNum-1].size;
+		if (IsBss(&seg[i]->sections[seg[i]->sectionNum - 1]))
+			memorySize -= seg[i]->sections[seg[i]->sectionNum - 1].size;
 	}
-	
+
 	// For Check
 #ifdef DEBUG
-	printf("Address: 0x%x\n",vAddr);
-	printf("Size:    0x%x\n",memorySize);
+	printf("Address: 0x%x\n", vAddr);
+	printf("Size:    0x%x\n", memorySize);
 #endif
 
 	out->address = vAddr;
 	out->size = memorySize;
-	out->maxPageNum = SizeToPage(memorySize,elf);
+	out->maxPageNum = SizeToPage(memorySize, elf);
 	out->data = malloc(memorySize);
-	
+
 	/* Writing Segment to Buffer */
-	//vAddr = 0;
-	//memorySize = 0;
-	for(int i = 0; i < ContinuousSegmentNum; i++){
-		/*
-		if (i==0)
-			vAddr = ContinuousSegments[i]->vAddr;
+	for (int i = 0; i < seg_num; i++) {
 		
-		else{
-			u32 num = ContinuousSegments[i]->vAddr - (vAddr + memorySize);
-			memorySize += num;
-		}
-		*/
-		//u32 size = 0;
-		for (int j = 0; j < ContinuousSegments[i]->sectionNum; j++){
-			elf_section_entry *section = &ContinuousSegments[i]->sections[j];
-			if (!IsBss(section)){				
-				u8 *pos = (out->data + (section->address - ContinuousSegments[i]->vAddr));
-				memcpy(pos,section->ptr,section->size);
+		for (int j = 0; j < seg[i]->sectionNum; j++) {
+			elf_section_entry *section = &seg[i]->sections[j];
+			if (!IsBss(section)) {
+				u8 *pos = (out->data + (section->address - seg[i]->vAddr));
+				memcpy(pos, section->ptr, section->size);
 				//size += section->size;
 			}
-
-			//else if (j == (ContinuousSegments[i]->sectionNum-1))
-				//memorySize -= section->size;
-			//'else
-				//size += section->size;
 		}
 	}
 
-	free(ContinuousSegments);
+	free(seg);
 	return 0;
-}
-
-
-elf_segment** GetContinuousSegments(u16 *ContinuousSegmentNum, elf_context *elf, char **names, u32 nameNum)
-{
-	u16 SegmentNum = 0;
-	elf_segment **Segments = GetSegments(&SegmentNum, elf, names, nameNum);
-	if (Segments == NULL || SegmentNum == 0){ // No Segments for the names were found
-		//printf("Not Found Segment\n");
-		return NULL;
-	}
-
-	if (SegmentNum == 1){ //Return as there is no need to check
-		*ContinuousSegmentNum = SegmentNum;
-		return Segments;
-	}
-
-	u32 vAddr = Segments[0]->vAddr + Segments[0]->header->sizeInMemory;
-	for (int i = 1; i < SegmentNum; i++){
-		if (Segments[i]->vAddr != (u32)align(vAddr,Segments[i]->header->alignment)){ //Each Segment must start after each other
-			fprintf(stderr,"[ELF ERROR] %s segment and %s segment are not continuous\n", Segments[i]->name, Segments[i - 1]->name);
-			free(Segments);
-			*ContinuousSegmentNum = 0xffff; // Signify to function that an error occured
-			return NULL;
-		}
-	}
-	*ContinuousSegmentNum = SegmentNum;
-	return Segments;
-}
-
-
-elf_segment** GetSegments(u16 *SegmentNum, elf_context *elf, char **names, u32 nameNum)
-{
-	if (names == NULL)
-	{
-		return NULL;
-	}
-
-	elf_segment **Segments = calloc(nameNum,sizeof(elf_segment*)); 
-	*SegmentNum = 0; // There can be a max of nameNum Segments, however, they might not all exist
-	for (int i = 0; i < nameNum; i++){
-		for(int j = 0; j < elf->activeSegments; j++){
-			if(strcmp(names[i],elf->segments[j].name) == 0){ // If there is a match, store Segment data pointer & increment index
-				Segments[*SegmentNum] = &elf->segments[j];
-				*SegmentNum = *SegmentNum + 1;
-			}
-		}
-	}
-	return Segments;
 }
 
 // ELF Functions
@@ -547,9 +486,11 @@ void PrintElfContext(elf_context *elf, u8 *elfFile)
 		printf(" Segment [%d][%s]\n",i,elf->segments[i].name);
 		printf(" > Size :     0x%"PRIx64"\n",elf->segments[i].header->sizeInFile);
 		printf(" > Address :  0x%"PRIx64"\n",elf->segments[i].vAddr);
+		printf(" > Flags:     0x%"PRIx64"\n", elf->segments[i].header->flags);
+		printf(" > Type:      0x%"PRIx64"\n", elf->segments[i].header->type);
 		printf(" > Sections : %d\n",elf->segments[i].sectionNum);  
 		for(int j = 0; j < elf->segments[i].sectionNum; j++)
-			printf("    > Section [%d][%s]\n",j,elf->segments[i].sections[j].name);
+			printf("    > Section [%d][%s][0x%"PRIx64"][0x%"PRIx64"]\n",j,elf->segments[i].sections[j].name, elf->segments[i].sections[j].flags, elf->segments[i].sections[j].type);
 		
 		/*
 		char outpath[100];

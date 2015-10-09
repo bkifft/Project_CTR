@@ -5,8 +5,6 @@ void GET_AccessControlInfo(ctr_yaml_context *ctx, rsf_settings *rsf);
 void GET_SystemControlInfo(ctr_yaml_context *ctx, rsf_settings *rsf);
 void GET_BasicInfo(ctr_yaml_context *ctx, rsf_settings *rsf);
 void GET_RomFs(ctr_yaml_context *ctx, rsf_settings *rsf);
-void GET_ExeFs(ctr_yaml_context *ctx, rsf_settings *rsf);
-void GET_PlainRegion(ctr_yaml_context *ctx, rsf_settings *rsf);
 void GET_TitleInfo(ctr_yaml_context *ctx, rsf_settings *rsf);
 void GET_CardInfo(ctr_yaml_context *ctx, rsf_settings *rsf);
 void GET_CommonHeaderKey(ctr_yaml_context *ctx, rsf_settings *rsf);
@@ -23,8 +21,6 @@ void EvaluateRSF(rsf_settings *rsf, ctr_yaml_context *ctx)
 	else if(cmpYamlValue("SystemControlInfo",ctx)) {FinishEvent(ctx); GET_SystemControlInfo(ctx,rsf); goto GET_NextGroup;}
 	else if(cmpYamlValue("BasicInfo",ctx)) {FinishEvent(ctx); GET_BasicInfo(ctx,rsf); goto GET_NextGroup;}
 	else if(cmpYamlValue("RomFs",ctx)) {FinishEvent(ctx); GET_RomFs(ctx,rsf); goto GET_NextGroup;}
-	else if(cmpYamlValue("ExeFs",ctx)) {FinishEvent(ctx); GET_ExeFs(ctx,rsf); goto GET_NextGroup;}
-	else if(cmpYamlValue("PlainRegion",ctx)) {FinishEvent(ctx); GET_PlainRegion(ctx,rsf); goto GET_NextGroup;}
 	else if(cmpYamlValue("TitleInfo",ctx)) {FinishEvent(ctx); GET_TitleInfo(ctx,rsf); goto GET_NextGroup;}
 	else if(cmpYamlValue("CardInfo",ctx)) {FinishEvent(ctx); GET_CardInfo(ctx,rsf); goto GET_NextGroup;}
 	else if(cmpYamlValue("CommonHeaderKey",ctx)) {FinishEvent(ctx); GET_CommonHeaderKey(ctx,rsf); goto GET_NextGroup;}
@@ -240,39 +236,6 @@ void GET_RomFs(ctr_yaml_context *ctx, rsf_settings *rsf)
 	FinishEvent(ctx);
 }
 
-void GET_ExeFs(ctr_yaml_context *ctx, rsf_settings *rsf)
-{
-	/* Checking That Group is in a map */
-	if(!CheckMappingEvent(ctx)) return;
-	u32 InitLevel = ctx->Level;
-	/* Checking each child */
-	GetEvent(ctx);
-	while(ctx->Level == InitLevel){
-		if(ctx->error || ctx->done) return;
-		// Handle childs
-		
-		if(cmpYamlValue("Text",ctx)) rsf->ExeFs.TextNum = SetYAMLSequence(&rsf->ExeFs.Text,"Text",ctx);
-		else if(cmpYamlValue("ReadOnly",ctx)) rsf->ExeFs.ReadOnlyNum = SetYAMLSequence(&rsf->ExeFs.ReadOnly,"ReadOnly",ctx);
-		else if(cmpYamlValue("ReadWrite",ctx)) rsf->ExeFs.ReadWriteNum = SetYAMLSequence(&rsf->ExeFs.ReadWrite,"ReadWrite",ctx);
-		
-		else{
-			fprintf(stderr,"[RSF ERROR] Unrecognised key '%s'\n",GetYamlString(ctx));
-			ctx->error = YAML_UNKNOWN_KEY;
-			FinishEvent(ctx);
-			return;
-		}
-		// Finish event start next
-		FinishEvent(ctx);
-		GetEvent(ctx);
-	}
-	FinishEvent(ctx);
-}
-
-void GET_PlainRegion(ctr_yaml_context *ctx, rsf_settings *rsf)
-{
-	rsf->PlainRegionNum = SetYAMLSequence(&rsf->PlainRegion,"PlainRegion",ctx);
-}
-
 void GET_TitleInfo(ctr_yaml_context *ctx, rsf_settings *rsf)
 {
 	/* Checking That Group is in a map */
@@ -486,28 +449,6 @@ void free_RsfSettings(rsf_settings *set)
 		free(set->RomFs.File[i]);
 	}
 	free(set->RomFs.File);
-	
-	//ExeFs
-	for(u32 i = 0; i < set->ExeFs.TextNum; i++){
-		free(set->ExeFs.Text[i]);
-	}
-	free(set->ExeFs.Text);
-	
-	for(u32 i = 0; i < set->ExeFs.ReadOnlyNum; i++){
-		free(set->ExeFs.ReadOnly[i]);
-	}
-	free(set->ExeFs.ReadOnly);
-	
-	for(u32 i = 0; i < set->ExeFs.ReadWriteNum; i++){
-		free(set->ExeFs.ReadWrite[i]);
-	}
-	free(set->ExeFs.ReadWrite);
-	
-	//PlainRegion
-	for(u32 i = 0; i < set->PlainRegionNum; i++){
-		free(set->PlainRegion[i]);
-	}
-	free(set->PlainRegion);
 	
 	//TitleInfo
 	free(set->TitleInfo.Platform);
