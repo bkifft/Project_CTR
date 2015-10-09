@@ -161,6 +161,7 @@ typedef struct
 #define PT_LOPROC	0x70000000	/* Start of processor-specific */
 #define PT_HIPROC	0x7fffffff	/* End of processor-specific */
 
+#define PF_CTRSDK	0x80000000
 #define	PF_R		0x4		/* p_flags */
 #define	PF_W		0x2
 #define	PF_X		0x1

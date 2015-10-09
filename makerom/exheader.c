@@ -4,6 +4,7 @@
 #include "accessdesc.h"
 #include "titleid.h"
 
+const char *DEFAULT_EXHEADER_NAME = "CtrApp";
 
 /* Prototypes */
 void free_ExHeaderSettings(exheader_settings *exhdrset);
@@ -189,17 +190,10 @@ finish:
 int get_ExHeaderCodeSetInfo(exhdr_CodeSetInfo *CodeSetInfo, rsf_settings *rsf)
 {
 	/* Name */
-	if(rsf->BasicInfo.Title){
-		//if(strlen(rsf->BasicInfo.Title) > 8){
-		//	fprintf(stderr,"[EXHEADER ERROR] Parameter Too Long \"BasicInfo/Title\"\n");
-		//	return EXHDR_BAD_RSF_OPT;
-		//}
-		strncpy((char*)CodeSetInfo->name,rsf->BasicInfo.Title,8);
-	}
-	else{
-		ErrorParamNotFound("BasicInfo/Title");
-		return EXHDR_BAD_RSF_OPT;
-	}
+	if (rsf->BasicInfo.Title)
+		strncpy((char*)CodeSetInfo->name, rsf->BasicInfo.Title, 8);
+	else
+		strncpy((char*)CodeSetInfo->name, DEFAULT_EXHEADER_NAME, 8);
 	
 	/* Stack Size */
 	if(rsf->SystemControlInfo.StackSize)

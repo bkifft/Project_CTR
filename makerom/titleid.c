@@ -2,6 +2,8 @@
 #include "ncch_read.h"
 #include "titleid.h"
 
+const u32 DEFAULT_UNIQUE_ID = 0xff3ff;
+
 void SetPIDType(u16 *type);
 int SetPIDCategoryFromName(u16 *cat, char *CategoryStr);
 int SetPIDCategoryFromFlags(u16 *cat, char **CategoryFlags, u32 FlagNum);
@@ -52,10 +54,8 @@ int GetProgramID(u64 *dest, rsf_settings *rsf, bool IsForExheader)
 	// Getting UniqueId
 	if(rsf->TitleInfo.UniqueId) 
 		GetUniqueID(&uniqueId,rsf);
-	else{
-		fprintf(stderr,"[ID ERROR] ParameterNotFound: \"TitleInfo/UniqueId\"\n");
-		return PID_BAD_RSF_SET;
-	}
+	else
+		uniqueId = DEFAULT_UNIQUE_ID;
 
 	// Getting Variation
 	if(SetTitleVariation(&variation,category,rsf) == PID_INVALID_VARIATION)

@@ -12,6 +12,8 @@
 #include "ncch_logo.h" // Contains Logos
 
 const u32 NCCH_BLOCK_SIZE = 0x200;
+const char *DEFAULT_PRODUCT_CODE = "CTR-P-CTAP";
+const char *DEFAULT_MAKER_CODE = "00";
 
 // Private Prototypes
 int SignCFA(ncch_hdr *hdr, keys_struct *keys);
@@ -591,18 +593,20 @@ int SetCommonHeaderBasicData(ncch_settings *set, ncch_hdr *hdr)
 			fprintf(stderr,"[NCCH ERROR] Invalid Product Code\n");
 			return NCCH_BAD_RSF_SET;
 		}
-		memcpy(hdr->productCode,set->rsfSet->BasicInfo.ProductCode,strlen((char*)set->rsfSet->BasicInfo.ProductCode));
+		strncpy((char*)hdr->productCode,set->rsfSet->BasicInfo.ProductCode, 16);
 	}
-	else memcpy(hdr->productCode,"CTR-P-CTAP",10);
+	else
+		strncpy((char*)hdr->productCode, DEFAULT_PRODUCT_CODE, 16);
 
 	if(set->rsfSet->BasicInfo.CompanyCode){
 		if(strlen((char*)set->rsfSet->BasicInfo.CompanyCode) != 2){
 			fprintf(stderr,"[NCCH ERROR] CompanyCode length must be 2\n");
 			return NCCH_BAD_RSF_SET;
 		}
-		memcpy(hdr->makerCode,set->rsfSet->BasicInfo.CompanyCode,2);
+		strncpy((char*)hdr->makerCode, set->rsfSet->BasicInfo.CompanyCode, 2);
 	}
-	else memcpy(hdr->makerCode,"00",2);
+	else
+		strncpy((char*)hdr->makerCode, DEFAULT_MAKER_CODE, 2);
 
 	// Setting Encryption Settings
 	if(!set->options.Encrypt)

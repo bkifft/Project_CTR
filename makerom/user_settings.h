@@ -170,18 +170,6 @@ typedef struct
 	} RomFs;
 	
 	struct{
-		u32 TextNum;
-		char **Text;
-		u32 ReadOnlyNum;
-		char **ReadOnly;
-		u32 ReadWriteNum;
-		char **ReadWrite;
-	} ExeFs;
-	
-	u32 PlainRegionNum;
-	char **PlainRegion;
-	
-	struct{
 		// Strings
 		char *Platform;
 		char *Category;
