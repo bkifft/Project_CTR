@@ -315,7 +315,7 @@ int SetARM11SystemLocalInfoFlags(exhdr_ARM11SystemLocalCapabilities *arm11, rsf_
 	arm11->flag[0] |= rsf->AccessControlInfo.EnableL2Cache;
 
 	if (rsf->AccessControlInfo.CpuSpeed) {
-		if(strcasecmp(rsf->AccessControlInfo.CpuSpeed, "256mhz") == 0)
+		if(strcasecmp(rsf->AccessControlInfo.CpuSpeed, "268mhz") == 0)
 			arm11->flag[0] |= cpuspeed_268MHz << 1;
 		else if(strcasecmp(rsf->AccessControlInfo.CpuSpeed, "804mhz") == 0)
 			arm11->flag[0] |= cpuspeed_804MHz << 1;
