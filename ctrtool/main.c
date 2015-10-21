@@ -38,9 +38,10 @@ typedef struct
 static void usage(const char *argv0)
 {
 	fprintf(stderr,
-		   "Usage: %s [options...] <file>\n"
 		   "CTRTOOL (c) neimod, 3DSGuy.\n"
+		   "Built: %s %s\n"
            "\n"
+		   "Usage: %s [options...] <file>\n"
            "Options:\n"
            "  -i, --info         Show file info.\n"
 		   "                          This is the default action.\n"
@@ -86,7 +87,7 @@ static void usage(const char *argv0)
 		   "  --romfsdir=dir     Specify RomFS directory path.\n"
 		   "  --listromfs        List files in RomFS.\n"
            "\n",
-		   argv0);
+		   __TIME__, __DATE__, argv0);
    exit(1);
 }
 
