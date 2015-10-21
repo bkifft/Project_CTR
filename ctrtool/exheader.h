@@ -100,7 +100,7 @@ typedef struct
 	u64 extdata_id;
 	u32 other_user_saveid[3];
 	u8 use_other_variation_savedata;
-	u32 accessible_saveid[3];
+	u32 accessible_saveid[6];
 	u32 system_saveid[2];
 	u64 accessinfo;
 
