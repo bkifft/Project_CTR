@@ -1,15 +1,17 @@
-OBJS = keyset.o main.o ctr.o ncsd.o cia.o tik.o tmd.o filepath.o lzss.o exheader.o exefs.o ncch.o utils.o settings.o firm.o cwav.o stream.o romfs.o ivfc.o
-POLAR_OBJS = polarssl/aes.o polarssl/bignum.o polarssl/rsa.o polarssl/sha2.o
-TINYXML_OBJS = tinyxml/tinystr.o tinyxml/tinyxml.o tinyxml/tinyxmlerror.o tinyxml/tinyxmlparser.o
+# Sources
+SRC_DIR = . polarssl tinyxml
+OBJS = $(foreach dir,$(SRC_DIR),$(subst .c,.o,$(wildcard $(dir)/*.c))) $(foreach dir,$(SRC_DIR),$(subst .cpp,.o,$(wildcard $(dir)/*.cpp)))
+
+# Compiler Settings
 LIBS = -static-libgcc -static-libstdc++
 CXXFLAGS = -I. 
-CFLAGS = -Wall -O2 -flto -static -Wno-unused-variable -Wno-unused-but-set-variable -I.
+CFLAGS = -O2 -flto -Wall -Wno-unused-variable -Wno-unused-but-set-variable -I.
 OUTPUT = ctrtool
 CC = gcc
+CXX = g++
 
-main: $(OBJS) $(POLAR_OBJS) $(TINYXML_OBJS)
-	g++ -o $(OUTPUT) $(LIBS) $(OBJS) $(POLAR_OBJS) $(TINYXML_OBJS)
-
+main: $(OBJS)
+	$(CXX) -o $(OUTPUT) $(LIBS) $(OBJS)
 
 clean:
-	rm -rf $(OUTPUT) $(OBJS) $(POLAR_OBJS) $(TINYXML_OBJS)
+	rm -rf $(OUTPUT) $(OBJS)
