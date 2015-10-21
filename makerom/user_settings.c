@@ -118,7 +118,7 @@ void SetDefaults(user_settings *set)
 	set->cia.deviceId = 0;
 	set->cia.eshopAccId = 0;
 	set->cia.useDataTitleVer = false;
-	set->cia.titleVersion[VER_MAJOR] = MAX_U16; // invalid so changes can be detected
+	set->cia.useFullTitleVer = false;
 	set->cia.randomTitleKey = false;
 	set->common.keys.aes.currentCommonKey = MAX_U8 + 1; // invalid so changes can be detected
 	for (int i = 0; i < CIA_MAX_CONTENT; i++)
@@ -450,13 +450,29 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 	}
 
 	// Cia Options
+	else if (strcmp(argv[i], "-ver") == 0) {
+		if (ParamNum != 1) {
+			PrintArgReqParam(argv[i], 1);
+			return USR_ARG_REQ_PARAM;
+		}
+		set->cia.useFullTitleVer = true;
+		u32 ver = strtoul(argv[i + 1], NULL, 0);
+		if (ver > VER_MAX) {
+			fprintf(stderr, "[SETTING ERROR] Version: '%d' is too large, max: '%d'\n", ver, VER_MAX);
+			return USR_BAD_ARG;
+		}
+		set->cia.titleVersion[VER_MAJOR] = (ver >> 10) & VER_MAJOR_MAX;
+		set->cia.titleVersion[VER_MINOR] = (ver >> 4) & VER_MINOR_MAX;
+		set->cia.titleVersion[VER_MICRO] = ver & VER_MICRO_MAX;
+		return 2;
+	}
 	else if (strcmp(argv[i], "-major") == 0) {
 		if (ParamNum != 1) {
 			PrintArgReqParam(argv[i], 1);
 			return USR_ARG_REQ_PARAM;
 		}
 		set->cia.useNormTitleVer = true;
-		u32 ver = strtoul(argv[i + 1], NULL, 10);
+		u32 ver = strtoul(argv[i + 1], NULL, 0);
 		if (ver > VER_MAJOR_MAX) {
 			fprintf(stderr, "[SETTING ERROR] Major version: '%d' is too large, max: '%d'\n", ver, VER_MAJOR_MAX);
 			return USR_BAD_ARG;
@@ -470,7 +486,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			return USR_ARG_REQ_PARAM;
 		}
 		set->cia.useNormTitleVer = true;
-		u32 ver = strtoul(argv[i + 1], NULL, 10);
+		u32 ver = strtoul(argv[i + 1], NULL, 0);
 		if (ver > VER_MINOR_MAX) {
 			fprintf(stderr, "[SETTING ERROR] Minor version: '%d' is too large, max: '%d'\n", ver, VER_MINOR_MAX);
 			return USR_BAD_ARG;
@@ -483,7 +499,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			PrintArgReqParam(argv[i], 1);
 			return USR_ARG_REQ_PARAM;
 		}
-		u32 ver = strtoul(argv[i + 1], NULL, 10);
+		u32 ver = strtoul(argv[i + 1], NULL, 0);
 		if (ver > VER_MICRO_MAX) {
 			fprintf(stderr, "[SETTING ERROR] Micro version: '%d' is too large, max: '%d'\n", ver, VER_MICRO_MAX);
 			return USR_BAD_ARG;
@@ -497,7 +513,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			return USR_ARG_REQ_PARAM;
 		}
 		set->cia.useDataTitleVer = true;
-		u32 ver = strtoul(argv[i + 1], NULL, 10);
+		u32 ver = strtoul(argv[i + 1], NULL, 0);
 		if (ver > VER_DVER_MAX) {
 			fprintf(stderr, "[SETTING ERROR] Data version: '%d' is too large, max: '%d'\n", ver, VER_DVER_MAX);
 			return USR_BAD_ARG;
@@ -732,6 +748,16 @@ int CheckArgumentCombination(user_settings *set)
 		return USR_BAD_ARG;
 	}
 
+	if (set->cia.useDataTitleVer && set->cia.useFullTitleVer) {
+		fprintf(stderr, "[SETTING ERROR] Arguments \"-dver\" and \"-ver\" cannot be used together\n");
+		return USR_BAD_ARG;
+	}
+
+	if (set->cia.useNormTitleVer && set->cia.useFullTitleVer) {
+		fprintf(stderr, "[SETTING ERROR] Arguments \"-ver\" and \"-major\"/\"-minor\" cannot be used together\n");
+		return USR_BAD_ARG;
+	}
+
 	if (set->ncch.elfPath && set->ncch.codePath) {
 		fprintf(stderr, "[SETTING ERROR] Arguments \"-elf\" and \"-code\" cannot be used together\n");
 		return USR_BAD_ARG;
@@ -878,6 +904,7 @@ void DisplayHelp(char *app_name)
 	printf(" -romfs         <file>              RomFS binary\n");
 	printf("CIA/CCI OPTIONS:\n");
 	printf(" -content       <file>:<index>      Specify content files\n");
+	printf(" -ver           <version>           Title Version\n");
 }
 
 void DisplayExtendedHelp(char *app_name)
@@ -923,6 +950,7 @@ void DisplayExtendedHelp(char *app_name)
 	printf("CIA OPTIONS:\n");
 	printf(" -content       <file>:<index>:<id> Specify content files\n");
 	printf(" -ver           <version>           Title Version\n");
+	printf(" -major         <version>           Major version\n");
 	printf(" -minor         <version>           Minor version\n");
 	printf(" -micro         <version>           Micro version\n");
 	printf(" -dver          <version>           Data-title version\n");

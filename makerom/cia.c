@@ -170,6 +170,7 @@ int GetSettingsFromUsrset(cia_settings *ciaset, user_settings *usrset)
 	ciaset->cert.caCrlVersion = 0;
 	ciaset->cert.signerCrlVersion = 0;
 
+	ciaset->common.useCxiRemasterVersion = !usrset->cia.useFullTitleVer;
 	for(int i = 0; i < 3; i++){
 		ciaset->common.titleVersion[i] = usrset->cia.titleVersion[i];
 	}
@@ -239,6 +240,7 @@ int GetSettingsFromNcch0(cia_settings *ciaset, u32 ncch0_offset)
 	int result = VerifyNcch(ncch0, ciaset->keys, false, ciaset->verbose == false);
 	if(result == UNABLE_TO_LOAD_NCCH_KEY){
 		ciaset->content.keyFound = false;
+		ciaset->common.useCxiRemasterVersion = false;
 		if(!ciaset->content.IsCfa){
 			fprintf(stderr,"[CIA WARNING] CXI AES Key could not be loaded\n");
 			fprintf(stderr,"      Meta Region, SaveDataSize, Remaster Version cannot be obtained\n");
@@ -306,35 +308,15 @@ int GetTmdDataFromNcch(cia_settings *ciaset, u8 *ncch, ncch_info *ncch_ctx, u8 *
 		ciaset->tmd.savedataSize = 0;
 		
 	// Process title version
-	// If this is a CFA, the -major must be set, since CFAs don't have an exheader
-	if(ciaset->content.IsCfa){
-		if(ciaset->common.titleVersion[VER_MAJOR] == MAX_U16){ // '-major' wasn't set
-			fprintf(stderr,"[CIA ERROR] Invalid major version. Use \"-major\" option.\n");
-			result = CIA_BAD_VERSION;
-			goto cleanup;
-		}
-	}
-	// Otherwise this is a CXI, if it can be decrypted, -major cannot be set and must be read from exheader
-	else if(ciaset->content.keyFound){
-		if(ciaset->common.titleVersion[VER_MAJOR] != MAX_U16){ // '-major' was set
-			fprintf(stderr,"[CIA ERROR] Option \"-major\" cannot be applied for cxi.\n");
-			result = CIA_BAD_VERSION;
-			goto cleanup;
-		}
+	// If this is a CXI, and we have to pull version major from exheader...
+	if(!ciaset->content.IsCfa && ciaset->common.useCxiRemasterVersion){
 		// Setting remaster ver
 		ciaset->common.titleVersion[VER_MAJOR] = GetRemasterVersion_frm_exhdr(exhdr);
-	}
-
-	// CXI which cannot be decrypted
-	else{
-		if(ciaset->common.titleVersion[VER_MAJOR] == MAX_U16) // '-major' wasn't set
-			ciaset->common.titleVersion[VER_MAJOR] = 0;
 	}
 	
 	// Calculate u16 title version
 	ciaset->tmd.version = ciaset->tik.version = SetupVersion(ciaset->common.titleVersion[VER_MAJOR],ciaset->common.titleVersion[VER_MINOR],ciaset->common.titleVersion[VER_MICRO]);
 
-cleanup:
 	free(exhdr);
 	return result;
 }

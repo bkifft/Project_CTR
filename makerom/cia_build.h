@@ -7,7 +7,6 @@ typedef enum
 	CIA_NO_NCCH0 = -1,
 	CIA_INVALID_NCCH0 = -2,
 	CIA_CONFILCTING_CONTENT_IDS = -3,
-	CIA_BAD_VERSION = -4,
 } cia_errors;
 
 typedef struct
@@ -23,8 +22,9 @@ typedef struct
 	bool verbose;
 	
 	struct{
+		bool useCxiRemasterVersion;
 		u64 titleId;
-		u16 titleVersion[4];
+		u16 titleVersion[3];
 		u8 titleKey[16];
 	} common;
 	

@@ -15,6 +15,7 @@ typedef enum
 
 typedef enum
 {
+	VER_MAX = 65535,
 	VER_MAJOR_MAX = 63,
 	VER_MINOR_MAX = 63,
 	VER_MICRO_MAX = 15,
@@ -291,6 +292,7 @@ typedef struct
 
 		bool useNormTitleVer;
 		bool useDataTitleVer;
+		bool useFullTitleVer;
 		u16 titleVersion[3];
 		
 		u32 deviceId;
