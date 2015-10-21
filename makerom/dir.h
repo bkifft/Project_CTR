@@ -21,7 +21,7 @@
 #endif
 	
 
-typedef struct
+struct fs_entry
 {
 	bool IsDir;
 	fs_char *fs_name;
@@ -29,35 +29,35 @@ typedef struct
 	u32 name_len;
 	u64 size;
 	FILE *fp;
-} fs_entry;
+};
 
-typedef struct
+struct fs_file
 {
 	fs_romfs_char *name;
 	u32 name_len;
 	u64 size;
 	FILE *fp;
-} fs_file;
+};
 
-typedef struct
+struct fs_dir
 {
 	fs_romfs_char *name;
 	u32 name_len;
 	
-	void *dir; // treated as type 'fs_dir'. This officially type 'void' to prevent self referencing problems
+	struct fs_dir *dir;
 	u32 m_dir;
 	u32 u_dir;
 	
-	fs_file *file;
+	struct fs_file *file;
 	u32 m_file;
 	u32 u_file;
-} fs_dir;
+};
 
+typedef struct fs_entry fs_entry;
+typedef struct fs_file fs_file;
+typedef struct fs_dir fs_dir;
 
-int fs_u8String_to_u16String(u16 **dst, u32 *dst_len, u8 *src, u32 src_len);
-int fs_u16String_to_u16String(u16 **dst, u32 *dst_len, u16 *src, u32 src_len);
-int fs_u32String_to_u16String(u16 **dst, u32 *dst_len, u32 *src, u32 src_len);
-int fs_u16StrLen(fs_romfs_char *str);
+int fs_RomFsStrLen(fs_romfs_char *str);
 
 int fs_OpenDir(fs_char *fs_path, fs_romfs_char *path, u32 pathlen, fs_dir *dir);
 void fs_PrintDir(fs_dir *dir, u32 depth);

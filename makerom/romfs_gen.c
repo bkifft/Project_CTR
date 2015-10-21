@@ -308,13 +308,13 @@ void BuildRomfsHeader(romfs_buildctx *ctx)
 
 u32 GetFileHashTableIndex(romfs_buildctx *ctx, u32 parent, fs_romfs_char *path)
 {
-	u32 hash = CalcPathHash(parent, path, 0, fs_u16StrLen(path));
+	u32 hash = CalcPathHash(parent, path, 0, fs_RomFsStrLen(path));
 	return hash % ctx->m_fileHashTable;
 }
 
 u32 GetDirHashTableIndex(romfs_buildctx *ctx, u32 parent, fs_romfs_char* path)
 {
-	u32 hash = CalcPathHash(parent, path, 0, fs_u16StrLen(path));
+	u32 hash = CalcPathHash(parent, path, 0, fs_RomFsStrLen(path));
 	return hash % ctx->m_dirHashTable;
 }
 

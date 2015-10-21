@@ -2,7 +2,8 @@
 #include "dir.h"
 #include "utf.h"
 
-/* This is mainly a FS interface for ROMFS generation */
+/* This is the FS interface for ROMFS generation */
+/* Tested working on Windows/Linux/OSX */
 int fs_InitDir(u16 *path, u32 pathlen, fs_dir *dir);
 int fs_ManageDirSlot(fs_dir *dir);
 int fs_ManageFileSlot(fs_dir *dir);
@@ -13,7 +14,7 @@ bool fs_EntryIsDirNav(fs_entry *entry);
 int fs_AddDir(fs_entry *entry, fs_dir *dir);
 int fs_AddFile(fs_entry *entry, fs_dir *dir);
 
-int fs_u16StrLen(fs_romfs_char *str)
+int fs_RomFsStrLen(fs_romfs_char *str)
 {
 	int i;
 	for( i = 0; str[i] != 0x0; i++ );
@@ -159,8 +160,7 @@ int fs_AddDir(fs_entry *entry, fs_dir *dir)
 	fs_ManageDirSlot(dir);
 	u32 current_slot = dir->u_dir;
 	dir->u_dir++;
-	fs_dir *tmp = (fs_dir*)dir->dir;
-	return fs_OpenDir(entry->fs_name,entry->name,entry->name_len,&tmp[current_slot]);
+	return fs_OpenDir(entry->fs_name,entry->name,entry->name_len,&dir->dir[current_slot]);
 }
 
 int fs_AddFile(fs_entry *entry, fs_dir *dir)
@@ -288,9 +288,8 @@ void fs_PrintDir(fs_dir *dir, u32 depth) // This is just for simple debugging, p
 	}
 	if(dir->u_dir)
 	{
-		fs_dir *tmp = (fs_dir*)dir->dir;
 		for(u32 i = 0; i < dir->u_dir; i++)
-			fs_PrintDir(&tmp[i],depth+1);
+			fs_PrintDir(&dir->dir[i],depth+1);
 	}
 }
 
@@ -305,13 +304,11 @@ void fs_FreeDir(fs_dir *dir)
 	free(dir->file);
 	
 	
-	fs_dir *tmp = (fs_dir*)dir->dir;
-	//printf("free dir names\n");
+	//printf("free dir names and\n");
 	for(u32 i = 0; i < dir->u_dir; i++)
 	{	
-		//wprintf(L"freeing: %s\n",tmp[i].name);
-		free(tmp[i].name);
-		fs_FreeDir(&tmp[i]);
+		free(dir->dir[i].name);
+		fs_FreeDir(&dir->dir[i]);
 	}
 	//printf("free dir struct\n");
 	free(dir->dir);
@@ -326,7 +323,6 @@ void fs_FreeFiles(fs_dir *dir)
 			fclose(dir->file[i].fp);
 	}
 	
-	fs_dir *tmp = (fs_dir*)dir->dir;
 	for(u32 i = 0; i < dir->u_dir; i++)
-		fs_FreeFiles(&tmp[i]);
+		fs_FreeFiles(&dir->dir[i]);
 }
