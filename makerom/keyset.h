@@ -102,9 +102,9 @@ void InitKeys(keys_struct *keys);
 int SetKeys(keys_struct *keys);
 void FreeKeys(keys_struct *keys);
 
-int SetCommonKey(keys_struct *keys, u8 *commonKey, u8 Index);
+int SetCommonKey(keys_struct *keys, const u8 *key, u8 Index);
 int SetCurrentCommonKey(keys_struct *keys, u8 Index);
-int SetNormalKey(keys_struct *keys, u8 *systemFixedKey);
-int SetSystemFixedKey(keys_struct *keys, u8 *systemFixedKey);
+int SetNormalKey(keys_struct *keys, const u8 *key);
+int SetSystemFixedKey(keys_struct *keys, const u8 *key);
 
-u8* AesKeyScrambler(u8 *key, u8 *keyX, u8 *keyY);
+u8* AesKeyScrambler(u8 *key, const u8 *keyX, const u8 *keyY);

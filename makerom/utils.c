@@ -4,21 +4,7 @@
 #include "polarssl/base64.h"
 
 // Memory
-void endian_memcpy(u8 *destination, u8 *source, u32 size, int endianness)
-{ 
-    for (u32 i = 0; i < size; i++){
-        switch (endianness){
-            case(BE):
-                destination[i] = source[i];
-                break;
-            case(LE):
-                destination[i] = source[((size-1)-i)];
-                break;
-        }
-    }
-}
-
-int CopyData(u8 **dest, u8 *source, u64 size)
+int CopyData(u8 **dest, const u8 *source, u64 size)
 {
 	if(!*dest){
 		*dest = malloc(size);

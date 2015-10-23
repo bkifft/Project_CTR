@@ -7,8 +7,7 @@ typedef struct
 } buffer_struct;
 
 // Memory
-void endian_memcpy(u8 *destination, u8 *source, u32 size, int endianness);
-int CopyData(u8 **dest, u8 *source, u64 size);
+int CopyData(u8 **dest, const u8 *source, u64 size);
 void rndset(void *ptr, u64 num);
 void clrmem(void *ptr, u64 num);
 

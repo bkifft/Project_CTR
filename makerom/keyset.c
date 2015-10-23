@@ -6,24 +6,23 @@
 #include "pki/dev.h" // Development PKI
 
 // Private Prototypes
-int SetRsaKeySet(u8 **PrivDest, u8 *PrivSource, u8 **PubDest, u8 *PubSource);
-int SetunFixedKey(keys_struct *keys, u8 *unFixedKey);
+int SetRsaKeySet(u8 **priv_exp_dst, const u8 *priv_exp_src, u8 **modulus_dst, const u8 *modulus_src);
 void InitCommonKeySlots(keys_struct *keys);
 void InitNcchKeyXSlots(keys_struct *keys);
-int SetNcchKeyX(keys_struct *keys, u8 *keyX, u8 index);
+int SetNcchKeyX(keys_struct *keys, const u8 *keyX, u8 index);
 
-FILE* keyset_OpenFile(char *dir, char *name, bool FileRequired);
 void keysetOpenError(char *file);
+FILE* keyset_OpenFile(char *dir, char *name, bool FileRequired);
 
-int SetTIK_RsaKey(keys_struct *keys, u8 *PrivateExp, u8 *PublicMod);
-int SetTMD_RsaKey(keys_struct *keys, u8 *PrivateExp, u8 *PublicMod);
-int Set_CCI_CFA_RsaKey(keys_struct *keys, u8 *PrivateExp, u8 *PublicMod);
-int SetAccessDesc_RsaKey(keys_struct *keys, u8 *PrivateExp, u8 *PublicMod);
-int SetCXI_RsaKey(keys_struct *keys, u8 *PrivateExp, u8 *PublicMod);
+int SetTIK_RsaKey(keys_struct *keys, const u8 *priv_exp, const u8 *modulus);
+int SetTMD_RsaKey(keys_struct *keys, const u8 *priv_exp, const u8 *modulus);
+int Set_CCI_CFA_RsaKey(keys_struct *keys, const u8 *priv_exp, const u8 *modulus);
+int SetAccessDesc_RsaKey(keys_struct *keys, const u8 *priv_exp, const u8 *modulus);
+int SetCXI_RsaKey(keys_struct *keys, const u8 *priv_exp, const u8 *modulus);
 
-int SetCaCert(keys_struct *keys, u8 *Cert);
-int SetTikCert(keys_struct *keys, u8 *Cert);
-int SetTmdCert(keys_struct *keys, u8 *Cert);
+int SetCaCert(keys_struct *keys, const u8 *cert);
+int SetTikCert(keys_struct *keys, const u8 *cert);
+int SetTmdCert(keys_struct *keys, const u8 *cert);
 
 int LoadKeysFromResources(keys_struct *keys);
 void SetDummyRsaData(keys_struct *keys);
@@ -48,7 +47,7 @@ void PrintBadKeySize(char *path, u32 size)
 	fprintf(stderr,"[KEYSET ERROR] %s has invalid size (0x%x)\n",path,size);
 }
 
-u8* AesKeyScrambler(u8 *key, u8 *keyX, u8 *keyY)
+u8* AesKeyScrambler(u8 *key, const u8 *keyX, const u8 *keyY)
 {
 	// Process keyX/keyY to get raw normal key
 	for(int i = 0; i < 16; i++)
@@ -91,7 +90,7 @@ int LoadKeysFromResources(keys_struct *keys)
 		keys->keysetLoaded = true;
 		/* AES Keys */
 		// CIA
-		//SetCommonKey(keys,(u8*)zeros_aesKey,1);
+		//SetCommonKey(keys, zeros_aesKey,1);
 		if(keys->aes.currentCommonKey > 0xff)
 			SetCurrentCommonKey(keys,0);
 	
@@ -107,33 +106,33 @@ int LoadKeysFromResources(keys_struct *keys)
 		/* AES Keys */
 		// CIA
 		for(int i = 0; i < 2; i++)
-			SetCommonKey(keys,(u8*)ctr_common_etd_key_dpki[i],i);
+			SetCommonKey(keys, ctr_common_etd_key_dpki[i],i);
 
 		if(keys->aes.currentCommonKey > 0xff)
 			SetCurrentCommonKey(keys,0);
 	
 		// NCCH
-		SetNormalKey(keys,(u8*)dev_fixed_ncch_key[0]);
-		SetSystemFixedKey(keys,(u8*)dev_fixed_ncch_key[1]);
+		SetNormalKey(keys, dev_fixed_ncch_key[0]);
+		SetSystemFixedKey(keys, dev_fixed_ncch_key[1]);
 		
 		/*
 		for(int i = 0; i < 2; i++)
-			SetNcchKeyX(keys,(u8*)dev_unfixed_ncch_keyX[i],i);
+			SetNcchKeyX(keys, dev_unfixed_ncch_keyX[i],i);
 		*/
 
 		/* RSA Keys */
 		// CIA
-		SetTIK_RsaKey(keys,(u8*)xs9_dpki_rsa_priv,(u8*)xs9_dpki_rsa_pub);
-		SetTMD_RsaKey(keys,(u8*)cpA_dpki_rsa_priv,(u8*)cpA_dpki_rsa_pub);
+		SetTIK_RsaKey(keys, xs9_dpki_rsa_priv, xs9_dpki_rsa_pub);
+		SetTMD_RsaKey(keys, cpA_dpki_rsa_priv, cpA_dpki_rsa_pub);
 		// CCI/CFA
-		Set_CCI_CFA_RsaKey(keys,(u8*)dev_ncsd_cfa_priv,(u8*)dev_ncsd_cfa_pub);
+		Set_CCI_CFA_RsaKey(keys, dev_ncsd_cfa_priv, dev_ncsd_cfa_pub);
 		// CXI
-		SetAccessDesc_RsaKey(keys,(u8*)dev_acex_priv,(u8*)dev_acex_pub);
+		SetAccessDesc_RsaKey(keys, dev_acex_priv, dev_acex_pub);
 	
 		/* Certs */
-		SetCaCert(keys,(u8*)ca4_dpki_cert);
-		SetTikCert(keys,(u8*)xs9_dpki_cert);
-		SetTmdCert(keys,(u8*)cpA_dpki_cert);
+		SetCaCert(keys, ca4_dpki_cert);
+		SetTikCert(keys, xs9_dpki_cert);
+		SetTmdCert(keys, cpA_dpki_cert);
 	}
 	else if(keys->keyset == pki_PRODUCTION){
 		keys->keysetLoaded = true;
@@ -141,7 +140,7 @@ int LoadKeysFromResources(keys_struct *keys)
 		// CIA
 		//for(int i = 0; i < 6; i++){
 		//	keys->aes.commonKey[i] = malloc(16);
-		//	AesKeyScrambler(keys->aes.commonKey[i],(u8*)ctr_common_etd_keyX_ppki,(u8*)ctr_common_etd_keyY_ppki[i]);
+		//	AesKeyScrambler(keys->aes.commonKey[i], ctr_common_etd_keyX_ppki, ctr_common_etd_keyY_ppki[i]);
 		//}
 		if(keys->aes.currentCommonKey > 0xff)
 			SetCurrentCommonKey(keys,0);
@@ -151,22 +150,22 @@ int LoadKeysFromResources(keys_struct *keys)
 		keys->aes.systemFixedKey = NULL;
 		/*
 		for(int i = 0; i < 2; i++)
-			SetNcchKeyX(keys,(u8*)prod_unfixed_ncch_keyX[i],i);
+			SetNcchKeyX(keys, prod_unfixed_ncch_keyX[i],i);
 		*/
 
 		/* RSA Keys */
 		// CIA
-		SetTIK_RsaKey(keys,(u8*)xsC_ppki_rsa_priv,(u8*)xsC_ppki_rsa_pub);
-		SetTMD_RsaKey(keys,(u8*)cpB_ppki_rsa_priv,(u8*)cpB_ppki_rsa_pub);
+		SetTIK_RsaKey(keys, xsC_ppki_rsa_priv, xsC_ppki_rsa_pub);
+		SetTMD_RsaKey(keys, cpB_ppki_rsa_priv, cpB_ppki_rsa_pub);
 		// CCI/CFA
-		Set_CCI_CFA_RsaKey(keys,(u8*)prod_ncsd_cfa_priv,(u8*)prod_ncsd_cfa_pub);
+		Set_CCI_CFA_RsaKey(keys, prod_ncsd_cfa_priv, prod_ncsd_cfa_pub);
 		// CXI
-		SetAccessDesc_RsaKey(keys,(u8*)prod_acex_priv,(u8*)prod_acex_pub);
+		SetAccessDesc_RsaKey(keys, prod_acex_priv, prod_acex_pub);
 	
 		/* Certs */
-		SetCaCert(keys,(u8*)ca3_ppki_cert);
-		SetTikCert(keys,(u8*)xsC_ppki_cert);
-		SetTmdCert(keys,(u8*)cpB_ppki_cert);
+		SetCaCert(keys, ca3_ppki_cert);
+		SetTikCert(keys, xsC_ppki_cert);
+		SetTmdCert(keys, cpB_ppki_cert);
 	}
 	return 0;
 }
@@ -174,23 +173,23 @@ int LoadKeysFromResources(keys_struct *keys)
 void SetDummyRsaData(keys_struct *keys)
 {
 	if(!keys->rsa.xsPvt || !keys->rsa.xsPub)
-		SetTIK_RsaKey(keys,(u8*)tpki_rsa_privExp,(u8*)tpki_rsa_pubMod);
+		SetTIK_RsaKey(keys, tpki_rsa_privExp, tpki_rsa_pubMod);
 	if(!keys->rsa.cpPvt || !keys->rsa.cpPub)
-		SetTMD_RsaKey(keys,(u8*)tpki_rsa_privExp,(u8*)tpki_rsa_pubMod);
+		SetTMD_RsaKey(keys, tpki_rsa_privExp, tpki_rsa_pubMod);
 		
 	if(!keys->rsa.cciCfaPvt || !keys->rsa.cciCfaPub)
-		Set_CCI_CFA_RsaKey(keys,(u8*)tpki_rsa_privExp,(u8*)tpki_rsa_pubMod);
+		Set_CCI_CFA_RsaKey(keys, tpki_rsa_privExp, tpki_rsa_pubMod);
 	
 	if(!keys->rsa.acexPvt || !keys->rsa.acexPub)
-		SetAccessDesc_RsaKey(keys,(u8*)tpki_rsa_privExp,(u8*)tpki_rsa_pubMod);
+		SetAccessDesc_RsaKey(keys, tpki_rsa_privExp, tpki_rsa_pubMod);
 
 	/* Certs */
 	if(!keys->certs.caCert)
-		SetCaCert(keys,(u8*)ca3_tpki_cert);
+		SetCaCert(keys, ca3_tpki_cert);
 	if(!keys->certs.xsCert)
-		SetTikCert(keys,(u8*)xsC_tpki_cert);
+		SetTikCert(keys, xsC_tpki_cert);
 	if(!keys->certs.cpCert)
-		SetTmdCert(keys,(u8*)cpB_tpki_cert);
+		SetTmdCert(keys, cpB_tpki_cert);
 }
 
 int LoadKeysFromKeyfile(keys_struct *keys)
@@ -255,7 +254,12 @@ void DumpKeyset(keys_struct *keys)
 	memdump(stdout," [PVT]      ",keys->rsa.cciCfaPvt,0x100);
 }
 
-FILE* keyset_OpenFile(char *dir, char *name, bool FileRequired)
+void keysetOpenError(char *file)
+{
+	fprintf(stderr, "[KEYSET ERROR] Failed to open: %s\n", file);
+}
+
+FILE* keyset_OpenFile(char *dir, char *name, bool is_required)
 {
 	int file_path_len = sizeof(char)*(strlen(dir)+strlen(name)+1);
 	char *file_path = malloc(file_path_len);
@@ -265,17 +269,14 @@ FILE* keyset_OpenFile(char *dir, char *name, bool FileRequired)
 
 	FILE *fp = fopen(file_path,"rb");
 	
-	if(!fp && FileRequired)
-		fprintf(stderr,"[KEYSET ERROR] Failed to open: %s\n",file_path);
+	if (!fp && is_required)
+		keysetOpenError(file_path);
 
 	free(file_path);
 	return fp;
 }
 
-void keysetOpenError(char *file)
-{
-	fprintf(stderr,"[KEYSET ERROR] Failed to open: %s\n",file);
-}
+
 
 void FreeKeys(keys_struct *keys)
 {
@@ -316,24 +317,24 @@ void FreeKeys(keys_struct *keys)
 	memset(keys,0,sizeof(keys_struct));
 }
 
-int SetRsaKeySet(u8 **PrivDest, u8 *PrivSource, u8 **PubDest, u8 *PubSource)
+int SetRsaKeySet(u8 **priv_exp_dst, const u8 *priv_exp_src, u8 **modulus_dst, const u8 *modulus_src)
 {
 	int result = 0;
-	if(PrivSource){
-		result = CopyData(PrivDest,PrivSource,0x100);
+	if(priv_exp_src){
+		result = CopyData(priv_exp_dst,priv_exp_src,0x100);
 		if(result) return result;
 	}
-	if(PubSource){
-		result = CopyData(PubDest,PubSource,0x100);
+	if(modulus_src){
+		result = CopyData(modulus_dst,modulus_src,0x100);
 		if(result) return result;
 	}
 	return 0;
 }
 
-int SetCommonKey(keys_struct *keys, u8 *commonKey, u8 index)
+int SetCommonKey(keys_struct *keys, const u8 *key, u8 index)
 {
 	if(!keys) return -1;
-	return CopyData(&keys->aes.commonKey[index],commonKey,AES_128_KEY_SIZE);
+	return CopyData(&keys->aes.commonKey[index],key,AES_128_KEY_SIZE);
 }
 
 void InitCommonKeySlots(keys_struct *keys)
@@ -342,7 +343,7 @@ void InitCommonKeySlots(keys_struct *keys)
 		keys->aes.commonKey = calloc(MAX_CMN_KEY+1,sizeof(u8*));
 }
 
-int SetNcchKeyX(keys_struct *keys, u8 *keyX, u8 index)
+int SetNcchKeyX(keys_struct *keys, const u8 *keyX, u8 index)
 {
 	if(!keys) return -1;
 	return CopyData(&keys->aes.ncchKeyX[index],keyX,AES_128_KEY_SIZE);
@@ -361,55 +362,55 @@ int SetCurrentCommonKey(keys_struct *keys, u8 Index)
 	return 0;
 }
 
-int SetNormalKey(keys_struct *keys, u8 *systemFixedKey)
+int SetNormalKey(keys_struct *keys, const u8 *key)
 {
 	if(!keys) return -1;
-	return CopyData(&keys->aes.normalKey,systemFixedKey,16);
+	return CopyData(&keys->aes.normalKey,key,16);
 }
 
-int SetSystemFixedKey(keys_struct *keys, u8 *systemFixedKey)
+int SetSystemFixedKey(keys_struct *keys, const u8 *key)
 {
 	if(!keys) return -1;
-	return CopyData(&keys->aes.systemFixedKey,systemFixedKey,16);
+	return CopyData(&keys->aes.systemFixedKey,key,16);
 }
 
-int SetTIK_RsaKey(keys_struct *keys, u8 *PrivateExp, u8 *PublicMod)
+int SetTIK_RsaKey(keys_struct *keys, const u8 *priv_exp, const u8 *modulus)
 {
 	if(!keys) return -1;
-	return SetRsaKeySet(&keys->rsa.xsPvt,PrivateExp,&keys->rsa.xsPub,PublicMod);
+	return SetRsaKeySet(&keys->rsa.xsPvt,priv_exp,&keys->rsa.xsPub,modulus);
 }
 
-int SetTMD_RsaKey(keys_struct *keys, u8 *PrivateExp, u8 *PublicMod)
+int SetTMD_RsaKey(keys_struct *keys, const u8 *priv_exp, const u8 *modulus)
 {
 	if(!keys) return -1;
-	return SetRsaKeySet(&keys->rsa.cpPvt,PrivateExp,&keys->rsa.cpPub,PublicMod);
+	return SetRsaKeySet(&keys->rsa.cpPvt,priv_exp,&keys->rsa.cpPub,modulus);
 }
 
-int Set_CCI_CFA_RsaKey(keys_struct *keys, u8 *PrivateExp, u8 *PublicMod)
+int Set_CCI_CFA_RsaKey(keys_struct *keys, const u8 *priv_exp, const u8 *modulus)
 {
 	if(!keys) return -1;
-	return SetRsaKeySet(&keys->rsa.cciCfaPvt,PrivateExp,&keys->rsa.cciCfaPub,PublicMod);
+	return SetRsaKeySet(&keys->rsa.cciCfaPvt,priv_exp,&keys->rsa.cciCfaPub,modulus);
 }
 
-int SetAccessDesc_RsaKey(keys_struct *keys, u8 *PrivateExp, u8 *PublicMod)
+int SetAccessDesc_RsaKey(keys_struct *keys, const u8 *priv_exp, const u8 *modulus)
 {
 	if(!keys) return -1;
-	return SetRsaKeySet(&keys->rsa.acexPvt,PrivateExp,&keys->rsa.acexPub,PublicMod);
+	return SetRsaKeySet(&keys->rsa.acexPvt,priv_exp,&keys->rsa.acexPub,modulus);
 }
 
-int SetCaCert(keys_struct *keys, u8 *Cert)
+int SetCaCert(keys_struct *keys, const u8 *cert)
 {
 	if(!keys) return -1;
-	return CopyData(&keys->certs.caCert,Cert,0x400);
+	return CopyData(&keys->certs.caCert,cert,0x400);
 }
-int SetTikCert(keys_struct *keys, u8 *Cert)
+int SetTikCert(keys_struct *keys, const u8 *cert)
 {
 	if(!keys) return -1;
-	return CopyData(&keys->certs.xsCert,Cert,0x300);
+	return CopyData(&keys->certs.xsCert,cert,0x300);
 }
 
-int SetTmdCert(keys_struct *keys, u8 *Cert)
+int SetTmdCert(keys_struct *keys, const u8 *cert)
 {
 	if(!keys) return -1;
-	return CopyData(&keys->certs.cpCert,Cert,0x400);
+	return CopyData(&keys->certs.cpCert,cert,0x400);
 }
