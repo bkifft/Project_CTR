@@ -7,8 +7,8 @@ void InitCardInfoHdr(cardinfo_hdr **cihdr, devcardinfo_hdr **dcihdr, cci_setting
 int SetWriteableAddress(cardinfo_hdr *hdr, cci_settings *set);
 int SetCardInfoBitmask(cardinfo_hdr *hdr, cci_settings *set);
 int SetCardInfoNotes(cardinfo_hdr *hdr, cci_settings *set);
-void ImportNcch0Data(cardinfo_hdr *hdr, cci_settings *set);
-void SetInitialData(cardinfo_hdr *hdr, cci_settings *set);
+void SetNcchHeader(cardinfo_hdr *hdr, cci_settings *set);
+void SetCardSeedData(cardinfo_hdr *hdr, cci_settings *set);
 void SetDevCardInfo(devcardinfo_hdr *hdr, cci_settings *set);
 
 
@@ -25,8 +25,8 @@ int GenCardInfoHdr(cci_settings *set)
 		return GEN_HDR_FAIL;
 	if(SetCardInfoNotes(cihdr,set))
 		return GEN_HDR_FAIL;
-	ImportNcch0Data(cihdr,set);
-	SetInitialData(cihdr,set);
+	SetNcchHeader(cihdr,set);
+	SetCardSeedData(cihdr,set);
 	
 	if(dcihdr)
 		SetDevCardInfo(dcihdr,set);
@@ -49,6 +49,8 @@ void InitCardInfoHdr(cardinfo_hdr **cihdr, devcardinfo_hdr **dcihdr, cci_setting
 	else
 		*dcihdr = NULL;
 	
+	//clrmem(set->headers.cardinfohdr.buffer, set->headers.cardinfohdr.size);
+
 	return;
 }
 
@@ -174,7 +176,7 @@ int SetCardInfoNotes(cardinfo_hdr *hdr, cci_settings *set)
 	return 0;
 }
 
-void ImportNcch0Data(cardinfo_hdr *hdr, cci_settings *set)
+void SetNcchHeader(cardinfo_hdr *hdr, cci_settings *set)
 {
 	u8 *ncch;
 	ncch_hdr *ncchHdr;
@@ -182,19 +184,31 @@ void ImportNcch0Data(cardinfo_hdr *hdr, cci_settings *set)
 	ncch = set->content.data + set->content.dOffset[0];
 	ncchHdr = (ncch_hdr*)ncch;
 	
-	memcpy(hdr->ncch0TitleId,ncchHdr->titleId,8);
 	memcpy(hdr->ncch0Hdr,GetNcchHdrData(ncchHdr),GetNcchHdrDataLen(ncchHdr));
 	
 	return;
 }
 
-void SetInitialData(cardinfo_hdr *hdr, cci_settings *set)
+void SetCardSeedData(cardinfo_hdr *hdr, cci_settings *set)
 {
-	clrmem(hdr->initialData,0x30);
-	if(set->options.useExternalSdkCardInfo)
-		memcpy(hdr->initialData,(u8*)stock_initial_data,0x30);
-	else
-		rndset(hdr->initialData,0x2c);
+	u8 *ncch;
+	ncch_hdr *ncchHdr;
+
+	ncch = set->content.data + set->content.dOffset[0];
+	ncchHdr = (ncch_hdr*)ncch;
+
+	if (set->options.useExternalSdkCardInfo) {
+		memcpy(hdr->cardSeedKeyY, ncchHdr->titleId, 8);
+		clrmem(hdr->encCardSeed, 0x10);
+		memcpy(hdr->cardSeedMac, stock_card_seed_mac, 0x10);
+		clrmem(hdr->cardSeedNonce, 0xC);
+	}
+	else {
+		memcpy(hdr->cardSeedKeyY, ncchHdr->titleId, 8);
+		rndset(hdr->encCardSeed, 0x10);
+		rndset(hdr->cardSeedMac, 0x10);
+		rndset(hdr->cardSeedNonce, 0xC);
+	}
 		
 	return;
 }
