@@ -129,8 +129,6 @@ int get_ExHeaderSettingsFromNcchset(exheader_settings *exhdrset, ncch_settings *
 	exhdrset->exHdr = (extended_hdr*)ncchset->sections.exhdr.buffer;
 	exhdrset->acexDesc = (access_descriptor*)ncchset->sections.acexDesc.buffer;
 
-	/* BSS Size */
-	u32_to_u8(exhdrset->exHdr->codeSetInfo.bssSize,ncchset->codeDetails.bssSize,LE);
 	/* Data */
 	u32_to_u8(exhdrset->exHdr->codeSetInfo.data.address,ncchset->codeDetails.rwAddress,LE);
 	u32_to_u8(exhdrset->exHdr->codeSetInfo.data.codeSize,ncchset->codeDetails.rwSize,LE);
@@ -143,12 +141,16 @@ int get_ExHeaderSettingsFromNcchset(exheader_settings *exhdrset, ncch_settings *
 	u32_to_u8(exhdrset->exHdr->codeSetInfo.text.address,ncchset->codeDetails.textAddress,LE);
 	u32_to_u8(exhdrset->exHdr->codeSetInfo.text.codeSize,ncchset->codeDetails.textSize,LE);
 	u32_to_u8(exhdrset->exHdr->codeSetInfo.text.numMaxPages,ncchset->codeDetails.textMaxPages,LE);
+	/* BSS Size */
+	u32_to_u8(exhdrset->exHdr->codeSetInfo.bssSize, ncchset->codeDetails.bssSize, LE);
+	/* Stack Size */
+	u32_to_u8(exhdrset->exHdr->codeSetInfo.stackSize, ncchset->codeDetails.stackSize, LE);
 
 	/* Set Simple Flags */
 	if(ncchset->options.CompressCode)
-		exhdrset->exHdr->codeSetInfo.flag |= infoflag_COMPRESS_EXEFS_0;
-	if(ncchset->options.UseOnSD)
-		exhdrset->exHdr->codeSetInfo.flag |= infoflag_SD_APPLICATION;
+		exhdrset->exHdr->codeSetInfo.compressExeFs0 = true;
+	if (ncchset->options.UseOnSD)
+		exhdrset->exHdr->codeSetInfo.useOnSd = true;
 	if(!ncchset->options.UseRomFS)
 		exhdrset->exHdr->arm11SystemLocalCapabilities.storageInfo.otherAttributes |= attribute_NOT_USE_ROMFS;
 
@@ -195,13 +197,6 @@ int get_ExHeaderCodeSetInfo(exhdr_CodeSetInfo *CodeSetInfo, rsf_settings *rsf)
 	else
 		strncpy((char*)CodeSetInfo->name, DEFAULT_EXHEADER_NAME, 8);
 	
-	/* Stack Size */
-	if(rsf->SystemControlInfo.StackSize)
-		u32_to_u8(CodeSetInfo->stackSize, strtoul(rsf->SystemControlInfo.StackSize,NULL,0), LE);
-	else{
-		ErrorParamNotFound("SystemControlInfo/StackSize");
-		return EXHDR_BAD_RSF_OPT;
-	}
 	/* Remaster Version */
 	if(rsf->SystemControlInfo.RemasterVersion)
 		u16_to_u8(CodeSetInfo->remasterVersion, strtol(rsf->SystemControlInfo.RemasterVersion,NULL,0), LE);
@@ -311,93 +306,87 @@ int SetARM11SystemLocalInfoFlags(exhdr_ARM11SystemLocalCapabilities *arm11, rsf_
 		return EXHDR_BAD_RSF_OPT;
 	}
 
-	/* Flag[0] */
-	arm11->flag[0] |= rsf->AccessControlInfo.EnableL2Cache;
+	/* Defaults */
+	arm11->enableL2Cache = false;
+	arm11->cpuSpeed = cpuspeed_268MHz;
+	arm11->systemModeExt = sysmode_ext_LEGACY;
+	arm11->affinityMask = 0;
+	arm11->idealProcessor = 0;
+	arm11->systemMode = sysmode_64MB;
+
+	/* flag[0] */
+	arm11->enableL2Cache |= rsf->AccessControlInfo.EnableL2Cache;
 
 	if (rsf->AccessControlInfo.CpuSpeed) {
 		if(strcasecmp(rsf->AccessControlInfo.CpuSpeed, "268mhz") == 0)
-			arm11->flag[0] |= cpuspeed_268MHz << 1;
+			arm11->cpuSpeed |= cpuspeed_268MHz;
 		else if(strcasecmp(rsf->AccessControlInfo.CpuSpeed, "804mhz") == 0)
-			arm11->flag[0] |= cpuspeed_804MHz << 1;
+			arm11->cpuSpeed |= cpuspeed_804MHz;
 		else {
 			fprintf(stderr, "[EXHEADER ERROR] Invalid cpu speed: 0x%s\n", rsf->AccessControlInfo.CpuSpeed);
 			return EXHDR_BAD_RSF_OPT;
 		}
 	}
-	else
-		arm11->flag[0] |= cpuspeed_268MHz << 1;
 
-	/* Flag[1] (SystemModeExt) */
+	/* flag[1] (SystemModeExt) */
 	if (rsf->AccessControlInfo.SystemModeExt) {
 		if (strcasecmp(rsf->AccessControlInfo.SystemModeExt, "Legacy") == 0)
-			arm11->flag[1] = sysmode_ext_LEGACY;
+			arm11->systemModeExt = sysmode_ext_LEGACY;
 		else if (strcasecmp(rsf->AccessControlInfo.SystemModeExt, "124MB") == 0)
-			arm11->flag[1] = sysmode_ext_124MB;
+			arm11->systemModeExt = sysmode_ext_124MB;
 		else if (strcasecmp(rsf->AccessControlInfo.SystemModeExt, "178MB") == 0)
-			arm11->flag[1] = sysmode_ext_178MB;
+			arm11->systemModeExt = sysmode_ext_178MB;
 		
 		else {
 			fprintf(stderr, "[EXHEADER ERROR] Unexpected SystemModeExt: %s\n", rsf->AccessControlInfo.SystemModeExt);
 			return EXHDR_BAD_RSF_OPT;
 		}
 	} 
-	else {
-		arm11->flag[1] = sysmode_ext_LEGACY;
-	}
 
-	/* Flag[2] */
-	u8 affinityMask = 0;
-	u8 idealProcessor = 0;
-	u8 systemMode = 0;
-	
+	/* flag[2] */
 	if(rsf->AccessControlInfo.AffinityMask){
-		affinityMask = strtol(rsf->AccessControlInfo.AffinityMask,NULL,0);
-		if(affinityMask > 1){
-			fprintf(stderr,"[EXHEADER ERROR] Unexpected AffinityMask: %d. Expected range: 0x0 - 0x1\n",affinityMask);
+		arm11->affinityMask = strtol(rsf->AccessControlInfo.AffinityMask,NULL,0);
+		if(arm11->affinityMask > 1){
+			fprintf(stderr,"[EXHEADER ERROR] Unexpected AffinityMask: %d. Expected range: 0x0 - 0x1\n", arm11->affinityMask);
 			return EXHDR_BAD_RSF_OPT;
 		}
 	}
 	if(rsf->AccessControlInfo.IdealProcessor){
-		idealProcessor = strtol(rsf->AccessControlInfo.IdealProcessor,NULL,0);
-		if(idealProcessor > 1){
-			fprintf(stderr,"[EXHEADER ERROR] Unexpected IdealProcessor: %d. Expected range: 0x0 - 0x1\n",idealProcessor);
+		arm11->idealProcessor = strtol(rsf->AccessControlInfo.IdealProcessor,NULL,0);
+		if(arm11->idealProcessor > 1){
+			fprintf(stderr,"[EXHEADER ERROR] Unexpected IdealProcessor: %d. Expected range: 0x0 - 0x1\n", arm11->idealProcessor);
 			return EXHDR_BAD_RSF_OPT;
 		}
 	}
 	if(rsf->AccessControlInfo.SystemMode){
 		if (strcasecmp(rsf->AccessControlInfo.SystemMode, "64MB") == 0 || strcasecmp(rsf->AccessControlInfo.SystemMode, "prod") == 0)
-			systemMode = sysmode_64MB;
+			arm11->systemMode = sysmode_64MB;
 		//else if (strcasecmp(rsf->AccessControlInfo.SystemMode, "UNK") == 0 || strcasecmp(rsf->AccessControlInfo.SystemMode, "null") == 0)
-		//	systemMode = sysmode_UNK;
+		//	arm11->systemMode = sysmode_UNK;
 		else if (strcasecmp(rsf->AccessControlInfo.SystemMode, "96MB") == 0 || strcasecmp(rsf->AccessControlInfo.SystemMode, "dev1") == 0)
-			systemMode = sysmode_96MB;
+			arm11->systemMode = sysmode_96MB;
 		else if (strcasecmp(rsf->AccessControlInfo.SystemMode, "80MB") == 0 || strcasecmp(rsf->AccessControlInfo.SystemMode, "dev2") == 0)
-			systemMode = sysmode_80MB;
+			arm11->systemMode = sysmode_80MB;
 		else if (strcasecmp(rsf->AccessControlInfo.SystemMode, "72MB") == 0 || strcasecmp(rsf->AccessControlInfo.SystemMode, "dev3") == 0)
-			systemMode = sysmode_72MB;
+			arm11->systemMode = sysmode_72MB;
 		else if (strcasecmp(rsf->AccessControlInfo.SystemMode, "32MB") == 0 || strcasecmp(rsf->AccessControlInfo.SystemMode, "dev4") == 0)
-			systemMode = sysmode_32MB;
+			arm11->systemMode = sysmode_32MB;
 
 		else {
 			fprintf(stderr, "[EXHEADER ERROR] Unexpected SystemMode: %s\n", rsf->AccessControlInfo.SystemMode);
 			return EXHDR_BAD_RSF_OPT;
 		}
 	}
-	else {
-		systemMode = sysmode_64MB;
-	}
-	arm11->flag[2] = (u8)(systemMode << 4 | affinityMask << 2 | idealProcessor);
 
 	/* flag[3] (Thread Priority) */
 	if(rsf->AccessControlInfo.Priority){
-		u8 priority = strtoul(rsf->AccessControlInfo.Priority,NULL,0);
+		arm11->threadPriority = strtoul(rsf->AccessControlInfo.Priority,NULL,0);
 		if(GetAppType(rsf) == processtype_APPLICATION)
-			priority += 32;
-		if(priority > 127){
-			fprintf(stderr,"[EXHEADER ERROR] Invalid Priority: %d\n",priority);
+			arm11->threadPriority += 32;
+		if(arm11->threadPriority < 0){
+			fprintf(stderr,"[EXHEADER ERROR] Invalid Priority: %d\n", arm11->threadPriority);
 			return EXHDR_BAD_RSF_OPT;
 		}
-		arm11->flag[3] = priority;
 	}
 	else{
 		ErrorParamNotFound("AccessControlInfo/Priority");

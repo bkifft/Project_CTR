@@ -3,7 +3,7 @@
 #include "ncch_build.h"
 #include "exheader_build.h"
 #include "exheader_read.h"
-#include "elf.h"
+#include "code.h"
 #include "exefs_build.h"
 #include "exefs_read.h"
 #include "romfs.h"

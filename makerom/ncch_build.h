@@ -70,6 +70,7 @@ typedef struct
 		u32 rwSize;
 		u32 rwMaxPages;
 		u32 bssSize;
+		u32 stackSize;
 	} codeDetails;
 
 	struct

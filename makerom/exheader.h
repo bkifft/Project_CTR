@@ -121,7 +121,14 @@ typedef struct
 {
 	u8 name[8];
 	u8 padding0[5];
-	u8 flag;
+	union {
+		u8 flag;
+		struct {
+			u8 compressExeFs0 : 1;
+			u8 useOnSd : 1;
+		};
+	};
+	
 	u8 remasterVersion[2]; // le u16
 	exhdr_CodeSegmentInfo text;
 	u8 stackSize[4]; // le u32
@@ -151,7 +158,23 @@ typedef struct
 {
 	u8 programId[8];
 	u8 coreVersion[4];
-	u8 flag[4];
+	union {
+		u8 flag[4];
+		struct {
+			u8 enableL2Cache : 1;
+			u8 cpuSpeed : 1;
+			u8: 6;
+
+			u8 systemModeExt : 4;
+			u8: 4;
+
+			u8 idealProcessor : 2;
+			u8 affinityMask : 2;
+			u8 systemMode : 4;
+
+			s8 threadPriority;
+		};
+	};
 	u8 resourceLimitDescriptor[16][2];
 	exhdr_StorageInfo storageInfo;
 	u8 serviceAccessControl[34][8]; // Those char[8] server names

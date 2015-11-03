@@ -59,9 +59,9 @@ void ReadFile64(void *outbuff, u64 size, u64 offset, FILE *file);
 int fseek_64(FILE *fp, u64 file_pos);
 
 //Data Size conversion
-u16 u8_to_u16(u8 *value, u8 endianness);
-u32 u8_to_u32(u8 *value, u8 endianness);
-u64 u8_to_u64(u8 *value, u8 endianness);
+u16 u8_to_u16(const u8 *value, u8 endianness);
+u32 u8_to_u32(const u8 *value, u8 endianness);
+u64 u8_to_u64(const u8 *value, u8 endianness);
 int u16_to_u8(u8 *out_value, u16 in_value, u8 endianness);
 int u32_to_u8(u8 *out_value, u32 in_value, u8 endianness);
 int u64_to_u8(u8 *out_value, u64 in_value, u8 endianness);

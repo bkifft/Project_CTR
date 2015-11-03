@@ -1,430 +1,149 @@
 #include "lib.h"
-#include "ncch_build.h"
-#include "exheader_read.h"
-#include "elf_hdr.h"
 #include "elf.h"
-#include "blz.h"
 
-const char *SDK_PLAINREGION_SEGMENT_NAME = ".module_id";
+static const u32 ELF_MAGIC = 0x7f454c46;
 
-int ImportPlainRegionFromFile(ncch_settings *set);
-int ImportExeFsCodeBinaryFromFile(ncch_settings *set);
+typedef enum elf_bit_format_types
+{
+	elf_32_bit = 1,
+	elf_64_bit = 2,
+} elf_bit_format_types;
 
-u32 GetPageSize(ncch_settings *set);
-u32 SizeToPage(u32 memorySize, elf_context *elf);
+typedef enum elf_endianness
+{
+	elf_little_endian = 1,
+	elf_big_endian = 2,
+} elf_endianness;
 
-int GetBSSFromElf(elf_context *elf, u8 *elfFile, ncch_settings *set);
-int ImportPlainRegionFromElf(elf_context *elf, u8 *elfFile, ncch_settings *set);
-int CreateExeFsCode(elf_context *elf, u8 *elfFile, ncch_settings *set);
-int CreateCodeSegmentFromElf(code_segment *out, elf_context *elf, u8 *elfFile, u64 segment_flags);
+typedef enum elf_type
+{
+	elf_relocatable = 1,
+	elf_executeable = 2,
+	elf_shared = 3,
+	elf_core = 4,
+} elf_type;
+
+typedef enum elf_target_architecture
+{
+	elf_arm = 0x28,
+} elf_target_architecture;
+
+typedef struct elf_hdr
+{
+	u8 magic[4];
+	u8 bitFormat;
+	u8 endianness;
+	u8 elfVersion;
+	u8 os;
+	u8 padding0[8];
+	u8 type[2];
+	u8 targetArchitecture[2];
+	u8 version[4];
+	u8 entryPoint[4];
+	u8 programHeaderTableOffset[4];
+	u8 sectionHeaderTableOffset[4];
+	u8 flags[4];
+	u8 headerSize[2];
+	u8 programHeaderEntrySize[2];
+	u8 programHeaderEntryCount[2];
+	u8 sectionTableEntrySize[2];
+	u8 sectionHeaderEntryCount[2];
+	u8 sectionHeaderNameEntryIndex[2];
+} elf_hdr;
+
+/* taken from elf specs, will not follow global style */
+
+/* Section header.  */
+typedef struct elf_shdr
+{
+	u8 name[4];		/* Section name (string tbl index) */
+	u8 type[4];		/* Section type */
+	u8 flags[4];		/* Section flags */
+	u8 addr[4];		/* Section virtual addr at execution */
+	u8 offset[4];		/* Section file offset */
+	u8 size[4];		/* Section size in bytes */
+	u8 link[4];		/* Link to another section */
+	u8 info[4];		/* Additional section information */
+	u8 addralign[4];		/* Section alignment */
+	u8 entsize[4];		/* Entry size if section holds table */
+} elf_shdr;
+
+/* Program segment header.  */
+typedef struct elf_phdr
+{
+	u8 type[4];			/* Segment type */
+	u8 offset[4];		/* Segment file offset */
+	u8 vaddr[4];		/* Segment virtual address */
+	u8 paddr[4];		/* Segment physical address */
+	u8 filesz[4];		/* Segment size in file */
+	u8 memsz[4];		/* Segment size in memory */
+	u8 flags[4];		/* Segment flags */
+	u8 align[4];		/* Segment alignment */
+} elf_phdr;
 
 // ELF Functions
-int GetElfContext(elf_context *elf, u8 *elfFile);
-int GetElfSectionEntries(elf_context *elf, u8 *elfFile);
-int GetElfProgramEntries(elf_context *elf, u8 *elfFile);
-void PrintElfContext(elf_context *elf, u8 *elfFile);
-int ReadElfHdr(elf_context *elf, u8 *elfFile);
+int GetElfSectionEntries(elf_context *elf);
+int GetElfProgramEntries(elf_context *elf);
+void PrintElfContext(elf_context *elf);
+int ReadElfHdr(elf_context *elf);
 
-int CreateElfSegments(elf_context *elf, u8 *elfFile);
+int CreateElfSegments(elf_context *elf);
 bool IsIgnoreSection(elf_section_entry info);
 
-/* ELF Section Entry Functions */
-u8* GetELFSectionHeader(u16 index, elf_context *elf, u8 *elfFile);
-u8* GetELFSectionEntry(u16 index, elf_context *elf, u8 *elfFile);
-char* GetELFSectionEntryName(u16 index, elf_context *elf, u8 *elfFile);
-u64 GetELFSectionEntryType(u16 index, elf_context *elf, u8 *elfFile);
-u64 GetELFSectionEntryFlags(u16 index, elf_context *elf, u8 *elfFile);
-u64 GetELFSectionEntryAddress(u16 index, elf_context *elf, u8 *elfFile);
-u64 GetELFSectionEntryFileOffset(u16 index, elf_context *elf, u8 *elfFile);
-u64 GetELFSectionEntrySize(u16 index, elf_context *elf, u8 *elfFile);
-u64 GetELFSectionEntryAlignment(u16 index, elf_context *elf, u8 *elfFile);
+// ELF Functions
 
-u16 GetElfSectionIndexFromName(char *name, elf_context *elf, u8 *elfFile);
-
-bool IsBss(elf_section_entry *section);
-bool IsData(elf_section_entry *section);
-bool IsRoData(elf_section_entry *section);
-bool IsText(elf_section_entry *section);
-
-/* ELF Program Entry Functions */
-u8* GetELFProgramHeader(u16 index, elf_context *elf, u8 *elfFile);
-u8* GetELFProgramEntry(u16 index, elf_context *elf, u8 *elfFile);
-u64 GetELFProgramEntryType(u16 index, elf_context *elf, u8 *elfFile);
-u64 GetELFProgramEntryFlags(u16 index, elf_context *elf, u8 *elfFile);
-u64 GetELFProgramEntryFileSize(u16 index, elf_context *elf, u8 *elfFile);
-u64 GetELFProgramEntryFileOffset(u16 index, elf_context *elf, u8 *elfFile);
-u64 GetELFProgramEntryMemorySize(u16 index, elf_context *elf, u8 *elfFile);
-u64 GetELFProgramEntryVAddress(u16 index, elf_context *elf, u8 *elfFile);
-u64 GetELFProgramEntryPAddress(u16 index, elf_context *elf, u8 *elfFile);
-u64 GetELFProgramEntryAlignment(u16 index, elf_context *elf, u8 *elfFile);
-
-
-int BuildExeFsCode(ncch_settings *set)
+int GetElfContext(elf_context *elf, const u8 *elfFile)
 {
-	int result = 0;
-	if(set->options.IsCfa)
-		return result;
-	if(set->componentFilePtrs.plainregion){ // Import PlainRegion from file
-		result = ImportPlainRegionFromFile(set);
-		if(result) return result;
-	}
-	if(!set->options.IsBuildingCodeSection){ // Import ExeFs Code from file and return
-		result = ImportExeFsCodeBinaryFromFile(set);
-		return result;
-	}
-
-	/* Import ELF */
-	u8 *elfFile = malloc(set->componentFilePtrs.elfSize);
-	if(!elfFile) {
-		fprintf(stderr,"[ELF ERROR] Not enough memory\n"); 
-		return MEM_ERROR;
-	}
-	ReadFile64(elfFile,set->componentFilePtrs.elfSize,0,set->componentFilePtrs.elf);
-
-	/* Create ELF Context */
-	elf_context *elf = calloc(1,sizeof(elf_context));
-	if(!elf) {
-		fprintf(stderr,"[ELF ERROR] Not enough memory\n"); 
-		free(elfFile); 
-		return MEM_ERROR;
-	}
+	elf->file = elfFile;
 	
-	result = GetElfContext(elf,elfFile);
-	if(result) goto finish;
+	int result;
 
-	/* Setting Page Size */
-	elf->pageSize = GetPageSize(set);
+	if((result = ReadElfHdr(elf))) return result;
+	if((result = GetElfSectionEntries(elf))) return result;
+	if((result = GetElfProgramEntries(elf))) return result;
+	if((result = CreateElfSegments(elf))) return result;
 
-	if(!set->componentFilePtrs.plainregion){
-		result = ImportPlainRegionFromElf(elf,elfFile,set);
-		if(result) goto finish;
-	}
+	return 0;
+}
 
-	if(set->options.verbose)
-		PrintElfContext(elf,elfFile);
-
-	result = CreateExeFsCode(elf,elfFile,set);
-	if(result) goto finish;
-
-	result = GetBSSFromElf(elf,elfFile,set);
-	if(result) goto finish;
-
-finish:
-	switch (result) {
-		case (0) :
-			break;
-		case (NOT_ELF_FILE) :
-			fprintf(stderr, "[ELF ERROR] Not ELF File\n");
-			break;
-		case (NOT_ARM_ELF) :
-			fprintf(stderr, "[ELF ERROR] Not ARM ELF\n");
-			break;
-		case (NON_EXECUTABLE_ELF) :
-			fprintf(stderr, "[ELF ERROR] Not Executeable ELF\n");
-			break;
-		case (NOT_FIND_TEXT_SEGMENT) :
-			fprintf(stderr, "[ELF ERROR] Failed to retrieve text sections from ELF\n");
-			break;
-		case (NOT_FIND_DATA_SEGMENT) :
-			fprintf(stderr, "[ELF ERROR] Failed to retrieve data sections from ELF\n");
-			break;
-		default:
-			fprintf(stderr, "[ELF ERROR] Failed to process ELF file (%d)\n", result);
-	}
-	for(int i = 0; i < elf->activeSegments; i++)
+void FreeElfContext(elf_context *elf)
+{
+	for (int i = 0; i < elf->activeSegments; i++)
 		free(elf->segments[i].sections);
-	free(elfFile);
 	free(elf->sections);
 	free(elf->programHeaders);
 	free(elf->segments);
-	free(elf);
-	return result;	
 }
 
-int ImportPlainRegionFromFile(ncch_settings *set)
+int ReadElfHdr(elf_context *elf)
 {
-	set->sections.plainRegion.size = align(set->componentFilePtrs.plainregionSize,set->options.blockSize);
-	set->sections.plainRegion.buffer = malloc(set->sections.plainRegion.size);
-	if(!set->sections.plainRegion.buffer) {fprintf(stderr,"[ELF ERROR] Not enough memory\n"); return MEM_ERROR;}
-	ReadFile64(set->sections.plainRegion.buffer,set->componentFilePtrs.plainregionSize,0,set->componentFilePtrs.plainregion);
-	return 0;
-}
+	const elf_hdr *hdr = (const elf_hdr*)elf->file;
 
-int ImportExeFsCodeBinaryFromFile(ncch_settings *set)
-{
-	u32 size = set->componentFilePtrs.codeSize;
-	u8 *buffer = malloc(size);
-	if(!buffer) {
-		fprintf(stderr,"[ELF ERROR] Not enough memory\n");
-		return MEM_ERROR;
-	}
-	ReadFile64(buffer,size,0,set->componentFilePtrs.code);
+	if (u8_to_u32(hdr->magic, BE) != ELF_MAGIC)
+		return NOT_ELF_FILE;
+	if (hdr->bitFormat != elf_32_bit)
+		return NOT_CTR_ARM_ELF;
+	if (hdr->endianness != elf_little_endian)
+		return NOT_CTR_ARM_ELF;
+	if (u8_to_u16(hdr->targetArchitecture, LE) != elf_arm)
+		return NOT_CTR_ARM_ELF;
+	if (u8_to_u16(hdr->type, LE) != elf_executeable)
+		return NON_EXECUTABLE_ELF;
 
-	set->exefsSections.code.size = set->componentFilePtrs.codeSize;
-	set->exefsSections.code.buffer = malloc(set->exefsSections.code.size);
-	if(!set->exefsSections.code.buffer) {fprintf(stderr,"[ELF ERROR] Not enough memory\n"); return MEM_ERROR;}
-	ReadFile64(set->exefsSections.code.buffer,set->exefsSections.code.size,0,set->componentFilePtrs.code);
-	if(set->options.CompressCode){
-		u32 new_len;
-		set->exefsSections.code.buffer = BLZ_Code(buffer,size,&new_len,BLZ_NORMAL);
-		set->exefsSections.code.size = new_len;
-		free(buffer);
-	}
-	else{
-		set->exefsSections.code.size = size;
-		set->exefsSections.code.buffer = buffer;
-	}
-	
-	size = set->componentFilePtrs.exhdrSize;
-	if(size < sizeof(extended_hdr)){
-		fprintf(stderr,"[ELF ERROR] Exheader code info template is too small\n");
-		return FAILED_TO_IMPORT_FILE;
-	}
-	extended_hdr *exhdr = malloc(size);
-	if(!exhdr) {
-		fprintf(stderr,"[ELF ERROR] Not enough memory\n");
-		return MEM_ERROR;
-	}
-	ReadFile64(exhdr,size,0,set->componentFilePtrs.exhdr);
-	
-	/* Setting code_segment data */
-	set->codeDetails.textAddress = u8_to_u32(exhdr->codeSetInfo.text.address,LE);
-	set->codeDetails.textMaxPages = u8_to_u32(exhdr->codeSetInfo.text.numMaxPages,LE);
-	set->codeDetails.textSize = u8_to_u32(exhdr->codeSetInfo.text.codeSize,LE);
+	elf->programTableOffset = u8_to_u32(hdr->programHeaderTableOffset, LE);
+	elf->programTableEntrySize = u8_to_u16(hdr->programHeaderEntrySize, LE);
+	elf->programTableEntryCount = u8_to_u16(hdr->programHeaderEntryCount, LE);
 
-	set->codeDetails.roAddress = u8_to_u32(exhdr->codeSetInfo.rodata.address,LE);
-	set->codeDetails.roMaxPages = u8_to_u32(exhdr->codeSetInfo.rodata.numMaxPages,LE);
-	set->codeDetails.roSize = u8_to_u32(exhdr->codeSetInfo.rodata.codeSize,LE);
+	elf->sectionTableOffset = u8_to_u32(hdr->sectionHeaderTableOffset, LE);
+	elf->sectionTableEntrySize = u8_to_u16(hdr->sectionTableEntrySize, LE);
+	elf->sectionTableEntryCount = u8_to_u16(hdr->sectionHeaderEntryCount, LE);
 
-	set->codeDetails.rwAddress = u8_to_u32(exhdr->codeSetInfo.data.address,LE);
-	set->codeDetails.rwMaxPages = u8_to_u32(exhdr->codeSetInfo.data.numMaxPages,LE);
-	set->codeDetails.rwSize = u8_to_u32(exhdr->codeSetInfo.data.codeSize,LE);
-	
-	set->codeDetails.bssSize = u8_to_u32(exhdr->codeSetInfo.bssSize,LE);
-	
-	free(exhdr);
-	
-	return 0;
-}
-
-u32 GetPageSize(ncch_settings *set)
-{
-	if(set->rsfSet->Option.PageSize)
-		return strtoul(set->rsfSet->Option.PageSize,NULL,10);
-	return 0x1000;
-}
-
-u32 SizeToPage(u32 memorySize, elf_context *elf)
-{
-	return align(memorySize,elf->pageSize)/elf->pageSize;
-}
-
-
-int GetBSSFromElf(elf_context *elf, u8 *elfFile, ncch_settings *set)
-{
-	set->codeDetails.bssSize = 0;
-	
-	for(int i = 0; i < elf->sectionTableEntryCount; i++){
-		if(IsBss(&elf->sections[i]))
-			set->codeDetails.bssSize = elf->sections[i].size;
-	}
-	
-	return 0;
-}
-
-int ImportPlainRegionFromElf(elf_context *elf, u8 *elfFile, ncch_settings *set) // Doesn't work same as N makerom
-{
-	u64 size = 0;
-	u64 offset = 0;
-	for (u16 i = 0; i < elf->activeSegments; i++) {
-		if (strcmp(elf->segments[i].name, SDK_PLAINREGION_SEGMENT_NAME) == 0) {
-			size = elf->segments[i].header->sizeInFile;
-			offset = elf->segments[i].header->offsetInFile;
-			break;
-		}
-	}
-	
-	
-	if (size > 0) {
-		/* Creating Output Buffer */
-		set->sections.plainRegion.size = align(size, set->options.blockSize);
-		set->sections.plainRegion.buffer = malloc(set->sections.plainRegion.size);
-		if (!set->sections.plainRegion.buffer) { fprintf(stderr, "[ELF ERROR] Not enough memory\n"); return MEM_ERROR; }
-		memset(set->sections.plainRegion.buffer, 0, set->sections.plainRegion.size);
-
-		/* Copy Plain Region */
-		memcpy(set->sections.plainRegion.buffer, elfFile+offset, size);
-	}
+	elf->sectionHeaderNameEntryIndex = u8_to_u16(hdr->sectionHeaderNameEntryIndex, LE);
 
 	return 0;
 }
 
-int CreateExeFsCode(elf_context *elf, u8 *elfFile, ncch_settings *set)
-{
-	/* Getting Code Segments */
-	code_segment text;
-	memset(&text,0,sizeof(code_segment));
-	code_segment rodata;
-	memset(&rodata,0,sizeof(code_segment));
-	code_segment rwdata;
-	memset(&rwdata,0,sizeof(code_segment));
-
-	int result = CreateCodeSegmentFromElf(&text,elf,elfFile,(PF_R|PF_X));
-	if(result) return result;
-	result = CreateCodeSegmentFromElf(&rodata,elf,elfFile,(PF_R));
-	if(result) return result;
-	result = CreateCodeSegmentFromElf(&rwdata,elf,elfFile,(PF_R | PF_W));
-	if(result) return result;
-
-	/* Checking the existence of essential ELF Segments */
-	if(!text.size) return NOT_FIND_TEXT_SEGMENT;
-	if(!rwdata.size) return NOT_FIND_DATA_SEGMENT;
-	
-	/* Allocating Buffer for ExeFs Code */
-	u32 size = (text.maxPageNum + rodata.maxPageNum + rwdata.maxPageNum)*elf->pageSize;
-	u8 *code = calloc(1,size);
-
-	/* Writing Code into Buffer */
-	u8 *textPos = (code + 0);
-	u8 *rodataPos = (code + text.maxPageNum*elf->pageSize);
-	u8 *rwdataPos = (code + (text.maxPageNum + rodata.maxPageNum)*elf->pageSize);
-	if(text.size) memcpy(textPos,text.data,text.size);
-	if(rodata.size) memcpy(rodataPos,rodata.data,rodata.size);
-	if(rwdata.size) memcpy(rwdataPos,rwdata.data,rwdata.size);
-
-
-	/* Compressing If needed */
-	if(set->options.CompressCode){
-		u32 new_len;
-		set->exefsSections.code.buffer = BLZ_Code(code,size,&new_len,BLZ_NORMAL);
-		set->exefsSections.code.size = new_len;
-		free(code);
-	}
-	else{
-		set->exefsSections.code.size = size;
-		set->exefsSections.code.buffer = code;
-	}
-
-	/* Setting code_segment data and freeing original buffers */
-	set->codeDetails.textAddress = text.address;
-	set->codeDetails.textMaxPages = text.maxPageNum;
-	set->codeDetails.textSize = text.size;
-	if(text.size) free(text.data);
-
-	set->codeDetails.roAddress = rodata.address;
-	set->codeDetails.roMaxPages = rodata.maxPageNum;
-	set->codeDetails.roSize = rodata.size;
-	if(rodata.size) free(rodata.data);
-
-	set->codeDetails.rwAddress = rwdata.address;
-	set->codeDetails.rwMaxPages = rwdata.maxPageNum;
-	set->codeDetails.rwSize = rwdata.size;
-	if(rwdata.size) free(rwdata.data);
-
-	/* Return */
-	return 0;
-}
-
-int CreateCodeSegmentFromElf(code_segment *out, elf_context *elf, u8 *elfFile, u64 segment_flags)
-{
-	memset(out, 0, sizeof(code_segment));
-
-	u16 seg_num = 0;
-	elf_segment **seg = calloc(elf->activeSegments, sizeof(elf_segment*));
-
-	for (u16 i = 0; i < elf->activeSegments; i++) {
-		// Skip SDK ELF plain region
-		if (strcmp(elf->segments[i].name, SDK_PLAINREGION_SEGMENT_NAME) == 0)
-			continue;
-
-		//printf("SegName: %s (flags: %x)\n", elf->segments[i].name, elf->segments[i].header->flags);
-		if ((elf->segments[i].header->flags & ~PF_CTRSDK) == segment_flags) {
-			if (seg_num == 0) {
-				seg[seg_num] = &elf->segments[i];
-				seg_num++;
-			}
-			else if (elf->segments[i].vAddr == (u32)align(seg[seg_num - 1]->vAddr, seg[seg_num-1]->header->alignment)) {
-				seg[seg_num] = &elf->segments[i];
-				seg_num++;
-			}
-		}
-	}
-
-	/* Return if there are no applicable segment */
-	if (seg_num == 0)
-		return 0;
-
-	/* Getting Segment Size/Settings */
-	u32 vAddr = 0;
-	u32 memorySize = 0;
-	for (u16 i = 0; i < seg_num; i++) {
-		if (i == 0) {
-			vAddr = seg[i]->vAddr;
-		}
-		else { // Add rounded size from previous segment
-			u32 padding = seg[i]->vAddr - (vAddr + memorySize);
-			memorySize += padding;
-		}
-
-		memorySize += seg[i]->header->sizeInMemory;
-
-		if (IsBss(&seg[i]->sections[seg[i]->sectionNum - 1]))
-			memorySize -= seg[i]->sections[seg[i]->sectionNum - 1].size;
-	}
-
-	// For Check
-#ifdef DEBUG
-	printf("Address: 0x%x\n", vAddr);
-	printf("Size:    0x%x\n", memorySize);
-#endif
-
-	out->address = vAddr;
-	out->size = memorySize;
-	out->maxPageNum = SizeToPage(memorySize, elf);
-	out->data = malloc(memorySize);
-
-	/* Writing Segment to Buffer */
-	for (int i = 0; i < seg_num; i++) {
-		
-		for (int j = 0; j < seg[i]->sectionNum; j++) {
-			elf_section_entry *section = &seg[i]->sections[j];
-			if (!IsBss(section)) {
-				u8 *pos = (out->data + (section->address - seg[i]->vAddr));
-				memcpy(pos, section->ptr, section->size);
-				//size += section->size;
-			}
-		}
-	}
-
-	free(seg);
-	return 0;
-}
-
-// ELF Functions
-
-int GetElfContext(elf_context *elf, u8 *elfFile)
-{
-	if(u8_to_u32(elfFile,BE) != ELF_MAGIC) return NOT_ELF_FILE;
-	
-	elf->Is64bit = (elfFile[4] == elf_64_bit);
-	elf->IsLittleEndian = (elfFile[5] == elf_little_endian);
-	
-	int result = ReadElfHdr(elf,elfFile);
-	if(result) return result;
-
-	result = GetElfSectionEntries(elf,elfFile);
-	if(result) return result;
-
-	result = GetElfProgramEntries(elf,elfFile);
-	if(result) return result;
-
-	result = CreateElfSegments(elf,elfFile);
-	if(result) return result;
-
-	return 0;
-}
-
-int GetElfSectionEntries(elf_context *elf, u8 *elfFile)
+int GetElfSectionEntries(elf_context *elf)
 {
 	elf->sections = calloc(elf->sectionTableEntryCount,sizeof(elf_section_entry));
 	if(!elf->sections) {
@@ -432,20 +151,23 @@ int GetElfSectionEntries(elf_context *elf, u8 *elfFile)
 		return MEM_ERROR;
 	}
 
+	const elf_shdr *shdr = (const elf_shdr *)(elf->file + elf->sectionTableOffset);
+	const char *nameTable = (const char*)(elf->file + u8_to_u32(shdr[elf->sectionHeaderNameEntryIndex].offset, LE));
+
 	for(int i = 0; i < elf->sectionTableEntryCount; i++){
-		elf->sections[i].name = GetELFSectionEntryName(i,elf,elfFile);
-		elf->sections[i].type = GetELFSectionEntryType(i,elf,elfFile);
-		elf->sections[i].flags = GetELFSectionEntryFlags(i,elf,elfFile);
-		elf->sections[i].ptr = GetELFSectionEntry(i,elf,elfFile);
-		elf->sections[i].offsetInFile = GetELFSectionEntryFileOffset(i,elf,elfFile);
-		elf->sections[i].size = GetELFSectionEntrySize(i,elf,elfFile);
-		elf->sections[i].address = GetELFSectionEntryAddress(i,elf,elfFile);
-		elf->sections[i].alignment = GetELFSectionEntryAlignment(i,elf,elfFile);
+		elf->sections[i].name = nameTable + u8_to_u32(shdr[i].name, LE);
+		elf->sections[i].type = u8_to_u32(shdr[i].type, LE);
+		elf->sections[i].flags = u8_to_u32(shdr[i].flags, LE);
+		elf->sections[i].offsetInFile = u8_to_u32(shdr[i].offset, LE);
+		elf->sections[i].size = u8_to_u32(shdr[i].size, LE);
+		elf->sections[i].ptr = elf->file + elf->sections[i].offsetInFile;
+		elf->sections[i].address = u8_to_u32(shdr[i].addr, LE);
+		elf->sections[i].alignment = u8_to_u32(shdr[i].addralign, LE);
 	}
 	return 0;
 }
 
-int GetElfProgramEntries(elf_context *elf, u8 *elfFile)
+int GetElfProgramEntries(elf_context *elf)
 {
 	elf->programHeaders = calloc(elf->programTableEntryCount,sizeof(elf_program_entry));
 	if(!elf->programHeaders) {
@@ -453,239 +175,24 @@ int GetElfProgramEntries(elf_context *elf, u8 *elfFile)
 		return MEM_ERROR;
 	}
 
+	const elf_phdr *phdr = (const elf_phdr*)(elf->file + elf->programTableOffset);
+
 	for(int i = 0; i < elf->programTableEntryCount; i++){
-		elf->programHeaders[i].type = GetELFProgramEntryType(i,elf,elfFile);
-		elf->programHeaders[i].flags = GetELFProgramEntryFlags(i,elf,elfFile);
-		elf->programHeaders[i].ptr = GetELFProgramEntry(i,elf,elfFile);
-		elf->programHeaders[i].offsetInFile = GetELFProgramEntryFileOffset(i,elf,elfFile);
-		elf->programHeaders[i].sizeInFile = GetELFProgramEntryFileSize(i,elf,elfFile);
-		elf->programHeaders[i].physicalAddress = GetELFProgramEntryPAddress(i,elf,elfFile);
-		elf->programHeaders[i].virtualAddress = GetELFProgramEntryVAddress(i,elf,elfFile);
-		elf->programHeaders[i].sizeInMemory = GetELFProgramEntryMemorySize(i,elf,elfFile);
-		elf->programHeaders[i].alignment = GetELFProgramEntryAlignment(i,elf,elfFile);
+		elf->programHeaders[i].type = u8_to_u32(phdr[i].type, LE);
+		elf->programHeaders[i].flags = u8_to_u32(phdr[i].flags, LE);
+		elf->programHeaders[i].offsetInFile = u8_to_u32(phdr[i].offset, LE);
+		elf->programHeaders[i].sizeInFile = u8_to_u32(phdr[i].filesz, LE);
+		elf->programHeaders[i].ptr = elf->file + elf->programHeaders[i].offsetInFile;
+		elf->programHeaders[i].physicalAddress = u8_to_u32(phdr[i].paddr, LE);
+		elf->programHeaders[i].virtualAddress = u8_to_u32(phdr[i].vaddr, LE);
+		elf->programHeaders[i].sizeInMemory = u8_to_u32(phdr[i].memsz, LE);
+		elf->programHeaders[i].alignment = u8_to_u32(phdr[i].align, LE);
 	}
 
-	return 0;
-}
-
-void PrintElfContext(elf_context *elf, u8 *elfFile)
-{
-	printf("[ELF] Basic Details\n");
-	printf(" Class:  %s\n",elf->Is64bit ? "64-bit" : "32-bit");
-	printf(" Data:   %s\n",elf->IsLittleEndian ? "Little Endian" : "Big Endian");
-	printf("[ELF] Program Table Data\n");
-	printf(" Offset: 0x%"PRIx64"\n",elf->programTableOffset);
-	printf(" Size:   0x%x\n",elf->programTableEntrySize);
-	printf(" Count:  0x%x\n",elf->programTableEntryCount);
-	printf("[ELF] Section Table Data\n");
-	printf(" Offset: 0x%"PRIx64"\n",elf->sectionTableOffset);
-	printf(" Size:   0x%x\n",elf->sectionTableEntrySize);
-	printf(" Count:  0x%x\n",elf->sectionTableEntryCount);
-	printf(" Label index: 0x%x\n",elf->sectionHeaderNameEntryIndex);
-	for(int i = 0; i < elf->activeSegments; i++){
-		printf(" Segment [%d][%s]\n",i,elf->segments[i].name);
-		printf(" > Size :     0x%"PRIx64"\n",elf->segments[i].header->sizeInFile);
-		printf(" > Address :  0x%"PRIx64"\n",elf->segments[i].vAddr);
-		printf(" > Flags:     0x%"PRIx64"\n", elf->segments[i].header->flags);
-		printf(" > Type:      0x%"PRIx64"\n", elf->segments[i].header->type);
-		printf(" > Sections : %d\n",elf->segments[i].sectionNum);  
-		for(int j = 0; j < elf->segments[i].sectionNum; j++)
-			printf("    > Section [%d][%s][0x%"PRIx64"][0x%"PRIx64"]\n",j,elf->segments[i].sections[j].name, elf->segments[i].sections[j].flags, elf->segments[i].sections[j].type);
-		
-		/*
-		char outpath[100];
-		memset(&outpath,0,100);
-		sprintf(outpath,"%s.bin",elf->sections[i].name);
-		chdir("elfsections");
-		FILE *tmp = fopen(outpath,"wb");
-		WriteBuffer(elf->sections[i].ptr,elf->sections[i].size,0,tmp);
-		fclose(tmp);
-		chdir("..");
-		*/
-	}
-
-}
-
-int ReadElfHdr(elf_context *elf, u8 *elfFile)
-{
-	if(elf->Is64bit){
-		elf_64_hdr *hdr = (elf_64_hdr*)elfFile;
-
-		u16 Architecture = u8_to_u16(hdr->targetArchitecture,elf->IsLittleEndian);
-		u16 Type = u8_to_u16(hdr->type,elf->IsLittleEndian);
-		if(Architecture != elf_arm) return NOT_ARM_ELF;
-		if(Type != elf_executeable) return NON_EXECUTABLE_ELF;
-
-		elf->programTableOffset = u8_to_u64(hdr->programHeaderTableOffset,elf->IsLittleEndian);
-		elf->programTableEntrySize = u8_to_u16(hdr->programHeaderEntrySize,elf->IsLittleEndian);
-		elf->programTableEntryCount = u8_to_u16(hdr->programHeaderEntryCount,elf->IsLittleEndian);
-
-		elf->sectionTableOffset = u8_to_u64(hdr->sectionHeaderTableOffset,elf->IsLittleEndian);
-		elf->sectionTableEntrySize = u8_to_u16(hdr->sectionTableEntrySize,elf->IsLittleEndian);
-		elf->sectionTableEntryCount = u8_to_u16(hdr->sectionHeaderEntryCount,elf->IsLittleEndian);
-
-		elf->sectionHeaderNameEntryIndex = u8_to_u16(hdr->sectionHeaderNameEntryIndex,elf->IsLittleEndian);
-	}
-	else{
-		elf_32_hdr *hdr = (elf_32_hdr*)elfFile;
-
-		u16 Architecture = u8_to_u16(hdr->targetArchitecture,elf->IsLittleEndian);
-		u16 Type = u8_to_u16(hdr->type,elf->IsLittleEndian);
-		if(Architecture != elf_arm) return NOT_ARM_ELF;
-		if(Type != elf_executeable) return NON_EXECUTABLE_ELF;
-
-		elf->programTableOffset = u8_to_u32(hdr->programHeaderTableOffset,elf->IsLittleEndian);
-		elf->programTableEntrySize = u8_to_u16(hdr->programHeaderEntrySize,elf->IsLittleEndian);
-		elf->programTableEntryCount = u8_to_u16(hdr->programHeaderEntryCount,elf->IsLittleEndian);
-
-		elf->sectionTableOffset = u8_to_u32(hdr->sectionHeaderTableOffset,elf->IsLittleEndian);
-		elf->sectionTableEntrySize = u8_to_u16(hdr->sectionTableEntrySize,elf->IsLittleEndian);
-		elf->sectionTableEntryCount = u8_to_u16(hdr->sectionHeaderEntryCount,elf->IsLittleEndian);
-
-		elf->sectionHeaderNameEntryIndex = u8_to_u16(hdr->sectionHeaderNameEntryIndex,elf->IsLittleEndian);
-	}
 	return 0;
 }
 
 /* Section Hdr Functions */
-
-u8* GetELFSectionHeader(u16 index, elf_context *elf, u8 *elfFile)
-{
-	if(index >= elf->sectionTableEntryCount) return NULL;
-
-	return (elfFile + elf->sectionTableOffset + elf->sectionTableEntrySize*index);
-}
-
-u8* GetELFSectionEntry(u16 index, elf_context *elf, u8 *elfFile)
-{
-	if(index >= elf->sectionTableEntryCount) return NULL;
-
-	return (u8*) (elfFile + GetELFSectionEntryFileOffset(index,elf,elfFile));
-}
-
-char* GetELFSectionEntryName(u16 index, elf_context *elf, u8 *elfFile)
-{
-	if(index >= elf->sectionTableEntryCount) return 0;
-
-	u64 NameIndex = 0;
-	if(elf->Is64bit){
-		elf_64_shdr *shdr = (elf_64_shdr*)GetELFSectionHeader(index,elf,elfFile);
-		NameIndex = u8_to_u64(shdr->sh_name,elf->IsLittleEndian);
-	}
-	else{
-		elf_32_shdr *shdr = (elf_32_shdr*)GetELFSectionHeader(index,elf,elfFile);
-		NameIndex = u8_to_u32(shdr->sh_name,elf->IsLittleEndian);
-	}
-
-	u8 *NameTable = GetELFSectionEntry(elf->sectionHeaderNameEntryIndex,elf,elfFile);
-	
-	return (char*)(NameTable+NameIndex);
-}
-
-u64 GetELFSectionEntryType(u16 index, elf_context *elf, u8 *elfFile)
-{
-	if(index >= elf->sectionTableEntryCount) return 0;
-
-	if(elf->Is64bit){
-		elf_64_shdr *shdr = (elf_64_shdr*)GetELFSectionHeader(index,elf,elfFile);
-		return u8_to_u64(shdr->sh_type,elf->IsLittleEndian);
-	}
-	else{
-		elf_32_shdr *shdr = (elf_32_shdr*)GetELFSectionHeader(index,elf,elfFile);
-		return u8_to_u32(shdr->sh_type,elf->IsLittleEndian);
-	}
-
-	return 0;
-}
-
-u64 GetELFSectionEntryFlags(u16 index, elf_context *elf, u8 *elfFile)
-{
-	if(index >= elf->sectionTableEntryCount) return 0;
-
-	if(elf->Is64bit){
-		elf_64_shdr *shdr = (elf_64_shdr*)GetELFSectionHeader(index,elf,elfFile);
-		return u8_to_u64(shdr->sh_flags,elf->IsLittleEndian);
-	}
-	else{
-		elf_32_shdr *shdr = (elf_32_shdr*)GetELFSectionHeader(index,elf,elfFile);
-		return u8_to_u32(shdr->sh_flags,elf->IsLittleEndian);
-	}
-
-	return 0;
-}
-
-u64 GetELFSectionEntryAddress(u16 index, elf_context *elf, u8 *elfFile)
-{
-	if(index >= elf->sectionTableEntryCount) return 0;
-
-	if(elf->Is64bit){
-		elf_64_shdr *shdr = (elf_64_shdr*)GetELFSectionHeader(index,elf,elfFile);
-		return u8_to_u64(shdr->sh_addr,elf->IsLittleEndian);
-	}
-	else{
-		elf_32_shdr *shdr = (elf_32_shdr*)GetELFSectionHeader(index,elf,elfFile);
-		return u8_to_u32(shdr->sh_addr,elf->IsLittleEndian);
-	}
-
-	return 0;
-}
-
-u64 GetELFSectionEntryFileOffset(u16 index, elf_context *elf, u8 *elfFile)
-{
-	if(index >= elf->sectionTableEntryCount) return 0;
-
-	if(elf->Is64bit){
-		elf_64_shdr *shdr = (elf_64_shdr*)GetELFSectionHeader(index,elf,elfFile);
-		return u8_to_u64(shdr->sh_offset,elf->IsLittleEndian);
-	}
-	else{
-		elf_32_shdr *shdr = (elf_32_shdr*)GetELFSectionHeader(index,elf,elfFile);
-		return u8_to_u32(shdr->sh_offset,elf->IsLittleEndian);
-	}
-
-	return 0;
-}
-
-u64 GetELFSectionEntrySize(u16 index, elf_context *elf, u8 *elfFile)
-{
-	if(index >= elf->sectionTableEntryCount) return 0;
-
-	if(elf->Is64bit){
-		elf_64_shdr *shdr = (elf_64_shdr*)GetELFSectionHeader(index,elf,elfFile);
-		return u8_to_u64(shdr->sh_size,elf->IsLittleEndian);
-	}
-	else{
-		elf_32_shdr *shdr = (elf_32_shdr*)GetELFSectionHeader(index,elf,elfFile);
-		return u8_to_u32(shdr->sh_size,elf->IsLittleEndian);
-	}
-
-	return 0;
-}
-
-u64 GetELFSectionEntryAlignment(u16 index, elf_context *elf, u8 *elfFile)
-{
-	if(index >= elf->sectionTableEntryCount) return 0;
-
-	if(elf->Is64bit){
-		elf_64_shdr *shdr = (elf_64_shdr*)GetELFSectionHeader(index,elf,elfFile);
-		return u8_to_u64(shdr->sh_addralign,elf->IsLittleEndian);
-	}
-	else{
-		elf_32_shdr *shdr = (elf_32_shdr*)GetELFSectionHeader(index,elf,elfFile);
-		return u8_to_u32(shdr->sh_addralign,elf->IsLittleEndian);
-	}
-
-	return 0;
-}
-
-
-u16 GetElfSectionIndexFromName(char *name, elf_context *elf, u8 *elfFile)
-{
-	for(int i = 0; i < elf->sectionTableEntryCount; i++){
-		if(strcmp(name,elf->sections[i].name) == 0) return i;
-	}
-	return 0; // Assuming 0 is always empty
-}
 
 bool IsBss(elf_section_entry *section)
 {
@@ -707,153 +214,7 @@ bool IsText(elf_section_entry *section)
 	return (section->type == SHT_PROGBITS && section->flags == (SHF_ALLOC | SHF_EXECINSTR));
 }
 
-/* ProgramHeader Functions */
-
-u8* GetELFProgramHeader(u16 index, elf_context *elf, u8 *elfFile)
-{
-	if(index >= elf->programTableEntryCount) return NULL;
-
-	return (elfFile + elf->programTableOffset + elf->programTableEntrySize*index);
-}
-
-u8* GetELFProgramEntry(u16 index, elf_context *elf, u8 *elfFile)
-{
-	if(index >= elf->programTableEntryCount) return NULL;
-
-	return (u8*) (elfFile + GetELFProgramEntryFileOffset(index,elf,elfFile));
-
-	return NULL;
-}
-
-u64 GetELFProgramEntryType(u16 index, elf_context *elf, u8 *elfFile)
-{
-	if(index >= elf->programTableEntryCount) return 0;
-
-	if(elf->Is64bit){
-		elf_64_phdr *phdr = (elf_64_phdr*)GetELFProgramHeader(index,elf,elfFile);
-		return u8_to_u64(phdr->p_type,elf->IsLittleEndian);
-	}
-	else{
-		elf_32_phdr *phdr = (elf_32_phdr*)GetELFProgramHeader(index,elf,elfFile);
-		return u8_to_u32(phdr->p_type,elf->IsLittleEndian);
-	}
-
-	return 0;
-}
-
-u64 GetELFProgramEntryFlags(u16 index, elf_context *elf, u8 *elfFile)
-{
-	if(index >= elf->programTableEntryCount) return 0;
-
-	if(elf->Is64bit){
-		elf_64_phdr *phdr = (elf_64_phdr*)GetELFProgramHeader(index,elf,elfFile);
-		return u8_to_u64(phdr->p_flags,elf->IsLittleEndian);
-	}
-	else{
-		elf_32_phdr *phdr = (elf_32_phdr*)GetELFProgramHeader(index,elf,elfFile);
-		return u8_to_u32(phdr->p_flags,elf->IsLittleEndian);
-	}
-
-	return 0;
-}
-
-u64 GetELFProgramEntryFileSize(u16 index, elf_context *elf, u8 *elfFile)
-{
-	if(index >= elf->programTableEntryCount) return 0;
-
-	if(elf->Is64bit){
-		elf_64_phdr *phdr = (elf_64_phdr*)GetELFProgramHeader(index,elf,elfFile);
-		return u8_to_u64(phdr->p_filesz,elf->IsLittleEndian);
-	}
-	else{
-		elf_32_phdr *phdr = (elf_32_phdr*)GetELFProgramHeader(index,elf,elfFile);
-		return u8_to_u32(phdr->p_filesz,elf->IsLittleEndian);
-	}
-
-	return 0;
-}
-
-u64 GetELFProgramEntryFileOffset(u16 index, elf_context *elf, u8 *elfFile)
-{
-	if(index >= elf->programTableEntryCount) return 0;
-
-	if(elf->Is64bit){
-		elf_64_phdr *phdr = (elf_64_phdr*)GetELFProgramHeader(index,elf,elfFile);
-		return u8_to_u64(phdr->p_offset,elf->IsLittleEndian);
-	}
-	else{
-		elf_32_phdr *phdr = (elf_32_phdr*)GetELFProgramHeader(index,elf,elfFile);
-		return u8_to_u32(phdr->p_offset,elf->IsLittleEndian);
-	}
-
-	return 0;
-}
-
-u64 GetELFProgramEntryMemorySize(u16 index, elf_context *elf, u8 *elfFile)
-{
-	if(index >= elf->programTableEntryCount) return 0;
-
-	if(elf->Is64bit){
-		elf_64_phdr *phdr = (elf_64_phdr*)GetELFProgramHeader(index,elf,elfFile);
-		return u8_to_u64(phdr->p_memsz,elf->IsLittleEndian);
-	}
-	else{
-		elf_32_phdr *phdr = (elf_32_phdr*)GetELFProgramHeader(index,elf,elfFile);
-		return u8_to_u32(phdr->p_memsz,elf->IsLittleEndian);
-	}
-
-	return 0;
-}
-
-u64 GetELFProgramEntryVAddress(u16 index, elf_context *elf, u8 *elfFile)
-{
-	if(index >= elf->programTableEntryCount) return 0;
-
-	if(elf->Is64bit){
-		elf_64_phdr *phdr = (elf_64_phdr*)GetELFProgramHeader(index,elf,elfFile);
-		return u8_to_u64(phdr->p_vaddr,elf->IsLittleEndian);
-	}
-	else{
-		elf_32_phdr *phdr = (elf_32_phdr*)GetELFProgramHeader(index,elf,elfFile);
-		return u8_to_u32(phdr->p_vaddr,elf->IsLittleEndian);
-	}
-
-	return 0;
-}
-
-u64 GetELFProgramEntryPAddress(u16 index, elf_context *elf, u8 *elfFile)
-{
-	if(index >= elf->programTableEntryCount) return 0;
-
-	if(elf->Is64bit){
-		elf_64_phdr *phdr = (elf_64_phdr*)GetELFProgramHeader(index,elf,elfFile);
-		return u8_to_u64(phdr->p_paddr,elf->IsLittleEndian);
-	}
-	else{
-		elf_32_phdr *phdr = (elf_32_phdr*)GetELFProgramHeader(index,elf,elfFile);
-		return u8_to_u32(phdr->p_paddr,elf->IsLittleEndian);
-	}
-
-	return 0;
-}
-
-
-u64 GetELFProgramEntryAlignment(u16 index, elf_context *elf, u8 *elfFile)
-{
-	if(index >= elf->programTableEntryCount) return 0;
-
-	if(elf->Is64bit){
-		elf_64_phdr *phdr = (elf_64_phdr*)GetELFProgramHeader(index,elf,elfFile);
-		return u8_to_u64(phdr->p_align,elf->IsLittleEndian);
-	}
-	else{
-		elf_32_phdr *phdr = (elf_32_phdr*)GetELFProgramHeader(index,elf,elfFile);
-		return u8_to_u32(phdr->p_align,elf->IsLittleEndian);
-	}
-
-	return 0;
-}
-
+/* Program Segment Functions */
 void InitSegment(elf_segment *segment)
 {
 	memset(segment, 0, sizeof(elf_segment));
@@ -880,7 +241,12 @@ void AddSegmentSection(elf_segment *segment, elf_section_entry *section)
 	segment->sectionNum++;
 }
 
-int CreateElfSegments(elf_context *elf, u8 *elfFile)
+bool IsIgnoreSection(elf_section_entry info)
+{
+	return !(info.flags & SHF_ALLOC);//(info.type != SHT_PROGBITS && info.type != SHT_NOBITS && info.type != SHT_INIT_ARRAY && info.type != SHT_FINI_ARRAY && info.type != SHT_ARM_EXIDX);
+}
+
+int CreateElfSegments(elf_context *elf)
 {
 	// Interate through Each Program Header
 	elf->activeSegments = 0;
@@ -945,9 +311,4 @@ int CreateElfSegments(elf_context *elf, u8 *elfFile)
 	}
 
 	return 0;
-}
-
-bool IsIgnoreSection(elf_section_entry info)
-{
-	return (info.type != SHT_PROGBITS && info.type != SHT_NOBITS && info.type != SHT_INIT_ARRAY && info.type != SHT_FINI_ARRAY && info.type != SHT_ARM_EXIDX);
 }

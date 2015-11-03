@@ -72,9 +72,6 @@
     <ClInclude Include="elf.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="elf_hdr.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="exefs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -339,6 +336,9 @@
     <ClInclude Include="desc\prod_sigdata.h">
       <Filter>Resource Files\DESC</Filter>
     </ClInclude>
+    <ClInclude Include="code.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="accessdesc.c">
@@ -469,6 +469,9 @@
     </ClCompile>
     <ClCompile Include="polarssl\sha4.c">
       <Filter>Source Files\polarssl</Filter>
+    </ClCompile>
+    <ClCompile Include="code.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

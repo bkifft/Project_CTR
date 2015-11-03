@@ -368,7 +368,7 @@ int fseek_64(FILE *fp, u64 file_pos)
 }
 
 //Data Size conversion
-u16 u8_to_u16(u8 *value, u8 endianness)
+u16 u8_to_u16(const u8 *value, u8 endianness)
 {
 	u16 new_value;
 	switch(endianness){
@@ -378,7 +378,7 @@ u16 u8_to_u16(u8 *value, u8 endianness)
 	return new_value;
 }
 
-u32 u8_to_u32(u8 *value, u8 endianness)
+u32 u8_to_u32(const u8 *value, u8 endianness)
 {
 	u32 new_value;
 	switch(endianness){
@@ -389,7 +389,7 @@ u32 u8_to_u32(u8 *value, u8 endianness)
 }
 
 
-u64 u8_to_u64(u8 *value, u8 endianness)
+u64 u8_to_u64(const u8 *value, u8 endianness)
 {
 	u64 ret = 0;
 	switch(endianness){

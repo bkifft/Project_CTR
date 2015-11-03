@@ -44,12 +44,10 @@ int accessdesc_SignWithKey(exheader_settings *exhdrset)
 	memcpy(&exhdrset->acexDesc->arm9AccessControlInfo,&exhdrset->exHdr->arm9AccessControlInfo,sizeof(exhdr_ARM9AccessControlInfo));
 	
 	/* Adjust Data */
-	u8 *flag = &exhdrset->acexDesc->arm11SystemLocalCapabilities.flag[2];
-	u8 SystemMode = (*flag>>4)&0xF;
-	u8 AffinityMask = (*flag>>2)&0x3;
-	u8 IdealProcessor = 1<<((*flag>>0)&0x3);
-	*flag = (u8)(SystemMode << 4 | AffinityMask << 2 | IdealProcessor);
-	exhdrset->acexDesc->arm11SystemLocalCapabilities.flag[3] /= 2;
+	exhdr_ARM11SystemLocalCapabilities *arm11 = &exhdrset->acexDesc->arm11SystemLocalCapabilities;
+
+	arm11->idealProcessor = 1 << arm11->idealProcessor;
+	arm11->threadPriority /= 2;
 
 	/* Sign AccessDesc */
 	return SignAccessDesc(exhdrset->acexDesc,exhdrset->keys);

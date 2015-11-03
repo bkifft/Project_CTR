@@ -97,6 +97,7 @@
     <ClInclude Include="cia.h" />
     <ClInclude Include="cia_build.h" />
     <ClInclude Include="cia_read.h" />
+    <ClInclude Include="code.h" />
     <ClInclude Include="crr.h" />
     <ClInclude Include="crypto.h" />
     <ClInclude Include="ctr_utils.h" />
@@ -105,7 +106,6 @@
     <ClInclude Include="desc\prod_sigdata.h" />
     <ClInclude Include="dir.h" />
     <ClInclude Include="elf.h" />
-    <ClInclude Include="elf_hdr.h" />
     <ClInclude Include="exefs.h" />
     <ClInclude Include="exefs_build.h" />
     <ClInclude Include="exefs_read.h" />
@@ -198,6 +198,7 @@
     <ClCompile Include="cardinfo.c" />
     <ClCompile Include="certs.c" />
     <ClCompile Include="cia.c" />
+    <ClCompile Include="code.c" />
     <ClCompile Include="crypto.c" />
     <ClCompile Include="ctr_utils.c" />
     <ClCompile Include="dir.c" />
