@@ -87,6 +87,7 @@ void tmd_print(tmd_context* ctx)
 	ctr_tmd_body* body = 0;
 	unsigned int contentcount = 0;
 	unsigned int savesize = 0;
+	unsigned int titlever = 0;
 	unsigned int i;
 
 	if (type == TMD_RSA_2048_SHA256 || type == TMD_RSA_2048_SHA1)
@@ -106,6 +107,7 @@ void tmd_print(tmd_context* ctx)
 
 	contentcount = getbe16(body->contentcount);
 	savesize = getle32(body->savedatasize);
+	titlever = getbe16(body->titleversion);
 	
 	fprintf(stdout, "\nTMD header:\n");
 	fprintf(stdout, "Signature type:         %s\n", tmd_get_type_string(type));
@@ -124,7 +126,7 @@ void tmd_print(tmd_context* ctx)
 	else
 		fprintf(stdout, "Save Size:              %dMB (%08x)\n", savesize/sizeMB, savesize);
 	fprintf(stdout, "Access rights:          %08x\n", getbe32(body->accessrights));
-	fprintf(stdout, "Title version:          %04x\n", getbe16(body->titleversion));
+	fprintf(stdout, "Title version:          %d.%d.%d (v%d)\n", (titlever >> 10) & 0x3F, (titlever >> 4) & 0x3F, titlever & 0xF, titlever);
 	fprintf(stdout, "Content count:          %04x\n", getbe16(body->contentcount));
 	fprintf(stdout, "Boot content:           %04x\n", getbe16(body->bootcontent));
 	memdump(stdout, "Hash:                   ", body->hash, 32);
