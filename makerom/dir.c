@@ -28,9 +28,9 @@ int fs_InitDir(u16 *path, u32 pathlen, fs_dir *dir)
 	memcpy(dir->name,path,dir->name_len);
 	
 	
-	dir->m_dir = 10;
-	dir->u_dir = 0;
-	dir->dir = calloc(dir->m_dir,sizeof(fs_dir));
+	dir->m_child = 10;
+	dir->u_child = 0;
+	dir->child = calloc(dir->m_child,sizeof(fs_dir));
 	
 	dir->m_file = 10;
 	dir->u_file = 0;
@@ -41,13 +41,13 @@ int fs_InitDir(u16 *path, u32 pathlen, fs_dir *dir)
 
 int fs_ManageDirSlot(fs_dir *dir)
 {
-	if(dir->u_dir >= dir->m_dir)
+	if(dir->u_child >= dir->m_child)
 	{
-		dir->m_dir *= 2;
-		fs_dir *tmp = calloc(dir->m_dir,sizeof(fs_dir));
-		memcpy(tmp,dir->dir,sizeof(fs_dir)*dir->u_dir);
-		free(dir->dir);
-		dir->dir = tmp;
+		dir->m_child *= 2;
+		fs_dir *tmp = calloc(dir->m_child,sizeof(fs_dir));
+		memcpy(tmp,dir->child,sizeof(fs_dir)*dir->u_child);
+		free(dir->child);
+		dir->child = tmp;
 	}
 	return 0;
 }
@@ -158,9 +158,9 @@ bool fs_EntryIsDirNav(fs_entry *entry)
 int fs_AddDir(fs_entry *entry, fs_dir *dir)
 {
 	fs_ManageDirSlot(dir);
-	u32 current_slot = dir->u_dir;
-	dir->u_dir++;
-	return fs_OpenDir(entry->fs_name,entry->name,entry->name_len,&dir->dir[current_slot]);
+	u32 current_slot = dir->u_child;
+	dir->u_child++;
+	return fs_OpenDir(entry->fs_name,entry->name,entry->name_len,&dir->child[current_slot]);
 }
 
 int fs_AddFile(fs_entry *entry, fs_dir *dir)
@@ -286,10 +286,10 @@ void fs_PrintDir(fs_dir *dir, u32 depth) // This is just for simple debugging, p
 #endif
 		}
 	}
-	if(dir->u_dir)
+	if(dir->u_child)
 	{
-		for(u32 i = 0; i < dir->u_dir; i++)
-			fs_PrintDir(&dir->dir[i],depth+1);
+		for(u32 i = 0; i < dir->u_child; i++)
+			fs_PrintDir(&dir->child[i],depth+1);
 	}
 }
 
@@ -305,13 +305,13 @@ void fs_FreeDir(fs_dir *dir)
 	
 	
 	//printf("free dir names and\n");
-	for(u32 i = 0; i < dir->u_dir; i++)
+	for(u32 i = 0; i < dir->u_child; i++)
 	{	
-		free(dir->dir[i].name);
-		fs_FreeDir(&dir->dir[i]);
+		free(dir->child[i].name);
+		fs_FreeDir(&dir->child[i]);
 	}
 	//printf("free dir struct\n");
-	free(dir->dir);
+	free(dir->child);
 	
 }
 
@@ -323,6 +323,6 @@ void fs_FreeFiles(fs_dir *dir)
 			fclose(dir->file[i].fp);
 	}
 	
-	for(u32 i = 0; i < dir->u_dir; i++)
-		fs_FreeFiles(&dir->dir[i]);
+	for(u32 i = 0; i < dir->u_child; i++)
+		fs_FreeFiles(&dir->child[i]);
 }

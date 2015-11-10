@@ -44,9 +44,9 @@ struct fs_dir
 	fs_romfs_char *name;
 	u32 name_len;
 	
-	struct fs_dir *dir;
-	u32 m_dir;
-	u32 u_dir;
+	struct fs_dir *child;
+	u32 m_child;
+	u32 u_child;
 	
 	struct fs_file *file;
 	u32 m_file;
