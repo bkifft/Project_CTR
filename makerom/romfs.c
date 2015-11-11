@@ -10,6 +10,7 @@ void FreeRomFsCtx(romfs_buildctx *ctx);
 // RomFs Build Functions
 int SetupRomFs(ncch_settings *ncchset, romfs_buildctx *ctx)
 {
+	ctx->verbose = ncchset->options.verbose;
 	ctx->output = NULL;
 	ctx->romfsSize = 0;
 
@@ -46,7 +47,6 @@ int BuildRomFs(romfs_buildctx *ctx)
 void FreeRomFsCtx(romfs_buildctx *ctx)
 {
 	if(ctx->fs){
-		fs_FreeFiles(ctx->fs);
 		fs_FreeDir(ctx->fs);	
 		free(ctx->fs);
 	}

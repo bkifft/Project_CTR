@@ -6,6 +6,7 @@ void DisplayExtendedHelp(char *app_name);
 void SetDefaults(user_settings *set);
 int SetArgument(int argc, int i, char *argv[], user_settings *set);
 int CheckArgumentCombination(user_settings *set);
+const char* GetOutputExtention(u8 file_type);
 void PrintNeedsArg(char *arg);
 void PrintArgInvalid(char *arg);
 void PrintArgReqParam(char *arg, u32 paramNum);
@@ -75,14 +76,7 @@ int ParseArgs(int argc, char *argv[], user_settings *set)
 			source_path = set->common.workingFilePath;
 		else
 			source_path = set->common.contentPath[0];
-		u16 outfile_len = strlen(source_path) + 0x10;
-		set->common.outFileName = calloc(outfile_len, sizeof(char));
-		if (!set->common.outFileName) {
-			fprintf(stderr, "[SETTING ERROR] Not Enough Memory\n");
-			return USR_MEM_ERROR;
-		}
-		set->common.outFileName_mallocd = true;
-		append_filextention(set->common.outFileName, outfile_len, source_path, (char*)&output_extention[set->common.outFormat - 1]);
+		set->common.outFileName = replace_filextention(source_path, GetOutputExtention(set->common.outFormat));
 	}
 	return 0;
 }
@@ -95,7 +89,7 @@ void SetDefaults(user_settings *set)
 
 	// Build NCCH Info
 	set->ncch.useSecCrypto = false;
-	set->ncch.buildNcch0 = false;
+	set->ncch.buildNcch0 = true;
 	set->ncch.includeExefsLogo = false;
 	set->common.outFormat = NCCH;
 	set->ncch.ncchType = format_not_set;
@@ -704,22 +698,18 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 
 int CheckArgumentCombination(user_settings *set)
 {
-	if (set->ncch.ncchType & (CXI | CFA)) {
+	if (set->common.contentPath[0] == NULL) {
 		set->ncch.buildNcch0 = true;
 		if (set->ncch.ncchType & CXI)
 			set->ncch.ncchType = CXI;
 		else
 			set->ncch.ncchType = CFA;
-	}
 
-	if (set->common.outFormat == NCCH) {
-		set->ncch.buildNcch0 = true;
-		if (set->ncch.ncchType)
+		if (set->common.outFormat == NCCH) 
 			set->common.outFormat = set->ncch.ncchType;
-		else {
-			set->ncch.ncchType = CFA;
-			set->common.outFormat = CFA;
-		}
+	}
+	else {
+		set->ncch.buildNcch0 = false;
 	}
 
 	for (int i = 0; i < CIA_MAX_CONTENT; i++) {
@@ -731,11 +721,6 @@ int CheckArgumentCombination(user_settings *set)
 			fprintf(stderr, "[SETTING ERROR] You cannot specify content while outputting CXI/CFA files\n");
 			return USR_BAD_ARG;
 		}
-	}
-
-	if (set->common.contentPath[0] && set->ncch.buildNcch0) {
-		fprintf(stderr, "[SETTING ERROR] You cannot both import and build content 0\n");
-		return USR_BAD_ARG;
 	}
 
 	if (set->common.outFormat == CIA && set->cci.cverDataPath) {
@@ -806,6 +791,18 @@ int CheckArgumentCombination(user_settings *set)
 	}
 
 	return 0;
+}
+
+const char* GetOutputExtention(u8 file_type)
+{
+	switch (file_type) {
+	case(NCCH) : return ".app";
+	case(CXI) : return ".cxi";
+	case(CFA) : return ".cfa";
+	case(CIA) : return ".cia";
+	case(CCI) : return ".cci";
+	default: return ".bin";
+	}
 }
 
 void init_UserSettings(user_settings *set)

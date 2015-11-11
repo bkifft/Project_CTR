@@ -536,12 +536,19 @@ int FinaliseNcch(ncch_settings *set)
 
 		// Crypting Exheader/AcexDesc
 		if(set->cryptoDetails.exhdrSize){
+			if (set->options.verbose)
+				printf("[NCCH] Encypting Exheader... ");
 			CryptNcchRegion(exhdr,set->cryptoDetails.exhdrSize,0x0,set->cryptoDetails.titleId,set->keys->aes.ncchKey0,ncch_exhdr);
 			CryptNcchRegion(acexDesc,set->cryptoDetails.acexSize,set->cryptoDetails.exhdrSize,set->cryptoDetails.titleId,set->keys->aes.ncchKey0,ncch_exhdr);
+			if (set->options.verbose)
+				printf("Done!\n");
 		}			
 
 		// Crypting ExeFs Files
 		if(set->cryptoDetails.exefsSize){
+			if (set->options.verbose)
+				printf("[NCCH] Encrypting ExeFS... ");
+
 			exefs_hdr *exefsHdr = (exefs_hdr*)exefs;
 			for(int i = 0; i < MAX_EXEFS_SECTIONS; i++){
 				u8 *key = NULL;
@@ -559,11 +566,19 @@ int FinaliseNcch(ncch_settings *set)
 			}
 			// Crypting ExeFs Header
 			CryptNcchRegion(exefs,sizeof(exefs_hdr),0x0,set->cryptoDetails.titleId,set->keys->aes.ncchKey0,ncch_exefs);
+
+			if (set->options.verbose)
+				printf("Done!\n");
 		}
 
 		// Crypting RomFs
-		if(set->cryptoDetails.romfsSize)
-			CryptNcchRegion(romfs,set->cryptoDetails.romfsSize,0x0,set->cryptoDetails.titleId,set->keys->aes.ncchKey1,ncch_romfs);
+		if (set->cryptoDetails.romfsSize) {
+			if (set->options.verbose)
+				printf("[NCCH] Encrypting RomFS... ");
+			CryptNcchRegion(romfs, set->cryptoDetails.romfsSize, 0x0, set->cryptoDetails.titleId, set->keys->aes.ncchKey1, ncch_romfs);
+			if (set->options.verbose)
+				printf("Done!\n");
+		}
 	}
 
 	return 0;

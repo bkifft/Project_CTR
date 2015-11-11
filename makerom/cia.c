@@ -571,16 +571,27 @@ u16 SetupVersion(u16 major, u16 minor, u16 micro)
 
 void GetContentHashes(cia_settings *ciaset)
 {
-	for(int i = 0; i < ciaset->content.count; i++)
-		ShaCalc(ciaset->ciaSections.content.buffer+ciaset->content.offset[i],ciaset->content.size[i],ciaset->content.hash[i],CTR_SHA_256);
+	for (int i = 0; i < ciaset->content.count; i++) {
+		if (ciaset->verbose)
+			printf("[CIA] Hashing content %d... ", i);
+		ShaCalc(ciaset->ciaSections.content.buffer + ciaset->content.offset[i], ciaset->content.size[i], ciaset->content.hash[i], CTR_SHA_256);
+		if (ciaset->verbose)
+			printf("Done!\n");
+	}
 }
 
 void EncryptContent(cia_settings *ciaset)
 {
 	for(int i = 0; i < ciaset->content.count; i++){
+		if (ciaset->verbose)
+			printf("[CIA] Encrypting content %d... ", i);
+
 		ciaset->content.flags[i] |= content_Encrypted;
 		u8 *content = ciaset->ciaSections.content.buffer+ciaset->content.offset[i];
 		CryptContent(content, content, ciaset->content.size[i], ciaset->common.titleKey, i, ENC);
+
+		if (ciaset->verbose)
+			printf("Done!\n");
 	}
 }
 
@@ -638,12 +649,20 @@ int BuildCiaHdr(cia_settings *ciaset)
 
 int WriteCiaToFile(cia_settings *ciaset)
 {
+	if (ciaset->verbose) {
+		printf("[CIA] Writing to file... ");
+	}
 	WriteBuffer(ciaset->ciaSections.ciaHdr.buffer,ciaset->ciaSections.ciaHdr.size,0,ciaset->out);
 	WriteBuffer(ciaset->ciaSections.certChain.buffer,ciaset->ciaSections.certChain.size,ciaset->ciaSections.certChainOffset,ciaset->out);
 	WriteBuffer(ciaset->ciaSections.tik.buffer,ciaset->ciaSections.tik.size,ciaset->ciaSections.tikOffset,ciaset->out);
 	WriteBuffer(ciaset->ciaSections.tmd.buffer,ciaset->ciaSections.tmd.size,ciaset->ciaSections.tmdOffset,ciaset->out);
 	WriteBuffer(ciaset->ciaSections.content.buffer,ciaset->ciaSections.content.size,ciaset->ciaSections.contentOffset,ciaset->out);
 	WriteBuffer(ciaset->ciaSections.meta.buffer,ciaset->ciaSections.meta.size,ciaset->ciaSections.metaOffset,ciaset->out);
+
+	if (ciaset->verbose) {
+		printf("Done!\n");
+	}
+
 	return 0;
 }
 

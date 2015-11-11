@@ -18,13 +18,13 @@ u64 min64(u64 a, u64 b);
 u64 max64(u64 a, u64 b);
 
 // Strings
-void memdump(FILE* fout, const char* prefix, const u8* data, u32 size);
-int append_filextention(char *output, u16 max_outlen, char *input, char extention[]);
-int str_u8_to_u16(u16 **dst, u32 *dst_len, u8 *src, u32 src_len);
-int str_u16_to_u16(u16 **dst, u32 *dst_len, u16 *src, u32 src_len);
-int str_u32_to_u16(u16 **dst, u32 *dst_len, u32 *src, u32 src_len);
+void memdump(FILE* fout, const char* prefix, const const u8* data, u32 size);
+char* replace_filextention(const char *input, const char *extention);
+int str_u8_to_u16(u16 **dst, u32 *dst_len, const u8 *src, u32 src_len);
+int str_u16_to_u16(u16 **dst, u32 *dst_len, const u16 *src, u32 src_len);
+int str_u32_to_u16(u16 **dst, u32 *dst_len, const u32 *src, u32 src_len);
 #ifndef _WIN32
-int str_utf8_to_u16(u16 **dst, u32 *dst_len, u8 *src, u32 src_len);
+int str_utf8_to_u16(u16 **dst, u32 *dst_len, const u8 *src, u32 src_len);
 #endif
 
 // Base64

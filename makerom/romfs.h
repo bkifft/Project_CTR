@@ -72,6 +72,8 @@ typedef struct
 
 typedef struct
 {
+	bool verbose;
+
 	u8 *output;
 	u64 romfsSize;
 	u64 romfsHeaderSize;

@@ -41,7 +41,7 @@ int ImportExeFsCodeBinaryFromFile(ncch_settings *set)
 	u32 size = set->componentFilePtrs.codeSize;
 	u8 *buffer = malloc(size);
 	if (!buffer) {
-		fprintf(stderr, "[ELF ERROR] Not enough memory\n");
+		fprintf(stderr, "[CODE ERROR] Not enough memory\n");
 		return MEM_ERROR;
 	}
 	ReadFile64(buffer, size, 0, set->componentFilePtrs.code);
@@ -51,10 +51,14 @@ int ImportExeFsCodeBinaryFromFile(ncch_settings *set)
 	if (!set->exefsSections.code.buffer) { fprintf(stderr, "[ELF ERROR] Not enough memory\n"); return MEM_ERROR; }
 	ReadFile64(set->exefsSections.code.buffer, set->exefsSections.code.size, 0, set->componentFilePtrs.code);
 	if (set->options.CompressCode) {
+		if (set->options.verbose)
+			printf("[CODE] Compressing code... ");
 		u32 new_len;
 		set->exefsSections.code.buffer = BLZ_Code(buffer, size, &new_len, BLZ_NORMAL);
 		set->exefsSections.code.size = new_len;
 		free(buffer);
+		if (set->options.verbose)
+			printf("Done!\n");
 	}
 	else {
 		set->exefsSections.code.size = size;
@@ -63,12 +67,12 @@ int ImportExeFsCodeBinaryFromFile(ncch_settings *set)
 
 	size = set->componentFilePtrs.exhdrSize;
 	if (size < sizeof(extended_hdr)) {
-		fprintf(stderr, "[ELF ERROR] Exheader code info template is too small\n");
+		fprintf(stderr, "[CODE ERROR] Exheader code info template is too small\n");
 		return FAILED_TO_IMPORT_FILE;
 	}
 	extended_hdr *exhdr = malloc(size);
 	if (!exhdr) {
-		fprintf(stderr, "[ELF ERROR] Not enough memory\n");
+		fprintf(stderr, "[CODE ERROR] Not enough memory\n");
 		return MEM_ERROR;
 	}
 	ReadFile64(exhdr, size, 0, set->componentFilePtrs.exhdr);
@@ -245,10 +249,14 @@ int CreateExeFsCode(elf_context *elf, ncch_settings *set)
 
 	/* Compressing If needed */
 	if (set->options.CompressCode) {
+		if (set->options.verbose)
+			printf("[CODE] Compressing code... ");
 		u32 new_len;
 		set->exefsSections.code.buffer = BLZ_Code(code, size, &new_len, BLZ_NORMAL);
 		set->exefsSections.code.size = new_len;
 		free(code);
+		if (set->options.verbose)
+			printf("Done!\n");
 	}
 	else {
 		set->exefsSections.code.size = size;

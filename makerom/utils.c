@@ -53,27 +53,27 @@ u64 max64(u64 a, u64 b)
 }
 
 // Strings
-int append_filextention(char *output, u16 max_outlen, char *input, char extention[])
+char* replace_filextention(const char *input, const char *new_ext)
 {
-	if(output == NULL || input == NULL){
-		printf("[!] Memory Error\n");
-		return Fail;
+	if(input == NULL || new_ext == NULL)
+		return NULL;
+
+	char *new_name;
+	char *ext = strrchr(input, '.');
+
+	// If there is no existing extention, just append new_ext
+	if (!ext) {
+		new_name = calloc(strlen(input) + strlen(new_ext), 1);
+		sprintf(new_name, "%s%s", input, new_ext);
 	}
-	memset(output,0,max_outlen);
-	u16 extention_point = strlen(input)+1;
-	for(int i = strlen(input)-1; i > 0; i--){
-		if(input[i] == '.'){
-			extention_point = i;
-			break;
-		}
+	else {
+		u32 size = ext - input;
+		new_name = calloc(size + strlen(new_ext), 1);
+		snprintf(new_name, size, "%s", input);
+		sprintf(new_name, "%s%s", new_name, new_ext);
 	}
-	if(extention_point+strlen(extention) >= max_outlen){
-		printf("[!] Input File Name Too Large for Output buffer\n");
-		return Fail;
-	}
-	memcpy(output,input,extention_point);
-	sprintf(output,"%s%s",output,extention);
-	return 0;
+	
+	return new_name;
 }
 
 void memdump(FILE* fout, const char* prefix, const u8* data, u32 size)
@@ -104,7 +104,7 @@ void memdump(FILE* fout, const char* prefix, const u8* data, u32 size)
 	}
 }
 
-int str_u8_to_u16(u16 **dst, u32 *dst_len, u8 *src, u32 src_len)
+int str_u8_to_u16(u16 **dst, u32 *dst_len, const u8 *src, u32 src_len)
 {
 	*dst_len = src_len*sizeof(u16);
 	*dst = malloc((*dst_len)+sizeof(u16));
@@ -117,7 +117,7 @@ int str_u8_to_u16(u16 **dst, u32 *dst_len, u8 *src, u32 src_len)
 	return 0;
 }
 
-int str_u16_to_u16(u16 **dst, u32 *dst_len, u16 *src, u32 src_len)
+int str_u16_to_u16(u16 **dst, u32 *dst_len, const u16 *src, u32 src_len)
 {
 	*dst_len = src_len*sizeof(u16);
 	*dst = malloc((*dst_len)+sizeof(u16));
@@ -130,7 +130,7 @@ int str_u16_to_u16(u16 **dst, u32 *dst_len, u16 *src, u32 src_len)
 	return 0;
 }
 
-int str_u32_to_u16(u16 **dst, u32 *dst_len, u32 *src, u32 src_len)
+int str_u32_to_u16(u16 **dst, u32 *dst_len, const u32 *src, u32 src_len)
 {
 	*dst_len = src_len*sizeof(u16);
 	*dst = malloc((*dst_len)+sizeof(u16));
@@ -144,7 +144,7 @@ int str_u32_to_u16(u16 **dst, u32 *dst_len, u32 *src, u32 src_len)
 }
 
 #ifndef _WIN32
-int str_utf8_to_u16(u16 **dst, u32 *dst_len, u8 *src, u32 src_len)
+int str_utf8_to_u16(u16 **dst, u32 *dst_len, const u8 *src, u32 src_len)
 {
 	*dst_len = src_len*sizeof(u16);
 	*dst = malloc((*dst_len)+sizeof(u16));

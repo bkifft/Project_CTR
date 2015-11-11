@@ -5,7 +5,6 @@
 
 const int ROMFS_BLOCK_SIZE = 0x1000;
 const unsigned int ROMFS_UNUSED_ENTRY = 0xffffffff;
-const fs_romfs_char ROMFS_EMPTY_PATH[2] = {0x0000, 0x0000};
 
 // Build
 bool IsFileWanted(fs_file *file, void *filter_criteria);
@@ -21,60 +20,39 @@ void PopulateRomfs(romfs_buildctx *ctx);
 void BuildRomfsHeader(romfs_buildctx *ctx);
 void BuildIvfcHeader(romfs_buildctx *ctx);
 void GenIvfcHashTree(romfs_buildctx *ctx);
-u32 CalcPathHash(u32 parent, fs_romfs_char* path, u32 start, u32 length);
+u32 CalcPathHash(u32 parent, const fs_romfs_char* path, u32 start, u32 length);
 
 
 int PrepareBuildRomFsBinary(ncch_settings *ncchset, romfs_buildctx *ctx)
 {
-	/* Input Path */
-	const int CWD_MAX_LEN = 1024;
-	char *cwd = calloc(CWD_MAX_LEN,sizeof(char));
-	getcwd(cwd,CWD_MAX_LEN);
-
-	char *dir = ncchset->rsfSet->RomFs.RootPath;
-
-	fs_char *fs_path;
-	fs_romfs_char *path;
-	u32 path_len;
-#ifdef _WIN32
-	str_u8_to_u16(&path,&path_len,(u8*)dir,strlen(dir));
-	fs_path = path;
-#else
-	str_utf8_to_u16(&path,&path_len,(u8*)dir,strlen(dir));
-	fs_path = dir;
-#endif
-
 	/* FS Structures */
 	void *filter_criteria = NULL;
 	fs_dir *fs_raw = calloc(1,sizeof(fs_dir));
 	ctx->fs = calloc(1,sizeof(fs_dir));
 
 	/* Import FS and process */
-	fs_OpenDir(fs_path,path,path_len,fs_raw);
+	fs_OpenRootDir(ncchset->rsfSet->RomFs.RootPath,fs_raw);
 	FilterRomFS(fs_raw,ctx->fs,filter_criteria);
 	
 	/* free unfiltered FS */
-	fs_FreeFiles(fs_raw); // All important FPs have been moved with FilterRomFS, so only un-wanted FPs are closed here
 	fs_FreeDir(fs_raw);
 	free(fs_raw);
 	
 	/* Abort romfs making, if no wanted files/directories were found */
 	if(ctx->fs->u_file == 0 && ctx->fs->u_child == 0){
 		ctx->romfsSize = 0;
-		goto finish;
-	}
-	
-	
-	/* Print Filtered FS */
-	if(ncchset->options.verbose){
-		printf("[ROMFS] File System:\n");
-		fs_PrintDir(ctx->fs,0);
+		return 0;
 	}
 	
 	CalcRomfsSize(ctx);
 	
-finish:
-	chdir(cwd);
+	if (ctx->verbose) {
+		printf("[ROMFS] File System:\n");
+		printf(" > Size:         %"PRIx64"\n", ctx->romfsSize);
+		printf(" > Directories:  %d\n", ctx->dirNum);
+		printf(" > Files:        %d\n", ctx->fileNum);
+	}
+
 	return 0;
 }
 
@@ -208,9 +186,10 @@ int FilterRomFS(fs_dir *fs_raw, fs_dir *fs_filtered, void *filter_criteria)
 	if(!IsDirWanted(fs_raw,filter_criteria))
 		return 0;
 	
+	fs_filtered->fs_path = fs_CopyPath(fs_raw->fs_path);
+
 	fs_filtered->name_len = fs_raw->name_len;
-	fs_filtered->name = calloc(fs_filtered->name_len+2,1);
-	memcpy(fs_filtered->name,fs_raw->name,fs_filtered->name_len);
+	fs_filtered->name = fs_CopyRomfsName(fs_raw->name);
 	
 	fs_filtered->u_child = 0;
 	fs_filtered->m_child = fs_raw->u_child;
@@ -233,15 +212,12 @@ int FilterRomFS(fs_dir *fs_raw, fs_dir *fs_filtered, void *filter_criteria)
 	{
 		if(IsFileWanted(&fs_raw->file[i],filter_criteria))
 		{
+			fs_filtered->file[fs_filtered->u_file].fs_path = fs_CopyPath(fs_raw->file[i].fs_path);
+
 			fs_filtered->file[fs_filtered->u_file].name_len = fs_raw->file[i].name_len;
-			fs_filtered->file[fs_filtered->u_file].name = malloc(fs_filtered->file[fs_filtered->u_file].name_len+2);
-			memset(fs_filtered->file[fs_filtered->u_file].name,0,fs_filtered->file[fs_filtered->u_file].name_len+2);
-			memcpy(fs_filtered->file[fs_filtered->u_file].name,fs_raw->file[i].name,fs_filtered->file[fs_filtered->u_file].name_len);
+			fs_filtered->file[fs_filtered->u_file].name = fs_CopyRomfsName(fs_raw->file[i].name);
 			
 			fs_filtered->file[fs_filtered->u_file].size = fs_raw->file[i].size;
-			
-			fs_filtered->file[fs_filtered->u_file].fp = fs_raw->file[i].fp;
-			fs_raw->file[i].fp = NULL;
 			
 			fs_filtered->u_file++;
 		}
@@ -301,15 +277,15 @@ void BuildRomfsHeader(romfs_buildctx *ctx)
 	}
 }
 
-u32 GetFileHashTableIndex(romfs_buildctx *ctx, u32 parent, fs_romfs_char *path)
+u32 GetFileHashTableIndex(romfs_buildctx *ctx, u32 parent, const fs_romfs_char *path)
 {
-	u32 hash = CalcPathHash(parent, path, 0, fs_RomFsStrLen(path));
+	u32 hash = CalcPathHash(parent, path, 0, fs_romfs_strlen(path));
 	return hash % ctx->m_fileHashTable;
 }
 
-u32 GetDirHashTableIndex(romfs_buildctx *ctx, u32 parent, fs_romfs_char* path)
+u32 GetDirHashTableIndex(romfs_buildctx *ctx, u32 parent, const fs_romfs_char* path)
 {
-	u32 hash = CalcPathHash(parent, path, 0, fs_RomFsStrLen(path));
+	u32 hash = CalcPathHash(parent, path, 0, fs_romfs_strlen(path));
 	return hash % ctx->m_dirHashTable;
 }
 
@@ -338,7 +314,21 @@ void AddFileToRomfs(romfs_buildctx *ctx, fs_file *file, u32 parent, u32 sibling)
 		u64_to_u8(entry->dataoffset,ctx->u_dataLen,LE);
 		u64_to_u8(entry->datasize,file->size,LE);
 		u8 *data_pos = (ctx->data + ctx->u_dataLen);
-		ReadFile64(data_pos,file->size,0,file->fp);
+
+		if (ctx->verbose) {
+			printf("[ROMFS] Reading \"");
+			fs_fputs(stdout, file->fs_path);
+			printf("\"... ");
+		}
+
+		FILE *fp = fs_fopen(file->fs_path);
+		fread(data_pos, file->size, 1, fp);
+		fclose(fp);
+
+		if (ctx->verbose) {
+			printf("Done!\n");
+		}
+
 		ctx->u_dataLen += file->size; // adding file size
 	}
 	else
@@ -351,7 +341,6 @@ void AddFileToRomfs(romfs_buildctx *ctx, fs_file *file, u32 parent, u32 sibling)
 void AddDirToRomfs(romfs_buildctx *ctx, fs_dir *fs, u32 parent, u32 sibling)
 {
 	u32 offset = ctx->u_dirTableLen;
-	u32 hashindex;
 	romfs_direntry *entry = (romfs_direntry*)(ctx->dirTable + offset);
 	
 	/* Set entry data */
@@ -360,37 +349,19 @@ void AddDirToRomfs(romfs_buildctx *ctx, fs_dir *fs, u32 parent, u32 sibling)
 	u32_to_u8(entry->childoffset, ROMFS_UNUSED_ENTRY, LE);
 	u32_to_u8(entry->fileoffset, ROMFS_UNUSED_ENTRY, LE);
 	
-
-	/* If root dir ... */
-	if(offset == 0)
-	{
-		/* Import name (root dir has no name) */
-		u32_to_u8(entry->namesize,0,LE);
-
-		/* Get hash table index */
-		hashindex = GetDirHashTableIndex(ctx, parent, (fs_romfs_char*)ROMFS_EMPTY_PATH);
-
-		/* Increment used dir table length */
-		ctx->u_dirTableLen += sizeof(romfs_direntry);
-	}
-	else
-	{
-		/* Import name */
-		u32_to_u8(entry->namesize,fs->name_len,LE);
-		u8 *name_pos = (u8*)(ctx->dirTable + ctx->u_dirTableLen + sizeof(romfs_direntry));
-		memset(name_pos,0,(u32)align(fs->name_len,4));
-		memcpy(name_pos,(u8*)fs->name,fs->name_len);
-
-		/* Get hash table index */
-		hashindex = GetDirHashTableIndex(ctx, parent, fs->name);
-
-		/* Increment used dir table length */
-		ctx->u_dirTableLen += sizeof(romfs_direntry) + (u32)align(fs->name_len,4);
-	}
+	/* Import name */
+	u32_to_u8(entry->namesize,fs->name_len,LE);
+	u8 *name_pos = (u8*)(ctx->dirTable + ctx->u_dirTableLen + sizeof(romfs_direntry));
+	memset(name_pos,0,(u32)align(fs->name_len,4));
+	memcpy(name_pos,(u8*)fs->name,fs->name_len);
 
 	/* Set hash data */
-	u32_to_u8(entry->hashoffset, u8_to_u32(ctx->dirHashTable + hashindex*4, LE), LE);
-	u32_to_u8(ctx->dirHashTable + hashindex*4, offset, LE);
+	u32 hashindex = GetDirHashTableIndex(ctx, parent, fs->name);
+	u32_to_u8(entry->hashoffset, u8_to_u32(ctx->dirHashTable + hashindex * 4, LE), LE);
+	u32_to_u8(ctx->dirHashTable + hashindex * 4, offset, LE);
+
+	/* Increment used dir table length */
+	ctx->u_dirTableLen += sizeof(romfs_direntry) + (u32)align(fs->name_len,4);
 }
 
 void AddDirChildrenToRomfs(romfs_buildctx *ctx, fs_dir *fs, u32 parent, u32 dir)
@@ -425,10 +396,10 @@ void AddDirChildrenToRomfs(romfs_buildctx *ctx, fs_dir *fs, u32 parent, u32 dir)
 		u32_to_u8(entry->childoffset, ctx->u_dirTableLen, LE);
 		for (u32 i = 0; i < fs->u_child; i++)
 		{
-			/* Store address fo child */
+			/* Store address for child */
 			childs[i] = ctx->u_dirTableLen;
 			
-			
+			/* If is the last child directory, no more siblings  */
 			u32 dir_sibling = 0;
 			if (i >= fs->u_child - 1)
 				dir_sibling = ROMFS_UNUSED_ENTRY;
@@ -488,7 +459,7 @@ void GenIvfcHashTree(romfs_buildctx *ctx)
 	return;
 }
 
-u32 CalcPathHash(u32 parent, fs_romfs_char* path, u32 start, u32 length)
+u32 CalcPathHash(u32 parent, const fs_romfs_char* path, u32 start, u32 length)
 {
 	u32 hash = parent ^ 123456789;
 	for( u32 index = 0; index < length; index++ )
