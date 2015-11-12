@@ -76,6 +76,7 @@ int ParseArgs(int argc, char *argv[], user_settings *set)
 			source_path = set->common.workingFilePath;
 		else
 			source_path = set->common.contentPath[0];
+		set->common.outFileName_mallocd = true;
 		set->common.outFileName = replace_filextention(source_path, GetOutputExtention(set->common.outFormat));
 	}
 	return 0;
@@ -676,13 +677,11 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 		}
 		val_pos = (val_pos + 1);
 		name_len = (val_pos - 1 - name_pos);
-		set->dname.items[set->dname.u_items].name = malloc(name_len + 1);
-		memset(set->dname.items[set->dname.u_items].name, 0, name_len + 1);
+		set->dname.items[set->dname.u_items].name = calloc(name_len + 1, sizeof(char));
 		memcpy(set->dname.items[set->dname.u_items].name, name_pos, name_len);
 
 		val_len = strlen(val_pos);
-		set->dname.items[set->dname.u_items].value = malloc(val_len + 1);
-		memset(set->dname.items[set->dname.u_items].value, 0, val_len + 1);
+		set->dname.items[set->dname.u_items].value = calloc(val_len + 1, sizeof(char));
 		memcpy(set->dname.items[set->dname.u_items].value, val_pos, val_len);
 
 		set->dname.u_items++;
