@@ -4,7 +4,7 @@
 
 /* This is the FS interface for ROMFS generation */
 /* Tested working on Windows/Linux/OSX */
-int OpenDir(romfs_dir *dir);
+int PopulateDir(romfs_dir *dir);
 int InitDir(romfs_dir *dir);
 int ManageDir(romfs_dir *dir);
 
@@ -157,10 +157,10 @@ int OpenRootDir(const char *path, romfs_dir *dir)
 	dir->name = romfs_CopyStr(ROMFS_EMPTY_PATH);
 	dir->namesize = 0;
 	
-	return OpenDir(dir);
+	return PopulateDir(dir);
 }
 
-int OpenDir(romfs_dir *dir)
+int PopulateDir(romfs_dir *dir)
 {
 	fs_DIR *dp, *tmp_dp;
 	struct fs_dirent *entry;
@@ -201,7 +201,7 @@ int OpenDir(romfs_dir *dir)
 			dir->u_child++;
 			
 			// Populate directory
-			OpenDir(&dir->child[dir->u_child-1]);
+			PopulateDir(&dir->child[dir->u_child-1]);
 		}
 		// Otherwise this is a file
 		else {
