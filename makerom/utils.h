@@ -55,7 +55,7 @@ u64 wGetFileSize64(u16 *filename);
 
 //IO Misc
 u8* ImportFile(char *file, u64 size);
-void WriteBuffer(void *buffer, u64 size, u64 offset, FILE *output);
+void WriteBuffer(const void *buffer, u64 size, u64 offset, FILE *output);
 void ReadFile64(void *outbuff, u64 size, u64 offset, FILE *file);
 int fseek_64(FILE *fp, u64 file_pos);
 

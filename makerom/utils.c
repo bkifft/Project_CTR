@@ -3,6 +3,8 @@
 
 #include "polarssl/base64.h"
 
+#define IO_BLOCKSIZE 5*MB
+
 // Memory
 int CopyData(u8 **dest, const u8 *source, u64 size)
 {
@@ -370,22 +372,28 @@ u8* ImportFile(char *file, u64 size)
 			return NULL;
 	}
 	FILE *fp = fopen(file,"rb");
-	fread(data,fsize,1,fp);
+	ReadFile64(data, fsize, 0, fp);
 	fclose(fp);
 
 	return data;
 }
 
-void WriteBuffer(void *buffer, u64 size, u64 offset, FILE *output)
+void WriteBuffer(const void *buffer, u64 size, u64 offset, FILE *fp)
 {
-	fseek_64(output,offset);
-	fwrite(buffer,size,1,output);
+	const u8* _buffer = (const u8*)buffer;
+	fseek_64(fp,offset);
+	for (; size > IO_BLOCKSIZE; size -= IO_BLOCKSIZE, _buffer += IO_BLOCKSIZE)
+		fwrite(_buffer, IO_BLOCKSIZE, 1, fp);
+	fwrite(_buffer,size,1,fp);
 } 
 
-void ReadFile64(void *outbuff, u64 size, u64 offset, FILE *file)
+void ReadFile64(void *outbuff, u64 size, u64 offset, FILE *fp)
 {
-	fseek_64(file,offset);
-	fread(outbuff,size,1,file);
+	u8* _buffer = (u8*)outbuff;
+	fseek_64(fp, offset);
+	for (; size > IO_BLOCKSIZE; size -= IO_BLOCKSIZE, _buffer += IO_BLOCKSIZE)
+		fread(_buffer, IO_BLOCKSIZE, 1, fp);
+	fread(_buffer, size, 1, fp);
 }
 
 int fseek_64(FILE *fp, u64 file_pos)
