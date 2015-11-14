@@ -448,12 +448,16 @@ void BuildIvfcHeader(romfs_buildctx *ctx)
 void GenIvfcHashTree(romfs_buildctx *ctx)
 {
 	for(int i = 2; i >= 0; i--){
+		if (ctx->verbose)
+			printf("[ROMFS] Generating IVFC level %d hashes... ", i+1);
 		u32 numHashes = align(ctx->level[i+1].size,ROMFS_BLOCK_SIZE) / ROMFS_BLOCK_SIZE;
 		for(u32 j = 0; j < numHashes; j++){
 			u8 *datapos = (u8*)(ctx->level[i+1].pos + ROMFS_BLOCK_SIZE * j);
 			u8 *hashpos = (u8*)(ctx->level[i].pos + SHA_256_LEN * j);
 			ShaCalc(datapos, ROMFS_BLOCK_SIZE, hashpos, CTR_SHA_256);
 		}
+		if (ctx->verbose)
+			printf("Done!\n");
 	}
 	
 	return;
