@@ -19,7 +19,7 @@ void PopulateRomfs(romfs_buildctx *ctx);
 void BuildRomfsHeader(romfs_buildctx *ctx);
 void BuildIvfcHeader(romfs_buildctx *ctx);
 void GenIvfcHashTree(romfs_buildctx *ctx);
-u32 CalcPathHash(u32 parent, const romfs_char* path, u32 start, u32 length);
+u32 CalcPathHash(u32 parent, const romfs_char* path);
 
 
 int PrepareBuildRomFsBinary(ncch_settings *ncchset, romfs_buildctx *ctx)
@@ -279,13 +279,13 @@ void BuildRomfsHeader(romfs_buildctx *ctx)
 
 u32 GetFileHashTableIndex(romfs_buildctx *ctx, u32 parent, const romfs_char *path)
 {
-	u32 hash = CalcPathHash(parent, path, 0, romfs_strlen(path));
+	u32 hash = CalcPathHash(parent, path);
 	return hash % ctx->m_fileHashTable;
 }
 
 u32 GetDirHashTableIndex(romfs_buildctx *ctx, u32 parent, const romfs_char* path)
 {
-	u32 hash = CalcPathHash(parent, path, 0, romfs_strlen(path));
+	u32 hash = CalcPathHash(parent, path);
 	return hash % ctx->m_dirHashTable;
 }
 
@@ -459,13 +459,14 @@ void GenIvfcHashTree(romfs_buildctx *ctx)
 	return;
 }
 
-u32 CalcPathHash(u32 parent, const romfs_char* path, u32 start, u32 length)
+u32 CalcPathHash(u32 parent, const romfs_char* path)
 {
+	u32 len = romfs_strlen(path);
 	u32 hash = parent ^ 123456789;
-	for( u32 index = 0; index < length; index++ )
+	for( u32 i = 0; i < len; i++ )
 	{
 		hash = (u32)((hash >> 5) | (hash << 27));//ror
-		hash ^= (u16)path[start + index];
+		hash ^= (u16)path[i];
 	}
 	return hash;
 }
