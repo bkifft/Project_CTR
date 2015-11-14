@@ -1,5 +1,4 @@
 #include "lib.h"
-#include "dir.h"
 #include "ncch_build.h"
 #include "exheader_build.h"
 #include "exheader_read.h"

@@ -104,7 +104,7 @@
     <ClInclude Include="desc\dev_sigdata.h" />
     <ClInclude Include="desc\presets.h" />
     <ClInclude Include="desc\prod_sigdata.h" />
-    <ClInclude Include="dir.h" />
+    <ClInclude Include="romfs_fs.h" />
     <ClInclude Include="elf.h" />
     <ClInclude Include="exefs.h" />
     <ClInclude Include="exefs_build.h" />
@@ -201,7 +201,7 @@
     <ClCompile Include="code.c" />
     <ClCompile Include="crypto.c" />
     <ClCompile Include="ctr_utils.c" />
-    <ClCompile Include="dir.c" />
+    <ClCompile Include="romfs_fs.c" />
     <ClCompile Include="elf.c" />
     <ClCompile Include="exefs.c" />
     <ClCompile Include="exheader.c" />

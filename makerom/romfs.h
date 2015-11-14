@@ -1,4 +1,5 @@
 #pragma once
+#include "romfs_fs.h"
 
 typedef enum
 {

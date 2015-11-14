@@ -1,5 +1,4 @@
 #include "lib.h"
-#include "dir.h"
 #include "ncch_build.h"
 #include "romfs.h"
 #include "romfs_gen.h"

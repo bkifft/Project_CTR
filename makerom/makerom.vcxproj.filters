@@ -336,7 +336,7 @@
     <ClInclude Include="code.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="dir.h">
+    <ClInclude Include="romfs_fs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -470,7 +470,7 @@
     <ClCompile Include="code.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="dir.c">
+    <ClCompile Include="romfs_fs.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

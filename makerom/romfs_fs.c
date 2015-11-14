@@ -1,5 +1,5 @@
 #include "lib.h"
-#include "dir.h"
+#include "romfs_fs.h"
 #include "utf.h"
 
 /* This is the FS interface for ROMFS generation */
