@@ -47,7 +47,7 @@ int BuildRomFs(romfs_buildctx *ctx)
 void FreeRomFsCtx(romfs_buildctx *ctx)
 {
 	if(ctx->fs){
-		fs_FreeDir(ctx->fs);	
+		FreeDir(ctx->fs);	
 		free(ctx->fs);
 	}
 }

@@ -2,34 +2,35 @@
 #include "dir.h"
 #include "utf.h"
 
-const fs_romfs_char FS_CURRENT_DIR_PATH = 0x2E;
-const fs_romfs_char FS_PARENT_DIR_PATH[2] = { 0x2E,0x2E };
-
 /* This is the FS interface for ROMFS generation */
 /* Tested working on Windows/Linux/OSX */
-int fs_InitDir(const fs_entry *entry, fs_dir *dir);
-int fs_ManageDirSlot(fs_dir *dir);
-int fs_ManageFileSlot(fs_dir *dir);
-void fs_chdirUp(void);
-fs_entry* fs_GetEntry(const fs_char *parent_path, fs_DIR *dp);
-void fs_FreeEntry(fs_entry *entry);
-bool fs_EntryIsDirNav(fs_entry *entry);
-int fs_AddDir(fs_entry *entry, fs_dir *dir);
-int fs_AddFile(fs_entry *entry, fs_dir *dir);
-
-u32 fs_romfs_strlen(const fs_romfs_char *str)
-{
-	u32 i;
-	for( i = 0; str[i] != 0x0; i++ );
-	return i;
-}
+int OpenDir(romfs_dir *dir);
+int InitDir(romfs_dir *dir);
+int ManageDir(romfs_dir *dir);
 
 u32 fs_strlen(const fs_char *str)
 {
-	u32 i;
-	for (i = 0; str[i] != 0x0; i++);
-	return i;
+#ifdef _WIN32
+	return strlen_char16(str);
+#else
+	return strlen(str);
+#endif
 }
+
+u32 romfs_strlen(const romfs_char *str)
+{
+	return strlen_char16(str);
+}
+
+int fs_strcmp(const fs_char *str1, const fs_char *str2)
+{
+#ifdef _WIN32
+	return wcscmp(str1, str2);
+#else
+	return strcmp(str1, str2);
+#endif
+}
+
 
 FILE* fs_fopen(fs_char *path)
 {
@@ -67,264 +68,164 @@ fs_char* fs_AppendToPath(const fs_char *src, const fs_char *add)
 	return new_path;
 }
 
-fs_char* fs_CopyPath(const fs_char *src)
-{
-	u32 src_len;
-	fs_char *new_path;
-
-	src_len = fs_strlen(src);
-	new_path = calloc(src_len + 0x10, sizeof(fs_char));
-
-	for (u32 i = 0; i < src_len; i++)
-		new_path[i] = src[i];
-
-	return new_path;
-}
-
-fs_romfs_char* fs_CopyRomfsName(const fs_romfs_char *src)
-{
-	u32 src_len;
-	fs_romfs_char *new_path;
-
-	src_len = fs_strlen(src);
-	new_path = calloc(src_len + 0x10, sizeof(fs_romfs_char));
-
-	for (u32 i = 0; i < src_len; i++)
-		new_path[i] = src[i];
-
-	return new_path;
-}
-
-void fs_fputs(FILE *out, const fs_char *str)
+fs_char* fs_CopyStr(const fs_char *src)
 {
 #ifdef _WIN32
-	wprintf(L"%s", str);
+	return strcopy_16to16(src);
 #else
-	printf("%s", str);
+	return strcopy_8to8(src);
 #endif
 }
 
-void fs_romfs_fputs(FILE *out, const fs_romfs_char *str)
+romfs_char* romfs_CopyConvertStr(const fs_char *src)
 {
 #ifdef _WIN32
-	wprintf(L"%s", str);
+	return strcopy_16to16(src);
+#else
+	return strcopy_utf8to16(src);
+#endif
+}
+
+
+romfs_char* romfs_CopyStr(const romfs_char *src)
+{
+	return strcopy_16to16(src);
+}
+
+void fs_fputs(const fs_char *str, FILE *out)
+{
+#ifdef _WIN32
+	fwprintf(out,L"%s", str);
+#else
+	fprintf(out,"%s", str);
+#endif
+}
+
+void romfs_fputs(const romfs_char *str, FILE *out)
+{
+#ifdef _WIN32
+	fwprintf(out,L"%s", str);
 #else
 	const char *name = (const char*)str;
-	for (u32 i = 0; i < fs_romfs_strlen(str)*2; i += 2)
-		putchar(name[i]);
+	for (u32 i = 0; i < romfs_strlen(str)*2; i += 2)
+		fputc(name[i],out);
 #endif
 }
 
-int fs_InitDir(const fs_entry *entry, fs_dir *dir)
+int InitDir(romfs_dir *dir)
 {
-	dir->fs_path = fs_CopyPath(entry->fs_path);
-
-	dir->name_len = entry->name_len;
-	dir->name = fs_CopyRomfsName(entry->name);
-	
 	dir->m_child = 10;
 	dir->u_child = 0;
-	dir->child = calloc(dir->m_child,sizeof(fs_dir));
+	dir->child = calloc(dir->m_child,sizeof(romfs_dir));
 	
 	dir->m_file = 10;
 	dir->u_file = 0;
-	dir->file = calloc(dir->m_file,sizeof(fs_file));
+	dir->file = calloc(dir->m_file,sizeof(romfs_file));
+
+	if (dir->child == NULL || dir->file == NULL)
+		return MEM_ERROR;
 	
 	return 0;
 }
 
-int fs_ManageDirSlot(fs_dir *dir)
+int ManageDir(romfs_dir *dir)
 {
-	if(dir->u_child >= dir->m_child)
-	{
-		dir->m_child *= 2;
-		fs_dir *tmp = calloc(dir->m_child,sizeof(fs_dir));
-		memcpy(tmp,dir->child,sizeof(fs_dir)*dir->u_child);
-		free(dir->child);
-		dir->child = tmp;
+	if (dir->u_child >= dir->m_child) {
+		dir->m_child = 2 * dir->u_child;
+		dir->child = realloc(dir->child, dir->m_child*sizeof(romfs_dir));
 	}
-	return 0;
-}
-
-int fs_ManageFileSlot(fs_dir *dir)
-{
-	if(dir->u_file >= dir->m_file)
-	{
-		dir->m_file *= 2;
-		fs_file *tmp = calloc(dir->m_file,sizeof(fs_file));
-		memcpy(tmp,dir->file,sizeof(fs_file)*dir->u_file);
-		free(dir->file);
-		dir->file = tmp;
+	if (dir->u_file >= dir->m_file) {
+		dir->m_file = 2 * dir->u_file;
+		dir->file = realloc(dir->file, dir->m_file*sizeof(romfs_file));
 	}
+
+	if (dir->child == NULL || dir->file == NULL)
+		return MEM_ERROR;
+
 	return 0;
 }
 
-fs_entry* fs_GetEntry(const fs_char *parent_path, fs_DIR *dp)
+int OpenRootDir(const char *path, romfs_dir *dir)
 {
-	// Directory structs
-	struct fs_dirent *tmp_entry;
-	fs_DIR *tmp_dptr;
-	u32 namlen = 0;
-	
-	//printf("get api dir entry from dir ptr\n");
-	tmp_entry = fs_readdir(dp);
-	
-	//printf("if null, return\n");
-	if(!tmp_entry) 
-		return NULL;
-		
+	// Create native FS path
 #ifdef _WIN32
-	namlen = tmp_entry->d_namlen;
+	dir->path = strcopy_8to16(path);
 #else
-	namlen = strlen(tmp_entry->d_name);
+	dir->path = strcopy_8to8(path);
 #endif
-		
-	//printf("allocate memory for entry\n");
-	fs_entry *entry  = malloc(sizeof(fs_entry));
-	memset(entry,0,sizeof(fs_entry));
+	// Copy romfs name (empty string)
+	dir->name = romfs_CopyStr(ROMFS_EMPTY_PATH);
+	dir->namesize = 0;
 	
-	//Copy FS compatible Entry name
-	fs_char *fs_name = calloc(sizeof(fs_char)*(namlen+1),1);
-	memcpy(fs_name,tmp_entry->d_name,sizeof(fs_char)*namlen);
-	entry->fs_path = fs_AppendToPath(parent_path, fs_name);
-	
-	// Convert Entry name into RomFS u16 char (windows wchar_t, thanks Nintendo)
-#if _WIN32
-	str_u16_to_u16(&entry->name,&entry->name_len,tmp_entry->d_name,namlen);
-#else
-	str_utf8_to_u16(&entry->name,&entry->name_len,(u8*)tmp_entry->d_name,namlen);
-#endif
-	
-	//printf("get dir entry from dir ptr to check if dir\n");
-	tmp_dptr = fs_opendir(entry->fs_path);
-	if(tmp_dptr)
+	return OpenDir(dir);
+}
+
+int OpenDir(romfs_dir *dir)
+{
+	fs_DIR *dp, *tmp_dp;
+	struct fs_dirent *entry;
+
+	if (InitDir(dir))
+		return MEM_ERROR;
+
+	// Open Directory
+	if((dp = fs_opendir(dir->path)) == NULL)
 	{
-		//printf("is dir\n");
-		fs_closedir(tmp_dptr);
-		entry->IsDir = true;
-		entry->size = 0;
-	}
-	else // Open file if it is a file
-	{
-		entry->IsDir = false;
-		entry->size = fs_fsize(entry->fs_path);
-	}
-	
-	// Don't bother returning current entry, if it is useless
-	if (fs_EntryIsDirNav(entry)) {
-		fs_FreeEntry(entry);
-		return fs_GetEntry(parent_path, dp);
-	}
-
-	return entry;
-}
-
-void fs_FreeEntry(fs_entry *entry)
-{
-	free(entry->fs_path);
-	free(entry->name);
-	free(entry);
-}
-
-bool fs_EntryIsDirNav(fs_entry *entry)
-{
-	if(entry->name_len == sizeof(fs_romfs_char)*1 && memcmp(entry->name,&FS_CURRENT_DIR_PATH,sizeof(fs_romfs_char)*1) == 0)
-		return true;
-	if(entry->name_len == sizeof(fs_romfs_char)*2 && memcmp(entry->name,FS_PARENT_DIR_PATH,sizeof(fs_romfs_char)*2) == 0)
-		return true;
-	return false;
-	
-}
-
-int fs_AddDir(fs_entry *entry, fs_dir *dir)
-{
-	fs_ManageDirSlot(dir);
-	u32 current_slot = dir->u_child;
-
-	dir->u_child++;
-	return fs_OpenDir(entry,&dir->child[current_slot]);
-}
-
-int fs_AddFile(fs_entry *entry, fs_dir *dir)
-{
-	fs_ManageFileSlot(dir);
-	dir->file[dir->u_file].fs_path = fs_CopyPath(entry->fs_path);
-	dir->file[dir->u_file].name_len = entry->name_len;
-	dir->file[dir->u_file].name = fs_CopyRomfsName(entry->name);
-	dir->file[dir->u_file].size = entry->size;
-	
-	dir->u_file++;
-	return 0;
-}
-
-int fs_OpenRootDir(const char *path, fs_dir *dir)
-{
-	fs_entry *root = calloc(1, sizeof(fs_entry));
-	u32 nul;
-
-	root->IsDir = true;
-	root->size = 0;
-
-	str_u16_to_u16(&root->name, &root->name_len, ROMFS_EMPTY_PATH, 0);
-#ifdef _WIN32
-	str_u8_to_u16(&root->fs_path, &nul, (u8*)path, strlen(path));
-#else
-	str_u8_to_u8(&root->fs_path, &nul, (u8*)path, strlen(path));
-#endif
-
-
-	int ret = fs_OpenDir(root, dir);
-
-	fs_FreeEntry(root);
-
-	return ret;
-}
-
-int fs_OpenDir(fs_entry *curr_dir_entry, fs_dir *dir)
-{
-	//printf("init open dir\n");
-	int ret = 0;
-	fs_DIR *dp;
-	fs_entry *entry;
-	
-	//printf("do some more init\n");
-	fs_InitDir(curr_dir_entry, dir);
-	//wprintf(L" rec: \"%s\" (%d)\n",dir->name,dir->name_len);
-
-	//printf("check if path exists\n");
-	dp = fs_opendir(dir->fs_path);
-	if(!dp)
-	{
-		wprintf(L"[!] Failed to open directory: \"%s\"\n",dir->fs_path);
+		printf("[ROMFS] Failed to open directory: \"");
+		fs_fputs(dir->path, stdout);
+		printf("\"\n");
 		return -1;
 	}
 	
-	//printf("read entries\n");
-	while((entry = fs_GetEntry(dir->fs_path, dp)) != NULL)
-	{		
-		ret = entry->IsDir? fs_AddDir(entry, dir) : fs_AddFile(entry, dir);
+	// Process Entries
+	while ((entry = fs_readdir(dp)) != NULL)
+	{
+		// Skip if "." or ".."
+		if (fs_strcmp(entry->d_name, FS_CURRENT_DIR_PATH) == 0 || fs_strcmp(entry->d_name, FS_PARENT_DIR_PATH) == 0)
+			continue;
 
-		//printf("free entry\n");		
-		fs_FreeEntry(entry);
+		// Ensures that there is always memory for child directory and file structs
+		if (ManageDir(dir))
+			return MEM_ERROR;
+
+		// Get native FS path
+		fs_char *path = fs_AppendToPath(dir->path, entry->d_name);
 		
-		if(ret)
-		{
-			//printf("error parsing entry\n");
-			break;
+		// Opening directory with fs path to test if directory
+		if ((tmp_dp = fs_opendir(path)) != NULL) {
+			fs_closedir(tmp_dp);
+
+			dir->child[dir->u_child].path = path;
+			dir->child[dir->u_child].name = romfs_CopyConvertStr(entry->d_name);
+			dir->child[dir->u_child].namesize = fs_strlen(entry->d_name)*sizeof(romfs_char);
+			dir->u_child++;
+			
+			// Populate directory
+			OpenDir(&dir->child[dir->u_child-1]);
+		}
+		// Otherwise this is a file
+		else {
+			dir->file[dir->u_file].path = path;
+			dir->file[dir->u_file].name = romfs_CopyConvertStr(entry->d_name);
+			dir->file[dir->u_file].namesize = fs_strlen(entry->d_name)*sizeof(romfs_char);
+			dir->file[dir->u_file].size = fs_fsize(path);
+			dir->u_file++;
 		}
 	}
+
 	fs_closedir(dp);
-	return ret;
+
+	return 0;
 }
 
 
-void fs_PrintDir(fs_dir *dir, u32 depth) // This is just for simple debugging, please don't shoot me
+void PrintDir(romfs_dir *dir, u32 depth)
 {
 	for(u32 i = 0; i < depth; i++)
 		printf(" ");
 
 	if (depth > 0)
-		fs_romfs_fputs(stdout, dir->name);
+		romfs_fputs(dir->name, stdout);
 	else
 		printf("romfs:");
 	putchar('\n');
@@ -335,23 +236,23 @@ void fs_PrintDir(fs_dir *dir, u32 depth) // This is just for simple debugging, p
 		{
 			for(u32 j = 0; j < depth+1; j++)
 				printf(" ");
-			fs_romfs_fputs(stdout, dir->file[i].name);
+			romfs_fputs(dir->file[i].name, stdout);
 			printf(" (0x%"PRIx64")\n", dir->file[i].size);
 		}
 	}
 	if(dir->u_child)
 	{
 		for(u32 i = 0; i < dir->u_child; i++)
-			fs_PrintDir(&dir->child[i],depth+1);
+			PrintDir(&dir->child[i],depth+1);
 	}
 }
 
-void fs_FreeDir(fs_dir *dir)
+void FreeDir(romfs_dir *dir)
 {
 	//printf("DIR!! free file names\n");
 	for(u32 i = 0; i < dir->u_file; i++)
 	{
-		free(dir->file[i].fs_path);
+		free(dir->file[i].path);
 		free(dir->file[i].name);
 	}
 	//printf("free file struct\n");
@@ -361,9 +262,9 @@ void fs_FreeDir(fs_dir *dir)
 	//printf("free dir names and\n");
 	for(u32 i = 0; i < dir->u_child; i++)
 	{	
-		free(dir->child[i].fs_path);
+		free(dir->child[i].path);
 		free(dir->child[i].name);
-		fs_FreeDir(&dir->child[i]);
+		FreeDir(&dir->child[i]);
 	}
 	//printf("free dir struct\n");
 	free(dir->child);

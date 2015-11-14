@@ -68,8 +68,8 @@ char* replace_filextention(const char *input, const char *new_ext)
 	}
 	else {
 		u32 size = ext - input;
-		new_name = calloc(size + strlen(new_ext), 1);
-		snprintf(new_name, size, "%s", input);
+		new_name = calloc(size + strlen(new_ext) + 1, 1);
+		strncpy(new_name, input, size);
 		sprintf(new_name, "%s%s", new_name, new_ext);
 	}
 	
@@ -104,61 +104,92 @@ void memdump(FILE* fout, const char* prefix, const u8* data, u32 size)
 	}
 }
 
-int str_u8_to_u16(u16 **dst, u32 *dst_len, const u8 *src, u32 src_len)
+u32 strlen_char16(const u16 *str)
 {
-	*dst_len = src_len*sizeof(u16);
-	*dst = malloc((*dst_len)+sizeof(u16));
-	if(*dst == NULL)
-		return -1;
-	memset(*dst,0,(*dst_len)+sizeof(u16));
-	u16 *tmp = *dst;
-	for(int i=0; i<src_len; i++)
-		tmp[i] = (u16)src[i];
-	return 0;
+	u32 i;
+	for (i = 0; str[i] != 0x0; i++);
+	return i;
 }
 
-int str_u16_to_u16(u16 **dst, u32 *dst_len, const u16 *src, u32 src_len)
+char* strcopy_8to8(const char *src)
 {
-	*dst_len = src_len*sizeof(u16);
-	*dst = malloc((*dst_len)+sizeof(u16));
-	if(*dst == NULL)
-		return -1;
-	memset(*dst,0,(*dst_len)+sizeof(u16));
-	u16 *tmp = *dst;
-	for(int i=0; i<src_len; i++)
-		tmp[i] = src[i];
-	return 0;
+	if (!src)
+		return NULL;
+
+	u32 src_len = strlen(src);
+
+	// Allocate memory for expanded string
+	char *dst = calloc(src_len + 1, sizeof(u8));
+	if (!dst)
+		return NULL;
+
+	// Copy elements from src into dst
+	strncpy(dst, src, src_len);
+
+	return dst;
 }
 
-int str_u32_to_u16(u16 **dst, u32 *dst_len, const u32 *src, u32 src_len)
+u16* strcopy_8to16(const char *src)
 {
-	*dst_len = src_len*sizeof(u16);
-	*dst = malloc((*dst_len)+sizeof(u16));
-	if(*dst == NULL)
-		return -1;
-	memset(*dst,0,(*dst_len)+sizeof(u16));
-	u16 *tmp = *dst;
-	for(int i=0; i<src_len; i++)
-		tmp[i] = (u16)src[i];
-	return 0;
+	if (!src)
+		return NULL;
+
+	u32 src_len = strlen(src);
+
+	// Allocate memory for expanded string
+	u16 *dst = calloc(src_len+1, sizeof(u16));
+	if (!dst)
+		return NULL;
+
+	// Copy elements from src into dst
+	for (u32 i = 0; i < src_len; i++)
+		dst[i] = src[i];
+
+	return dst;
+}
+
+
+u16* strcopy_16to16(const u16 *src)
+{
+	if (!src)
+		return NULL;
+
+	u32 src_len = strlen_char16(src);
+
+	// Allocate memory for expanded string
+	u16 *dst = calloc(src_len + 1, sizeof(u16));
+	if (!dst)
+		return NULL;
+
+	// Copy elements from src into dst
+	for (u32 i = 0; i < src_len; i++)
+		dst[i] = src[i];
+
+	return dst;
 }
 
 #ifndef _WIN32
-int str_utf8_to_u16(u16 **dst, u32 *dst_len, const u8 *src, u32 src_len)
+u16* strcopy_utf8to16(const char *src)
 {
-	*dst_len = src_len*sizeof(u16);
-	*dst = malloc((*dst_len)+sizeof(u16));
-	if(*dst == NULL)
-		return -1;
-	memset(*dst,0,(*dst_len)+sizeof(u16));
-	
-	UTF16 *target_start = *dst;
-	UTF16 *target_end = (target_start + *dst_len);
-	
+	if (!src)
+		return NULL;
+
+	u32 src_len = strlen(src);
+
+	// Allocate memory for expanded string
+	u16 *dst = calloc(src_len + 1, sizeof(u16));
+	if (!dst)
+		return NULL;
+
+	UTF16 *target_start = dst;
+	UTF16 *target_end = (target_start + (src_len*sizeof(u16)));
+
 	UTF8 *src_start = (UTF8*)src;
-	UTF8 *src_end = (UTF8*)(src+src_len*sizeof(u8));
-	
-	return ConvertUTF8toUTF16 ((const UTF8 **)&src_start, src_end, &target_start, target_end, strictConversion);
+	UTF8 *src_end = (UTF8*)(src + src_len*sizeof(char));
+
+	ConvertUTF8toUTF16((const UTF8 **)&src_start, src_end, &target_start, target_end, strictConversion);
+
+	return dst;
 }
 #endif
 

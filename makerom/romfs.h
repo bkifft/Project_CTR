@@ -86,7 +86,7 @@ typedef struct
 	ivfc_hdr *ivfcHdr;
 	romfs_infoheader *romfsHdr;
 	
-	fs_dir *fs;
+	romfs_dir *fs;
 	
 	u8 *dirHashTable;
 	u32 m_dirHashTable;

@@ -66,9 +66,6 @@
     <ClInclude Include="ctr_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="dir.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="elf.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -339,6 +336,9 @@
     <ClInclude Include="code.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="dir.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="accessdesc.c">
@@ -360,9 +360,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ctr_utils.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="dir.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="elf.c">
@@ -471,6 +468,9 @@
       <Filter>Source Files\polarssl</Filter>
     </ClCompile>
     <ClCompile Include="code.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dir.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
