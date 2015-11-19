@@ -35,7 +35,7 @@ void AesCtrCrypt(u8 *key, u8 *ctr, u8 *input, u8 *output, u64 length, u64 offset
 {
 	u8 stream[16];
 	aes_context aes;
-	u64 nc_off = 0;
+	size_t nc_off = 0;
 	
 	clrmem(&aes,sizeof(aes_context));
 	aes_setkey_enc(&aes, key, 128);

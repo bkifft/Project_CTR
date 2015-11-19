@@ -1053,7 +1053,7 @@ int GetNcchInfo(ncch_info *info, ncch_hdr *hdr)
 	info->titleId = u8_to_u64(hdr->titleId,LE);
 	info->programId = u8_to_u64(hdr->programId,LE);
 
-	u32 block_size = GetNcchBlockSize(hdr);
+	u64 block_size = GetNcchBlockSize(hdr);
 	
 	info->formatVersion = u8_to_u16(hdr->formatVersion,LE);
 	if(!IsCfa(hdr)){
@@ -1061,18 +1061,18 @@ int GetNcchInfo(ncch_info *info, ncch_hdr *hdr)
 		info->exhdrSize = u8_to_u32(hdr->exhdrSize,LE);
 		info->acexOffset = (info->exhdrOffset + info->exhdrSize);
 		info->acexSize = sizeof(access_descriptor);
-		info->plainRegionOffset = (u64)(u8_to_u32(hdr->plainRegionOffset,LE)*block_size);
-		info->plainRegionSize = (u64)(u8_to_u32(hdr->plainRegionSize,LE)*block_size);
+		info->plainRegionOffset = ((u64)u8_to_u32(hdr->plainRegionOffset,LE))*block_size;
+		info->plainRegionSize = ((u64)u8_to_u32(hdr->plainRegionSize,LE))*block_size;
 	}
 
-	info->logoOffset = (u64)(u8_to_u32(hdr->logoOffset,LE)*block_size);
-	info->logoSize = (u64)(u8_to_u32(hdr->logoSize,LE)*block_size);
-	info->exefsOffset = (u64)(u8_to_u32(hdr->exefsOffset,LE)*block_size);
-	info->exefsSize = (u64)(u8_to_u32(hdr->exefsSize,LE)*block_size);
-	info->exefsHashDataSize = (u64)(u8_to_u32(hdr->exefsHashSize,LE)*block_size);
-	info->romfsOffset = (u64) (u8_to_u32(hdr->romfsOffset,LE)*block_size);
-	info->romfsSize = (u64) (u8_to_u32(hdr->romfsSize,LE)*block_size);
-	info->romfsHashDataSize = (u64)(u8_to_u32(hdr->romfsHashSize,LE)*block_size);
+	info->logoOffset = ((u64)u8_to_u32(hdr->logoOffset,LE))*block_size;
+	info->logoSize = ((u64)u8_to_u32(hdr->logoSize,LE))*block_size;
+	info->exefsOffset = ((u64)u8_to_u32(hdr->exefsOffset,LE))*block_size;
+	info->exefsSize = ((u64)u8_to_u32(hdr->exefsSize,LE))*block_size;
+	info->exefsHashDataSize = ((u64)u8_to_u32(hdr->exefsHashSize,LE))*block_size;
+	info->romfsOffset = ((u64)u8_to_u32(hdr->romfsOffset,LE))*block_size;
+	info->romfsSize = ((u64)u8_to_u32(hdr->romfsSize,LE))*block_size;
+	info->romfsHashDataSize = ((u64)u8_to_u32(hdr->romfsHashSize,LE))*block_size;
 	return 0;
 }
 

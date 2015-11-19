@@ -473,6 +473,12 @@
     <ClCompile Include="romfs_fs.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="polarssl\aes.c">
+      <Filter>Source Files\polarssl</Filter>
+    </ClCompile>
+    <ClCompile Include="polarssl\padlock.c">
+      <Filter>Source Files\polarssl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Makefile">

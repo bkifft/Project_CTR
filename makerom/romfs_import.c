@@ -1,5 +1,5 @@
 #include "lib.h"
-#include "dir.h"
+#include "romfs_fs.h"
 #include "ncch_build.h"
 #include "romfs.h"
 

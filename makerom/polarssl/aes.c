@@ -839,14 +839,14 @@ int aes_crypt_cbc( aes_context *ctx,
  */
 int aes_crypt_cfb128( aes_context *ctx,
                        int mode,
-                       size_t length,
+                       uint64_t length,
                        size_t *iv_off,
                        unsigned char iv[16],
                        const unsigned char *input,
                        unsigned char *output )
 {
     int c;
-    size_t n = *iv_off;
+	size_t n = *iv_off;
 
     if( mode == AES_DECRYPT )
     {
@@ -886,7 +886,7 @@ int aes_crypt_cfb128( aes_context *ctx,
  * AES-CTR buffer encryption/decryption
  */
 int aes_crypt_ctr( aes_context *ctx,
-                       size_t length,
+                       uint64_t length,
                        size_t *nc_off,
                        unsigned char nonce_counter[16],
                        unsigned char stream_block[16],

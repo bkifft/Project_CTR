@@ -201,6 +201,8 @@
     <ClCompile Include="code.c" />
     <ClCompile Include="crypto.c" />
     <ClCompile Include="ctr_utils.c" />
+    <ClCompile Include="polarssl\aes.c" />
+    <ClCompile Include="polarssl\padlock.c" />
     <ClCompile Include="romfs_fs.c" />
     <ClCompile Include="elf.c" />
     <ClCompile Include="exefs.c" />

@@ -116,7 +116,7 @@ int aes_crypt_ecb( aes_context *ctx,
  */
 int aes_crypt_cbc( aes_context *ctx,
                     int mode,
-                    size_t length,
+                    uint64_t length,
                     unsigned char iv[16],
                     const unsigned char *input,
                     unsigned char *output );
@@ -141,7 +141,7 @@ int aes_crypt_cbc( aes_context *ctx,
  */
 int aes_crypt_cfb128( aes_context *ctx,
                        int mode,
-                       size_t length,
+                       uint64_t length,
                        size_t *iv_off,
                        unsigned char iv[16],
                        const unsigned char *input,
@@ -169,7 +169,7 @@ int aes_crypt_cfb128( aes_context *ctx,
  * \return         0 if successful
  */
 int aes_crypt_ctr( aes_context *ctx,
-                       size_t length,
+                       uint64_t length,
                        size_t *nc_off,
                        unsigned char nonce_counter[16],
                        unsigned char stream_block[16],
