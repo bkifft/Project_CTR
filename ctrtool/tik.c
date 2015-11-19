@@ -16,7 +16,7 @@ void tik_set_file(tik_context* ctx, FILE* file)
 	ctx->file = file;
 }
 
-void tik_set_offset(tik_context* ctx, u32 offset)
+void tik_set_offset(tik_context* ctx, u64 offset)
 {
 	ctx->offset = offset;
 }
@@ -76,7 +76,7 @@ void tik_process(tik_context* ctx, u32 actions)
 		goto clean;
 	}
 
-	fseek(ctx->file, ctx->offset, SEEK_SET);
+	fseeko64(ctx->file, ctx->offset, SEEK_SET);
 	fread((u8*)&ctx->tik, 1, sizeof(eticket), ctx->file);
 
 	tik_decrypt_titlekey(ctx, ctx->titlekey);

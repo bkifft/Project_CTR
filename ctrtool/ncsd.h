@@ -33,8 +33,8 @@ typedef struct
 typedef struct
 {
 	FILE* file;
-	u32 offset;
-	u32 size;
+	u64 offset;
+	u64 size;
 	u32 ncch_index;
 	ctr_ncsdheader header;
 	settings* usersettings;
@@ -44,14 +44,14 @@ typedef struct
 
 
 void ncsd_init(ncsd_context* ctx);
-void ncsd_set_offset(ncsd_context* ctx, u32 offset);
-void ncsd_set_size(ncsd_context* ctx, u32 size);
+void ncsd_set_offset(ncsd_context* ctx, u64 offset);
+void ncsd_set_size(ncsd_context* ctx, u64 size);
 void ncsd_set_ncch_index(ncsd_context* ctx, u32 ncch_index);
 void ncsd_set_file(ncsd_context* ctx, FILE* file);
 void ncsd_set_usersettings(ncsd_context* ctx, settings* usersettings);
 int ncsd_signature_verify(const void* blob, rsakey2048* key);
 void ncsd_process(ncsd_context* ctx, u32 actions);
 void ncsd_print(ncsd_context* ctx);
-unsigned int ncsd_get_mediaunit_size(ncsd_context* ctx);
+u64 ncsd_get_mediaunit_size(ncsd_context* ctx);
 
 #endif // _NCSD_H_

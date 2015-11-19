@@ -13,33 +13,24 @@ void ctr_set_iv( ctr_aes_context* ctx,
 }
 
 void ctr_add_counter( ctr_aes_context* ctx,
-				      u32 carry )
+				      u32 block_num )
 {
-	u32 counter[4];
-	u32 sum;
-	int i;
+	u32 i, j;
+	for (i = 0; i < block_num; i++) {
+		for (j = 0x10; j > 0; j--) {
+			// increment u8 by 1
+			ctx->ctr[j - 1]++;
 
-	for(i=0; i<4; i++)
-		counter[i] = (ctx->ctr[i*4+0]<<24) | (ctx->ctr[i*4+1]<<16) | (ctx->ctr[i*4+2]<<8) | (ctx->ctr[i*4+3]<<0);
+			// if it didn't overflow to 0, then we can exit now
+			if (ctx->ctr[j - 1])
+				break;
 
-	for(i=3; i>=0; i--)
-	{
-		sum = counter[i] + carry;
+			// if we reach here, the next u8 needs to be incremented
 
-		if (sum < counter[i])
-			carry = 1;
-		else
-			carry = 0;
-
-		counter[i] = sum;
-	}
-
-	for(i=0; i<4; i++)
-	{
-		ctx->ctr[i*4+0] = counter[i]>>24;
-		ctx->ctr[i*4+1] = counter[i]>>16;
-		ctx->ctr[i*4+2] = counter[i]>>8;
-		ctx->ctr[i*4+3] = counter[i]>>0;
+			// Loop to beginning back if needed
+			if (j == 1)
+				j = 0x10;
+		}
 	}
 }
 				  

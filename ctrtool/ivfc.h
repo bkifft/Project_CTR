@@ -4,6 +4,7 @@
 #include "types.h"
 #include "settings.h"
 
+#define IVFC_HEADER_SIZE 0x60
 #define IVFC_MAX_LEVEL 4
 #define IVFC_MAX_BUFFERSIZE 0x4000
 
@@ -43,8 +44,8 @@ typedef struct
 typedef struct
 {
 	FILE* file;
-	u32 offset;
-	u32 size;
+	u64 offset;
+	u64 size;
 	settings* usersettings;
 
 	ivfc_header header;
@@ -59,14 +60,14 @@ typedef struct
 
 void ivfc_init(ivfc_context* ctx);
 void ivfc_process(ivfc_context* ctx, u32 actions);
-void ivfc_set_offset(ivfc_context* ctx, u32 offset);
-void ivfc_set_size(ivfc_context* ctx, u32 size);
+void ivfc_set_offset(ivfc_context* ctx, u64 offset);
+void ivfc_set_size(ivfc_context* ctx, u64 size);
 void ivfc_set_file(ivfc_context* ctx, FILE* file);
 void ivfc_set_usersettings(ivfc_context* ctx, settings* usersettings);
 void ivfc_verify(ivfc_context* ctx, u32 flags);
 void ivfc_print(ivfc_context* ctx);
 
-void ivfc_read(ivfc_context* ctx, u32 offset, u32 size, u8* buffer);
-void ivfc_hash(ivfc_context* ctx, u32 offset, u32 size, u8* hash);
+void ivfc_read(ivfc_context* ctx, u64 offset, u64 size, u8* buffer);
+void ivfc_hash(ivfc_context* ctx, u64 offset, u64 size, u8* hash);
 
 #endif // __IVFC_H__

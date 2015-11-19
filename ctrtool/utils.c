@@ -1,13 +1,13 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include "utils.h"
 
 #ifdef _WIN32
 #include <direct.h>
-#else
-#include <sys/stat.h>
-#include <sys/types.h>
+#include <wchar.h>
 #endif
 
 
@@ -20,7 +20,7 @@ u32 align(u32 offset, u32 alignment)
 
 u64 align64(u64 offset, u32 alignment)
 {
-	u64 mask = ~(alignment-1);
+	u64 mask = ~(u64)(alignment-1);
 
 	return (offset + (alignment-1)) & mask;
 }
@@ -91,18 +91,14 @@ void putle32(u8* p, u32 n)
 
 void readkeyfile(u8* key, const char* keyfname)
 {
+	u32 keysize = _fsize(keyfname);
 	FILE* f = fopen(keyfname, "rb");
-	u32 keysize = 0;
-
+	
 	if (0 == f)
 	{
 		fprintf(stdout, "Error opening key file\n");
 		goto clean;
 	}
-
-	fseek(f, 0, SEEK_END);
-	keysize = ftell(f);
-	fseek(f, 0, SEEK_SET);
 
 	if (keysize != 16)
 	{
@@ -188,5 +184,22 @@ int makedir(const char* dir)
 	return _mkdir(dir);
 #else
 	return mkdir(dir, 0777);
+#endif
+}
+
+u64 _fsize(const char *filename)
+{
+#ifdef _WIN32
+	struct _stat64 st;
+	if (_stat64(filename, &st) != 0)
+		return 0;
+	else
+		return st.st_size;
+#else
+	struct stat st;
+	if (stat(filename, &st) != 0)
+		return 0;
+	else
+		return st.st_size;
 #endif
 }

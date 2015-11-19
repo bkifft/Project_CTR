@@ -18,12 +18,12 @@ void exefs_set_file(exefs_context* ctx, FILE* file)
 	ctx->file = file;
 }
 
-void exefs_set_offset(exefs_context* ctx, u32 offset)
+void exefs_set_offset(exefs_context* ctx, u64 offset)
 {
 	ctx->offset = offset;
 }
 
-void exefs_set_size(exefs_context* ctx, u32 size)
+void exefs_set_size(exefs_context* ctx, u64 size)
 {
 	ctx->size = size;
 }
@@ -122,10 +122,8 @@ void exefs_save(exefs_context* ctx, u32 index, u32 flags)
 		fprintf(stderr, "Error, failed to create file %s\n", outfname);
 		goto clean;
 	}
-	
-	
 
-	fseek(ctx->file, ctx->offset + offset, SEEK_SET);
+	fseeko64(ctx->file, ctx->offset + offset, SEEK_SET);
 	ctr_init_counter(&ctx->aes, ctx->key, ctx->counter);
 	ctr_add_counter(&ctx->aes, offset / 0x10);
 
@@ -209,7 +207,7 @@ clean:
 
 void exefs_read_header(exefs_context* ctx, u32 flags)
 {
-	fseek(ctx->file, ctx->offset, SEEK_SET);
+	fseeko64(ctx->file, ctx->offset, SEEK_SET);
 	fread(&ctx->header, 1, sizeof(exefs_header), ctx->file);
 
 	ctr_init_counter(&ctx->aes, ctx->key, ctx->counter);
@@ -270,7 +268,7 @@ int exefs_verify(exefs_context* ctx, u32 index, u32 flags)
 	if (size == 0)
 		return 0;
 
-	fseek(ctx->file, ctx->offset + offset, SEEK_SET);
+	fseeko64(ctx->file, ctx->offset + offset, SEEK_SET);
 	ctr_init_counter(&ctx->aes, ctx->key, ctx->counter);
 	ctr_add_counter(&ctx->aes, offset / 0x10);
 

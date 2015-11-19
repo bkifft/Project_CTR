@@ -31,7 +31,7 @@ typedef struct
 	int actions;
 	u32 filetype;
 	FILE* infile;
-	u32 infilesize;
+	u64 infilesize;
 	settings usersettings;
 } toolcontext;
 
@@ -259,6 +259,7 @@ int main(int argc, char* argv[])
 	if (ctx.actions & ShowKeysFlag)
 		keyset_dump(&ctx.usersettings.keys);
 
+	ctx.infilesize = _fsize(infname);
 	ctx.infile = fopen(infname, "rb");
 
 	if (ctx.infile == 0) 
@@ -267,16 +268,9 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	fseek(ctx.infile, 0, SEEK_END);
-	ctx.infilesize = ftell(ctx.infile);
-	fseek(ctx.infile, 0, SEEK_SET);
-
-
-
-
 	if (ctx.filetype == FILETYPE_UNKNOWN)
 	{
-		fseek(ctx.infile, 0x100, SEEK_SET);
+		fseeko64(ctx.infile, 0x100, SEEK_SET);
 		fread(&magic, 1, 4, ctx.infile);
 
 		switch(getle32(magic))
@@ -296,7 +290,7 @@ int main(int argc, char* argv[])
 
 	if (ctx.filetype == FILETYPE_UNKNOWN)
 	{
-		fseek(ctx.infile, 0, SEEK_SET);
+		fseeko64(ctx.infile, 0, SEEK_SET);
 		fread(magic, 1, 4, ctx.infile);
 		
 		switch(getle32(magic))

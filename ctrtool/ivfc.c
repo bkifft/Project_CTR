@@ -17,12 +17,12 @@ void ivfc_set_usersettings(ivfc_context* ctx, settings* usersettings)
 	ctx->usersettings = usersettings;
 }
 
-void ivfc_set_offset(ivfc_context* ctx, u32 offset)
+void ivfc_set_offset(ivfc_context* ctx, u64 offset)
 {
 	ctx->offset = offset;
 }
 
-void ivfc_set_size(ivfc_context* ctx, u32 size)
+void ivfc_set_size(ivfc_context* ctx, u64 size)
 {
 	ctx->size = size;
 }
@@ -35,9 +35,7 @@ void ivfc_set_file(ivfc_context* ctx, FILE* file)
 
 void ivfc_process(ivfc_context* ctx, u32 actions)
 {
-
-
-	fseek(ctx->file, ctx->offset, SEEK_SET);
+	fseeko64(ctx->file, ctx->offset, SEEK_SET);
 	fread(&ctx->header, 1, sizeof(ivfc_header), ctx->file);
 
 	if (getle32(ctx->header.magic) != MAGIC_IVFC)
@@ -55,22 +53,22 @@ void ivfc_process(ivfc_context* ctx, u32 actions)
 		ctx->level[2].hashblocksize = 1 << getle32(ctx->romfsheader.level3.blocksize);
 		ctx->level[1].hashblocksize = 1 << getle32(ctx->romfsheader.level2.blocksize);
 		ctx->level[0].hashblocksize = 1 << getle32(ctx->romfsheader.level1.blocksize);
-		ctx->level[0].hashoffset = 0x60;
 
-		ctx->bodyoffset = align64(ctx->level[0].hashoffset + getle32(ctx->romfsheader.masterhashsize), ctx->level[2].hashblocksize);
+		ctx->bodyoffset = align64(IVFC_HEADER_SIZE + getle32(ctx->romfsheader.masterhashsize), ctx->level[2].hashblocksize);
 		ctx->bodysize = getle64(ctx->romfsheader.level3.hashdatasize);
 		
 		ctx->level[2].dataoffset = ctx->bodyoffset;
 		ctx->level[2].datasize = align64(ctx->bodysize, ctx->level[2].hashblocksize);
 
-		ctx->level[1].hashoffset = align64(ctx->bodyoffset + ctx->bodysize, ctx->level[2].hashblocksize);
-		ctx->level[2].hashoffset = ctx->level[1].hashoffset + getle64(ctx->romfsheader.level2.logicaloffset) - getle64(ctx->romfsheader.level1.logicaloffset);
+		ctx->level[0].dataoffset = ctx->level[2].dataoffset + ctx->level[2].datasize;
+		ctx->level[0].datasize = align64(getle64(ctx->romfsheader.level1.hashdatasize), ctx->level[0].hashblocksize);
 
-		ctx->level[1].dataoffset = ctx->level[2].hashoffset;
+		ctx->level[1].dataoffset = ctx->level[0].dataoffset + ctx->level[0].datasize;
 		ctx->level[1].datasize = align64(getle64(ctx->romfsheader.level2.hashdatasize), ctx->level[1].hashblocksize);
 
-		ctx->level[0].dataoffset = ctx->level[1].hashoffset;
-		ctx->level[0].datasize = align64(getle64(ctx->romfsheader.level1.hashdatasize), ctx->level[0].hashblocksize);
+		ctx->level[0].hashoffset = IVFC_HEADER_SIZE;
+		ctx->level[1].hashoffset = ctx->level[0].dataoffset;
+		ctx->level[2].hashoffset = ctx->level[1].dataoffset;
 	}
 
 	if (actions & VerifyFlag)
@@ -98,7 +96,7 @@ void ivfc_verify(ivfc_context* ctx, u32 flags)
 		ivfc_level* level = ctx->level + i;
 
 		blockcount = level->datasize / level->hashblocksize;
-		if (blockcount * level->hashblocksize != level->datasize)
+		if (level->datasize % level->hashblocksize != 0)
 		{
 			fprintf(stderr, "Error, IVFC block size mismatch\n");
 			return;
@@ -110,7 +108,6 @@ void ivfc_verify(ivfc_context* ctx, u32 flags)
 		{
 			u8 calchash[32];
 			u8 testhash[32];
-
 			
 			ivfc_hash(ctx, level->dataoffset + level->hashblocksize * j, level->hashblocksize, calchash);
 			ivfc_read(ctx, level->hashoffset + 0x20 * j, 0x20, testhash);
@@ -121,15 +118,15 @@ void ivfc_verify(ivfc_context* ctx, u32 flags)
 	}
 }
 
-void ivfc_read(ivfc_context* ctx, u32 offset, u32 size, u8* buffer)
+void ivfc_read(ivfc_context* ctx, u64 offset, u64 size, u8* buffer)
 {
 	if ( (offset > ctx->size) || (offset+size > ctx->size) )
 	{
-		fprintf(stderr, "Error, IVFC offset out of range (offset=0x%08x, size=0x%08x)\n", offset, size);
+		fprintf(stderr, "Error, IVFC offset out of range (offset=0x%08"PRIx64", size=0x%08"PRIx64")\n", offset, size);
 		return;
 	}
 
-	fseek(ctx->file, ctx->offset + offset, SEEK_SET);
+	fseeko64(ctx->file, ctx->offset + offset, SEEK_SET);
 	if (size != fread(buffer, 1, size, ctx->file))
 	{
 		fprintf(stderr, "Error, IVFC could not read file\n");
@@ -137,7 +134,7 @@ void ivfc_read(ivfc_context* ctx, u32 offset, u32 size, u8* buffer)
 	}
 }
 
-void ivfc_hash(ivfc_context* ctx, u32 offset, u32 size, u8* hash)
+void ivfc_hash(ivfc_context* ctx, u64 offset, u64 size, u8* hash)
 {
 	if (size > IVFC_MAX_BUFFERSIZE)
 	{
@@ -157,7 +154,7 @@ void ivfc_print(ivfc_context* ctx)
 
 	fprintf(stdout, "\nIVFC:\n");
 
-	fprintf(stdout, "Header:                 %c%c%c%c\n", header->magic[0], header->magic[1], header->magic[2], header->magic[3]);
+	fprintf(stdout, "Header:                 %.4s\n", header->magic);
 	fprintf(stdout, "Id:                     %08x\n", getle32(header->id));
 
 	for(i=0; i<ctx->levelcount; i++)
@@ -169,9 +166,9 @@ void ivfc_print(ivfc_context* ctx)
 			fprintf(stdout, "Level %d:               \n", i);
 		else
 			fprintf(stdout, "Level %d (%s):          \n", i, level->hashcheck == Good? "GOOD" : "FAIL");
-		fprintf(stdout, " Data offset:           0x%016"PRIx64"\n", ctx->offset + level->dataoffset);
-		fprintf(stdout, " Data size:             0x%016"PRIx64"\n", level->datasize);
-		fprintf(stdout, " Hash offset:           0x%016"PRIx64"\n", ctx->offset + level->hashoffset);
+		fprintf(stdout, " Data offset:           0x%08"PRIx64"\n", ctx->offset + level->dataoffset);
+		fprintf(stdout, " Data size:             0x%08"PRIx64"\n", level->datasize);
+		fprintf(stdout, " Hash offset:           0x%08"PRIx64"\n", ctx->offset + level->hashoffset);
 		fprintf(stdout, " Hash block size:       0x%08x\n", level->hashblocksize);
 	}
 }

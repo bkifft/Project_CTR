@@ -13,7 +13,7 @@ void ncsd_init(ncsd_context* ctx)
 	memset(ctx, 0, sizeof(ncsd_context));
 }
 
-void ncsd_set_offset(ncsd_context* ctx, u32 offset)
+void ncsd_set_offset(ncsd_context* ctx, u64 offset)
 {
 	ctx->offset = offset;
 }
@@ -23,7 +23,7 @@ void ncsd_set_file(ncsd_context* ctx, FILE* file)
 	ctx->file = file;
 }
 
-void ncsd_set_size(ncsd_context* ctx, u32 size)
+void ncsd_set_size(ncsd_context* ctx, u64 size)
 {
 	ctx->size = size;
 }
@@ -48,7 +48,7 @@ int ncsd_signature_verify(const void* blob, rsakey2048* key)
 	return ctr_rsa_verify_hash(sig, hash, key);
 }
 
-unsigned int ncsd_get_mediaunit_size(ncsd_context* ctx)
+u64 ncsd_get_mediaunit_size(ncsd_context* ctx)
 {
 	unsigned int mediaunitsize = settings_get_mediaunit_size(ctx->usersettings);
 
@@ -60,7 +60,7 @@ unsigned int ncsd_get_mediaunit_size(ncsd_context* ctx)
 
 void ncsd_process(ncsd_context* ctx, u32 actions)
 {
-	fseek(ctx->file, ctx->offset, SEEK_SET);
+	fseeko64(ctx->file, ctx->offset, SEEK_SET);
 	fread(&ctx->header, 1, 0x200, ctx->file);
 
 	if (getle32(ctx->header.magic) != MAGIC_NCSD)

@@ -56,8 +56,8 @@ typedef struct
 {
 	FILE* file;
 	settings* usersettings;
-	u32 offset;
-	u32 size;
+	u64 offset;
+	u64 size;
 	romfs_header header;
 	romfs_infoheader infoheader;
 	u8* dirblock;
@@ -73,8 +73,8 @@ typedef struct
 
 void romfs_init(romfs_context* ctx);
 void romfs_set_file(romfs_context* ctx, FILE* file);
-void romfs_set_offset(romfs_context* ctx, u32 offset);
-void romfs_set_size(romfs_context* ctx, u32 size);
+void romfs_set_offset(romfs_context* ctx, u64 offset);
+void romfs_set_size(romfs_context* ctx, u64 size);
 void romfs_set_usersettings(romfs_context* ctx, settings* usersettings);
 void romfs_test(romfs_context* ctx);
 int  romfs_dirblock_read(romfs_context* ctx, u32 diroffset, u32 dirsize, void* buffer);

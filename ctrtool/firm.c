@@ -16,7 +16,7 @@ void firm_set_file(firm_context* ctx, FILE* file)
 	ctx->file = file;
 }
 
-void firm_set_offset(firm_context* ctx, u32 offset)
+void firm_set_offset(firm_context* ctx, u64 offset)
 {
 	ctx->offset = offset;
 }
@@ -66,7 +66,7 @@ void firm_save(firm_context* ctx, u32 index, u32 flags)
 	
 	
 
-	fseek(ctx->file, ctx->offset + offset, SEEK_SET);
+	fseeko64(ctx->file, ctx->offset + offset, SEEK_SET);
 	fprintf(stdout, "Saving section %d to %s...\n", index, outpath.pathname);
 
 	while(size)
@@ -100,7 +100,7 @@ void firm_process(firm_context* ctx, u32 actions)
 {
 	u32 i;
 
-	fseek(ctx->file, ctx->offset, SEEK_SET);
+	fseeko64(ctx->file, ctx->offset, SEEK_SET);
 	fread(&ctx->header, 1, sizeof(firm_header), ctx->file);
 
 	if (getle32(ctx->header.magic) != MAGIC_FIRM)
@@ -154,7 +154,7 @@ int firm_verify(firm_context* ctx, u32 flags)
 		if (size == 0)
 			return 0;
 
-		fseek(ctx->file, ctx->offset + offset, SEEK_SET);
+		fseeko64(ctx->file, ctx->offset + offset, SEEK_SET);
 
 		ctr_sha_256_init(&ctx->sha);
 

@@ -17,7 +17,7 @@ void tmd_set_file(tmd_context* ctx, FILE* file)
 	ctx->file = file;
 }
 
-void tmd_set_offset(tmd_context* ctx, u32 offset)
+void tmd_set_offset(tmd_context* ctx, u64 offset)
 {
 	ctx->offset = offset;
 }
@@ -39,7 +39,7 @@ void tmd_process(tmd_context* ctx, u32 actions)
 
 	if (ctx->buffer)
 	{
-		fseek(ctx->file, ctx->offset, SEEK_SET);
+		fseeko64(ctx->file, ctx->offset, SEEK_SET);
 		fread(ctx->buffer, 1, ctx->size, ctx->file);
 
 		if (actions & InfoFlag)

@@ -35,6 +35,12 @@ int key_load(char *name, u8 *out_buf);
 
 int makedir(const char* dir);
 
+u64 _fsize(const char *filename);
+
+#ifndef _WIN32
+extern int fseeko64 (FILE *__stream, __off64_t __off, int __whence);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

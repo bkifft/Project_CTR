@@ -40,7 +40,7 @@ void lzss_process(lzss_context* ctx, u32 actions)
 	FILE* fout = 0;
 
 
-	fseek(ctx->file, ctx->offset, SEEK_SET);
+	fseeko64(ctx->file, ctx->offset, SEEK_SET);
 	
 
 	if (actions & ExtractFlag)

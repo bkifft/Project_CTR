@@ -37,12 +37,12 @@ void cwav_set_file(cwav_context* ctx, FILE* file)
 	ctx->file = file;
 }
 
-void cwav_set_offset(cwav_context* ctx, u32 offset)
+void cwav_set_offset(cwav_context* ctx, u64 offset)
 {
 	ctx->offset = offset;
 }
 
-void cwav_set_size(cwav_context* ctx, u32 size)
+void cwav_set_size(cwav_context* ctx, u64 size)
 {
 	ctx->size = size;
 }
@@ -57,12 +57,12 @@ void cwav_process(cwav_context* ctx, u32 actions)
 	u32 i;
 	u32 infoheaderoffset;
 
-	fseek(ctx->file, ctx->offset, SEEK_SET);
+	fseeko64(ctx->file, ctx->offset, SEEK_SET);
 	fread(&ctx->header, 1, sizeof(cwav_header), ctx->file);
 
 	infoheaderoffset = getle32(ctx->header.infoblockref.offset);
 
-	fseek(ctx->file, ctx->offset + infoheaderoffset, SEEK_SET);
+	fseeko64(ctx->file, ctx->offset + infoheaderoffset, SEEK_SET);
 	fread(&ctx->infoheader, 1, sizeof(cwav_infoheader), ctx->file);
 
 	ctx->channelcount = getle32(ctx->infoheader.channelcount);
@@ -79,7 +79,7 @@ void cwav_process(cwav_context* ctx, u32 actions)
 		{
 			u32 channeloffset = infoheaderoffset + 0x1C + getle32(ctx->channel[i].inforef.offset);
 
-			fseek(ctx->file, ctx->offset + channeloffset, SEEK_SET);
+			fseeko64(ctx->file, ctx->offset + channeloffset, SEEK_SET);
 			fread(&ctx->channel[i].info, sizeof(cwav_channelinfo), 1, ctx->file);
 
 			if (ctx->infoheader.encoding == CWAV_ENCODING_DSPADPCM)
@@ -88,7 +88,7 @@ void cwav_process(cwav_context* ctx, u32 actions)
 				{
 					u32 codecoffset = channeloffset + getle32(ctx->channel[i].info.codecref.offset);
 
-					fseek(ctx->file, ctx->offset + codecoffset, SEEK_SET);
+					fseeko64(ctx->file, ctx->offset + codecoffset, SEEK_SET);
 					fread(&ctx->channel[i].infodspadpcm, sizeof(cwav_dspadpcminfo), 1, ctx->file);
 				}
 			}
@@ -98,7 +98,7 @@ void cwav_process(cwav_context* ctx, u32 actions)
 				{
 					u32 codecoffset = channeloffset + getle32(ctx->channel[i].info.codecref.offset);
 
-					fseek(ctx->file, ctx->offset + codecoffset, SEEK_SET);
+					fseeko64(ctx->file, ctx->offset + codecoffset, SEEK_SET);
 					fread(&ctx->channel[i].infoimaadpcm, sizeof(cwav_imaadpcminfo), 1, ctx->file);
 				}
 			}

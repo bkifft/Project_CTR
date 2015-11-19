@@ -30,8 +30,8 @@ typedef struct
 	u8 partitionid[8];
 	u8 counter[16];
 	u8 key[16];
-	u32 offset;
-	u32 size;
+	u64 offset;
+	u64 size;
 	exefs_header header;
 	ctr_aes_context aes;
 	ctr_sha256_context sha;
@@ -42,8 +42,8 @@ typedef struct
 
 void exefs_init(exefs_context* ctx);
 void exefs_set_file(exefs_context* ctx, FILE* file);
-void exefs_set_offset(exefs_context* ctx, u32 offset);
-void exefs_set_size(exefs_context* ctx, u32 size);
+void exefs_set_offset(exefs_context* ctx, u64 offset);
+void exefs_set_size(exefs_context* ctx, u64 size);
 void exefs_set_usersettings(exefs_context* ctx, settings* usersettings);
 void exefs_set_partitionid(exefs_context* ctx, u8 partitionid[8]);
 void exefs_set_counter(exefs_context* ctx, u8 counter[16]);

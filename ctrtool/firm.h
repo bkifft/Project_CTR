@@ -35,7 +35,7 @@ typedef struct
 {
 	FILE* file;
 	settings* usersettings;
-	u32 offset;
+	u64 offset;
 	u32 size;
 	firm_header header;
 	ctr_sha256_context sha;
@@ -45,7 +45,7 @@ typedef struct
 
 void firm_init(firm_context* ctx);
 void firm_set_file(firm_context* ctx, FILE* file);
-void firm_set_offset(firm_context* ctx, u32 offset);
+void firm_set_offset(firm_context* ctx, u64 offset);
 void firm_set_size(firm_context* ctx, u32 size);
 void firm_set_usersettings(firm_context* ctx, settings* usersettings);
 void firm_process(firm_context* ctx, u32 actions);

@@ -20,12 +20,12 @@ void cia_set_file(cia_context* ctx, FILE* file)
 	ctx->file = file;
 }
 
-void cia_set_offset(cia_context* ctx, u32 offset)
+void cia_set_offset(cia_context* ctx, u64 offset)
 {
 	ctx->offset = offset;
 }
 
-void cia_set_size(cia_context* ctx, u32 size)
+void cia_set_size(cia_context* ctx, u64 size)
 {
 	ctx->size = size;
 }
@@ -39,8 +39,8 @@ void cia_set_usersettings(cia_context* ctx, settings* usersettings)
 
 void cia_save(cia_context* ctx, u32 type, u32 flags)
 {
-	u32 offset;
-	u32 size;
+	u64 offset;
+	u64 size;
 	u16 contentflags;
 	u8 docrypto;
 	filepath* path = 0;
@@ -133,14 +133,13 @@ void cia_save(cia_context* ctx, u32 type, u32 flags)
 	cia_save_blob(ctx, path->pathname, offset, size, 0);
 }
 
-void cia_save_blob(cia_context *ctx, char *out_path, u32 offset, u32 size, int do_cbc) 
+void cia_save_blob(cia_context *ctx, char *out_path, u64 offset, u64 size, int do_cbc) 
 {
 	FILE *fout = 0;
 	u8 buffer[16*1024];
 
-	fseek(ctx->file, ctx->offset + offset, SEEK_SET);
+	fseeko64(ctx->file, ctx->offset + offset, SEEK_SET);
 
-	
 	fout = fopen(out_path, "wb");
 	if (fout == NULL)
 	{
@@ -180,7 +179,7 @@ clean:
 
 void cia_process(cia_context* ctx, u32 actions)
 {	
-	fseek(ctx->file, 0, SEEK_SET);
+	fseeko64(ctx->file, 0, SEEK_SET);
 
 	if (fread(&ctx->header, 1, sizeof(ctr_ciaheader), ctx->file) != sizeof(ctr_ciaheader))
 	{
@@ -192,14 +191,14 @@ void cia_process(cia_context* ctx, u32 actions)
 	ctx->sizecert = getle32(ctx->header.certsize);
 	ctx->sizetik = getle32(ctx->header.ticketsize);
 	ctx->sizetmd = getle32(ctx->header.tmdsize);
-	ctx->sizecontent = (u32)getle64(ctx->header.contentsize);
+	ctx->sizecontent = getle64(ctx->header.contentsize);
 	ctx->sizemeta = getle32(ctx->header.metasize);
 	
 	ctx->offsetcerts = align(ctx->sizeheader, 64);
 	ctx->offsettik = align(ctx->offsetcerts + ctx->sizecert, 64);
 	ctx->offsettmd = align(ctx->offsettik + ctx->sizetik, 64);
 	ctx->offsetcontent = align(ctx->offsettmd + ctx->sizetmd, 64);
-	ctx->offsetmeta = align(ctx->offsetcontent + ctx->sizecontent, 64);
+	ctx->offsetmeta = align64(ctx->offsetcontent + ctx->sizecontent, 64);
 
 	if (actions & InfoFlag)
 		cia_print(ctx);
@@ -260,7 +259,7 @@ void cia_verify_contents(cia_context *ctx, u32 actions)
 	body  = tmd_get_body(&ctx->tmd);
 	chunk = (ctr_tmd_contentchunk*)(body->contentinfo + (sizeof(ctr_tmd_contentinfo) * TMD_MAX_CONTENTS));
 
-	fseek(ctx->file, ctx->offset + ctx->offsetcontent, SEEK_SET);
+	fseeko64(ctx->file, ctx->offset + ctx->offsetcontent, SEEK_SET);
 	for(i = 0; i < getbe16(body->contentcount); i++) 
 	{
 		content_size = getbe64(chunk->size) & 0xffffffff;
@@ -298,14 +297,14 @@ void cia_print(cia_context* ctx)
 	fprintf(stdout, "Header size             0x%08x\n", getle32(header->headersize));
 	fprintf(stdout, "Type                    %04x\n", getle16(header->type));
 	fprintf(stdout, "Version                 %04x\n", getle16(header->version));
-	fprintf(stdout, "Certificates offset:    0x%08x\n", ctx->offsetcerts);
-	fprintf(stdout, "Certificates size:      0x%04x\n", ctx->sizecert);
-	fprintf(stdout, "Ticket offset:          0x%08x\n", ctx->offsettik);
-	fprintf(stdout, "Ticket size             0x%04x\n", ctx->sizetik);
-	fprintf(stdout, "TMD offset:             0x%08x\n", ctx->offsettmd);
-	fprintf(stdout, "TMD size:               0x%04x\n", ctx->sizetmd);
-	fprintf(stdout, "Meta offset:            0x%04x\n", ctx->offsetmeta);
-	fprintf(stdout, "Meta size:              0x%04x\n", ctx->sizemeta);
-	fprintf(stdout, "Content offset:         0x%08x\n", ctx->offsetcontent);
-	fprintf(stdout, "Content size:           0x%016"PRIx64"\n", getle64(header->contentsize));
+	fprintf(stdout, "Certificates offset:    0x%"PRIx64"\n", ctx->offsetcerts);
+	fprintf(stdout, "Certificates size:      0x%x\n", ctx->sizecert);
+	fprintf(stdout, "Ticket offset:          0x%"PRIx64"n", ctx->offsettik);
+	fprintf(stdout, "Ticket size             0x%x\n", ctx->sizetik);
+	fprintf(stdout, "TMD offset:             0x%"PRIx64"\n", ctx->offsettmd);
+	fprintf(stdout, "TMD size:               0x%x\n", ctx->sizetmd);
+	fprintf(stdout, "Meta offset:            0x%"PRIx64"\n", ctx->offsetmeta);
+	fprintf(stdout, "Meta size:              0x%x\n", ctx->sizemeta);
+	fprintf(stdout, "Content offset:         0x%"PRIx64"\n", ctx->offsetcontent);
+	fprintf(stdout, "Content size:           0x%"PRIx64"\n", ctx->sizecontent);
 }

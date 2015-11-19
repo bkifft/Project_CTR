@@ -56,7 +56,7 @@ void		ctr_set_iv( ctr_aes_context* ctx,
 						 u8 iv[16] );
 
 void		ctr_add_counter( ctr_aes_context* ctx,
-						     u32 carry );
+						     u32 block_num );
 
 void		ctr_set_counter( ctr_aes_context* ctx, 
 						 u8 ctr[16] );

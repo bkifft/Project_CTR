@@ -18,12 +18,12 @@ void romfs_set_file(romfs_context* ctx, FILE* file)
 	ctx->file = file;
 }
 
-void romfs_set_offset(romfs_context* ctx, u32 offset)
+void romfs_set_offset(romfs_context* ctx, u64 offset)
 {
 	ctx->offset = offset;
 }
 
-void romfs_set_size(romfs_context* ctx, u32 size)
+void romfs_set_size(romfs_context* ctx, u64 size)
 {
 	ctx->size = size;
 }
@@ -49,7 +49,7 @@ void romfs_process(romfs_context* ctx, u32 actions)
 	ivfc_set_usersettings(&ctx->ivfc, ctx->usersettings);
 	ivfc_process(&ctx->ivfc, actions);
 
-	fseek(ctx->file, ctx->offset, SEEK_SET);
+	fseeko64(ctx->file, ctx->offset, SEEK_SET);
 	fread(&ctx->header, 1, sizeof(romfs_header), ctx->file);
 
 	if (getle32(ctx->header.magic) != MAGIC_IVFC)
@@ -60,7 +60,7 @@ void romfs_process(romfs_context* ctx, u32 actions)
 
 	ctx->infoblockoffset = ctx->offset + 0x1000;
 
-	fseek(ctx->file, ctx->infoblockoffset, SEEK_SET);
+	fseeko64(ctx->file, ctx->infoblockoffset, SEEK_SET);
 	fread(&ctx->infoheader, 1, sizeof(romfs_infoheader), ctx->file);
 	
 	if (getle32(ctx->infoheader.headersize) != sizeof(romfs_infoheader))
@@ -83,13 +83,13 @@ void romfs_process(romfs_context* ctx, u32 actions)
 
 	if (ctx->dirblock)
 	{
-		fseek(ctx->file, dirblockoffset, SEEK_SET);
+		fseeko64(ctx->file, dirblockoffset, SEEK_SET);
 		fread(ctx->dirblock, 1, dirblocksize, ctx->file);
 	}
 
 	if (ctx->fileblock)
 	{
-		fseek(ctx->file, fileblockoffset, SEEK_SET);
+		fseeko64(ctx->file, fileblockoffset, SEEK_SET);
 		fread(ctx->fileblock, 1, fileblocksize, ctx->file);
 	}
 
@@ -295,13 +295,8 @@ void romfs_extract_datafile(romfs_context* ctx, u64 offset, u64 size, filepath* 
 		goto clean;
 
 	offset += ctx->datablockoffset;
-	if ( (offset >> 32) )
-	{
-		fprintf(stderr, "Error, support for 64-bit offset not yet implemented.\n");
-		goto clean;
-	}
 
-	fseek(ctx->file, offset, SEEK_SET);
+	fseeko64(ctx->file, offset, SEEK_SET);
 	outfile = fopen(path->pathname, "wb");
 	if (outfile == 0)
 	{
@@ -344,9 +339,9 @@ void romfs_print(romfs_context* ctx)
 	fprintf(stdout, "Header size:            0x%08X\n", getle32(ctx->infoheader.headersize));
 	for(i=0; i<4; i++)
 	{
-		fprintf(stdout, "Section %d offset:       0x%08X\n", i, ctx->offset + 0x1000 + getle32(ctx->infoheader.section[i].offset));
+		fprintf(stdout, "Section %d offset:       0x%08"PRIX64"\n", i, ctx->offset + 0x1000 + getle32(ctx->infoheader.section[i].offset));
 		fprintf(stdout, "Section %d size:         0x%08X\n", i, getle32(ctx->infoheader.section[i].size));
 	}
 
-	fprintf(stdout, "Data offset:            0x%08X\n", ctx->offset + 0x1000 + getle32(ctx->infoheader.dataoffset));
+	fprintf(stdout, "Data offset:            0x%08"PRIX64"\n", ctx->offset + 0x1000 + getle32(ctx->infoheader.dataoffset));
 }
