@@ -1,5 +1,7 @@
 #include "lib.h"
-#include "utf.h"
+#ifndef _WIN32
+#include <iconv.h>
+#endif
 
 #include "polarssl/base64.h"
 
@@ -105,95 +107,6 @@ void memdump(FILE* fout, const char* prefix, const u8* data, u32 size)
 		offs += max;
 	}
 }
-
-u32 strlen_char16(const u16 *str)
-{
-	u32 i;
-	for (i = 0; str[i] != 0x0; i++);
-	return i;
-}
-
-char* strcopy_8to8(const char *src)
-{
-	if (!src)
-		return NULL;
-
-	u32 src_len = strlen(src);
-
-	// Allocate memory for expanded string
-	char *dst = calloc(src_len + 1, sizeof(u8));
-	if (!dst)
-		return NULL;
-
-	// Copy elements from src into dst
-	strncpy(dst, src, src_len);
-
-	return dst;
-}
-
-u16* strcopy_8to16(const char *src)
-{
-	if (!src)
-		return NULL;
-
-	u32 src_len = strlen(src);
-
-	// Allocate memory for expanded string
-	u16 *dst = calloc(src_len+1, sizeof(u16));
-	if (!dst)
-		return NULL;
-
-	// Copy elements from src into dst
-	for (u32 i = 0; i < src_len; i++)
-		dst[i] = src[i];
-
-	return dst;
-}
-
-
-u16* strcopy_16to16(const u16 *src)
-{
-	if (!src)
-		return NULL;
-
-	u32 src_len = strlen_char16(src);
-
-	// Allocate memory for expanded string
-	u16 *dst = calloc(src_len + 1, sizeof(u16));
-	if (!dst)
-		return NULL;
-
-	// Copy elements from src into dst
-	for (u32 i = 0; i < src_len; i++)
-		dst[i] = src[i];
-
-	return dst;
-}
-
-#ifndef _WIN32
-u16* strcopy_utf8to16(const char *src)
-{
-	if (!src)
-		return NULL;
-
-	u32 src_len = strlen(src);
-
-	// Allocate memory for expanded string
-	u16 *dst = calloc(src_len + 1, sizeof(u16));
-	if (!dst)
-		return NULL;
-
-	UTF16 *target_start = dst;
-	UTF16 *target_end = (target_start + (src_len*sizeof(u16)));
-
-	UTF8 *src_start = (UTF8*)src;
-	UTF8 *src_end = (UTF8*)(src + src_len*sizeof(char));
-
-	ConvertUTF8toUTF16((const UTF8 **)&src_start, src_end, &target_start, target_end, strictConversion);
-
-	return dst;
-}
-#endif
 
 // Base64
 bool IsValidB64Char(char chr)
@@ -347,15 +260,6 @@ int TruncateFile64(char *filename, u64 filelen)
 #endif	
 }
 
-// Wide Char IO
-#ifdef _WIN32
-u64 wGetFileSize64(u16 *filename)
-{
-	struct _stat64 st;
-	_wstat64((wchar_t*)filename, &st);
-	return st.st_size;
-}
-#endif
 
 //IO Misc
 u8* ImportFile(char *file, u64 size)

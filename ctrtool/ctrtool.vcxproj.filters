@@ -114,6 +114,9 @@
     <ClCompile Include="tinyxml\tinyxmlparser.cpp">
       <Filter>Source Files\tinyxml</Filter>
     </ClCompile>
+    <ClCompile Include="oschar.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cia.h">
@@ -202,6 +205,9 @@
     </ClInclude>
     <ClInclude Include="tinyxml\tinyxml.h">
       <Filter>Header Files\tinyxml</Filter>
+    </ClInclude>
+    <ClInclude Include="oschar.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

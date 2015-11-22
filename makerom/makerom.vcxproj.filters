@@ -156,9 +156,6 @@
     <ClInclude Include="user_settings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="utf.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -339,6 +336,9 @@
     <ClInclude Include="romfs_fs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="oschar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="accessdesc.c">
@@ -405,9 +405,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="user_settings.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="utf.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="utils.c">
@@ -478,6 +475,9 @@
     </ClCompile>
     <ClCompile Include="polarssl\padlock.c">
       <Filter>Source Files\polarssl</Filter>
+    </ClCompile>
+    <ClCompile Include="oschar.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

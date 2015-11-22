@@ -67,7 +67,7 @@
     <NMakeCleanCommandLine>make clean</NMakeCleanCommandLine>
     <NMakeReBuildCommandLine>make rebuild</NMakeReBuildCommandLine>
     <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
-    <IncludePath>C:\Program Files\mingw-w64\x86_64-5.2.0-win32-seh-rt_v4-rev0\mingw64\x86_64-w64-mingw32\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Program Files\mingw-w64\x86_64-4.9.2-win32-seh-rt_v4-rev2\mingw64\x86_64-w64-mingw32\include</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <NMakeBuildCommandLine>make</NMakeBuildCommandLine>
@@ -104,6 +104,7 @@
     <ClInclude Include="desc\dev_sigdata.h" />
     <ClInclude Include="desc\presets.h" />
     <ClInclude Include="desc\prod_sigdata.h" />
+    <ClInclude Include="oschar.h" />
     <ClInclude Include="romfs_fs.h" />
     <ClInclude Include="elf.h" />
     <ClInclude Include="exefs.h" />
@@ -188,7 +189,6 @@
     <ClInclude Include="tmd_read.h" />
     <ClInclude Include="types.h" />
     <ClInclude Include="user_settings.h" />
-    <ClInclude Include="utf.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="yaml_parser.h" />
   </ItemGroup>
@@ -201,6 +201,7 @@
     <ClCompile Include="code.c" />
     <ClCompile Include="crypto.c" />
     <ClCompile Include="ctr_utils.c" />
+    <ClCompile Include="oschar.c" />
     <ClCompile Include="polarssl\aes.c" />
     <ClCompile Include="polarssl\padlock.c" />
     <ClCompile Include="romfs_fs.c" />
@@ -236,7 +237,6 @@
     <ClCompile Include="titleid.c" />
     <ClCompile Include="tmd.c" />
     <ClCompile Include="user_settings.c" />
-    <ClCompile Include="utf.c" />
     <ClCompile Include="utils.c" />
     <ClCompile Include="yaml_parser.c" />
   </ItemGroup>

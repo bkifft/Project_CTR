@@ -153,7 +153,7 @@ int ImportNcchForCci(cci_settings *set)
 
 bool CanCiaBeCci(u64 titleId, u16 count, tmd_content_chunk *content)
 {
-	if(GetTidCategory(titleId) != PROGRAM_ID_CATEGORY_APPLICATION && GetTidCategory(titleId) != PROGRAM_ID_CATEGORY_SYSTEM_APPLICATION)
+	if(GetTidCategory(titleId) != PROGRAM_ID_CATEGORY_APPLICATION)
 		return false;
 		
 	if(count > CCI_MAX_CONTENT)
@@ -222,6 +222,7 @@ int ProcessCiaForCci(cci_settings *set)
 	return 0;
 }
 
+/* This need to be more automagical */
 void GetTitleSaveSize(cci_settings *set)
 {
 	if(set->rsf->SystemControlInfo.SaveDataSize)

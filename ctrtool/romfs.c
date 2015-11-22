@@ -96,8 +96,13 @@ void romfs_process(romfs_context* ctx, u32 actions)
 	if (actions & InfoFlag)
 		romfs_print(ctx);
 
-	romfs_visit_dir(ctx, 0, 0, actions, settings_get_romfs_dir_path(ctx->usersettings));
+	if (settings_get_romfs_dir_path(ctx->usersettings)->valid)
+		ctx->extractdir = os_CopyConvertCharStr(settings_get_romfs_dir_path(ctx->usersettings)->pathname);
+	else
+		ctx->extractdir = NULL;
 
+	romfs_visit_dir(ctx, 0, 0, actions, ctx->extractdir);
+	free(ctx->extractdir);
 }
 
 int romfs_dirblock_read(romfs_context* ctx, u32 diroffset, u32 dirsize, void* buffer)
@@ -171,12 +176,12 @@ int romfs_fileblock_readentry(romfs_context* ctx, u32 fileoffset, romfs_fileentr
 
 
 
-void romfs_visit_dir(romfs_context* ctx, u32 diroffset, u32 depth, u32 actions, filepath* rootpath)
+void romfs_visit_dir(romfs_context* ctx, u32 diroffset, u32 depth, u32 actions, const oschar_t* rootpath)
 {
 	u32 siblingoffset;
 	u32 childoffset;
 	u32 fileoffset;
-	filepath currentpath;
+	oschar_t* currentpath;
 	romfs_direntry* entry = &ctx->direntry;
 
 
@@ -190,32 +195,39 @@ void romfs_visit_dir(romfs_context* ctx, u32 diroffset, u32 depth, u32 actions, 
 //	fwprintf(stdout, L"%ls\n", entry->name);
 
 
-	if (rootpath && rootpath->valid)
+	if (rootpath && os_strlen(rootpath))
 	{
-		filepath_copy(&currentpath, rootpath);
-		filepath_append_utf16(&currentpath, entry->name);
-		if (currentpath.valid)
+		if (utf16_strlen((const utf16char_t*)entry->name) > 0)
+			currentpath = os_AppendUTF16StrToPath(rootpath, (const utf16char_t*)entry->name);
+		else // root dir, use the provided extract path instead of the empty root name.
+			currentpath = os_CopyStr(rootpath);
+
+		if (currentpath)
 		{
-			makedir(currentpath.pathname);
+			os_makedir(currentpath);
 		}
 		else
 		{
-			fprintf(stderr, "Error creating directory in root %s\n", rootpath->pathname);
+			fputs("Error creating directory in root ", stderr);
+			os_fputs(rootpath, stderr);
+			fputs("\n", stderr);
 			return;
 		}
 	}
 	else
 	{
-		filepath_init(&currentpath);
-
+		currentpath = os_CopyConvertUTF16Str((const utf16char_t*)entry->name);
 		if (settings_get_list_romfs_files(ctx->usersettings))
 		{
 			u32 i;
 
 			for(i=0; i<depth; i++)
 				printf(" ");
-			fwprintf(stdout, L"%ls\n", entry->name);
+			os_fputs(currentpath, stdout);
+			fputs("\n", stdout);
 		}
+		free(currentpath);
+		currentpath = NULL;
 	}
 	
 
@@ -224,20 +236,22 @@ void romfs_visit_dir(romfs_context* ctx, u32 diroffset, u32 depth, u32 actions, 
 	fileoffset = getle32(entry->fileoffset);
 
 	if (fileoffset != (~0))
-		romfs_visit_file(ctx, fileoffset, depth+1, actions, &currentpath);
+		romfs_visit_file(ctx, fileoffset, depth+1, actions, currentpath);
 
 	if (childoffset != (~0))
-		romfs_visit_dir(ctx, childoffset, depth+1, actions, &currentpath);
+		romfs_visit_dir(ctx, childoffset, depth+1, actions, currentpath);
 
 	if (siblingoffset != (~0))
 		romfs_visit_dir(ctx, siblingoffset, depth, actions, rootpath);
+
+	free(currentpath);
 }
 
 
-void romfs_visit_file(romfs_context* ctx, u32 fileoffset, u32 depth, u32 actions, filepath* rootpath)
+void romfs_visit_file(romfs_context* ctx, u32 fileoffset, u32 depth, u32 actions, const oschar_t* rootpath)
 {
 	u32 siblingoffset = 0;
-	filepath currentpath;
+	oschar_t* currentpath = NULL;
 	romfs_fileentry* entry = &ctx->fileentry;
 
 
@@ -250,55 +264,63 @@ void romfs_visit_file(romfs_context* ctx, u32 fileoffset, u32 depth, u32 actions
 //			getle64(entry->datasize), getle32(entry->unknown));
 //	fwprintf(stdout, L"%ls\n", entry->name);
 
-	if (rootpath && rootpath->valid)
+	if (rootpath && os_strlen(rootpath))
 	{
-		filepath_copy(&currentpath, rootpath);
-		filepath_append_utf16(&currentpath, entry->name);
-		if (currentpath.valid)
+		currentpath = os_AppendUTF16StrToPath(rootpath, (const utf16char_t*)entry->name);
+		if (currentpath)
 		{
-			fprintf(stdout, "Saving %s...\n", currentpath.pathname);
-			romfs_extract_datafile(ctx, getle64(entry->dataoffset), getle64(entry->datasize), &currentpath);
+			fputs("Saving ", stdout);
+			os_fputs(currentpath, stdout);
+			fputs("...\n", stdout);
+			romfs_extract_datafile(ctx, getle64(entry->dataoffset), getle64(entry->datasize), currentpath);
 		}
 		else
 		{
-			fprintf(stderr, "Error creating directory in root %s\n", rootpath->pathname);
+			fputs("Error creating file in root ", stderr);
+			os_fputs(rootpath, stderr);
+			fputs("\n", stderr);
 			return;
 		}
 	}
 	else
 	{
-		filepath_init(&currentpath);
+		currentpath = os_CopyConvertUTF16Str((const utf16char_t*)entry->name);
 		if (settings_get_list_romfs_files(ctx->usersettings))
 		{
 			u32 i;
 
 			for(i=0; i<depth; i++)
 				printf(" ");
-			fwprintf(stdout, L"%ls\n", entry->name);
+			os_fputs(currentpath, stdout);
+			fputs("\n", stdout);
 		}
+		free(currentpath);
+		currentpath = NULL;
 	}
 
 	siblingoffset = getle32(entry->siblingoffset);
 
 	if (siblingoffset != (~0))
 		romfs_visit_file(ctx, siblingoffset, depth, actions, rootpath);
+
+	free(currentpath);
 }
 
-void romfs_extract_datafile(romfs_context* ctx, u64 offset, u64 size, filepath* path)
+void romfs_extract_datafile(romfs_context* ctx, u64 offset, u64 size, const oschar_t* path)
 {
 	FILE* outfile = 0;
 	u32 max;
 	u8 buffer[4096];
 
 
-	if (path == 0 || path->valid == 0)
+	if (path == NULL || os_strlen(path) == 0)
 		goto clean;
 
 	offset += ctx->datablockoffset;
 
 	fseeko64(ctx->file, offset, SEEK_SET);
-	outfile = fopen(path->pathname, "wb");
-	if (outfile == 0)
+	outfile = os_fopen(path, OS_MODE_WRITE);
+	if (outfile == NULL)
 	{
 		fprintf(stderr, "Error opening file for writing\n");
 		goto clean;

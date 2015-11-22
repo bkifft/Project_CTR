@@ -102,7 +102,7 @@ int main(int argc, char* argv[])
 	char keysetfname[512] = "keys.xml";
 	keyset tmpkeys;
 	unsigned int checkkeysetfile = 0;
-	
+
 	memset(&ctx, 0, sizeof(toolcontext));
 	ctx.actions = InfoFlag | ExtractFlag;
 	ctx.filetype = FILETYPE_UNKNOWN;

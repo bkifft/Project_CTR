@@ -20,13 +20,6 @@ u64 max64(u64 a, u64 b);
 // Strings
 void memdump(FILE* fout, const char* prefix, const const u8* data, u32 size);
 char* replace_filextention(const char *input, const char *extention);
-u32 strlen_char16(const u16 *str);
-char* strcopy_8to8(const char *src);
-u16* strcopy_8to16(const char *src);
-u16* strcopy_16to16(const u16 *src);
-#ifndef _WIN32
-u16* strcopy_utf8to16(const char *src);
-#endif
 
 // Base64
 bool IsValidB64Char(char chr);
@@ -45,13 +38,7 @@ u64 u64GetRand(void);
 bool AssertFile(char *filename);
 u64 GetFileSize64(char *filename);
 int makedir(const char* dir);
-char *getcwdir(char *buffer,int maxlen);
 int TruncateFile64(char *filename, u64 filelen);
-
-//Wide Char IO
-#ifdef _WIN32
-u64 wGetFileSize64(u16 *filename);
-#endif
 
 //IO Misc
 u8* ImportFile(char *file, u64 size);

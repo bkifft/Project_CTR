@@ -4,7 +4,7 @@
 #include "types.h"
 #include "info.h"
 #include "ctr.h"
-#include "filepath.h"
+#include "oschar.h"
 #include "settings.h"
 #include "ivfc.h"
 
@@ -55,6 +55,7 @@ typedef struct
 typedef struct
 {
 	FILE* file;
+	oschar_t* extractdir;
 	settings* usersettings;
 	u64 offset;
 	u64 size;
@@ -81,9 +82,9 @@ int  romfs_dirblock_read(romfs_context* ctx, u32 diroffset, u32 dirsize, void* b
 int  romfs_dirblock_readentry(romfs_context* ctx, u32 diroffset, romfs_direntry* entry);
 int  romfs_fileblock_read(romfs_context* ctx, u32 fileoffset, u32 filesize, void* buffer);
 int  romfs_fileblock_readentry(romfs_context* ctx, u32 fileoffset, romfs_fileentry* entry);
-void romfs_visit_dir(romfs_context* ctx, u32 diroffset, u32 depth, u32 actions, filepath* rootpath);
-void romfs_visit_file(romfs_context* ctx, u32 fileoffset, u32 depth, u32 actions, filepath* rootpath);
-void romfs_extract_datafile(romfs_context* ctx, u64 offset, u64 size, filepath* path);
+void romfs_visit_dir(romfs_context* ctx, u32 diroffset, u32 depth, u32 actions, const oschar_t* rootpath);
+void romfs_visit_file(romfs_context* ctx, u32 fileoffset, u32 depth, u32 actions, const oschar_t* rootpath);
+void romfs_extract_datafile(romfs_context* ctx, u64 offset, u64 size, const oschar_t* path);
 void romfs_process(romfs_context* ctx, u32 actions);
 void romfs_print(romfs_context* ctx);
 

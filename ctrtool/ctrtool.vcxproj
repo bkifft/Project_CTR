@@ -99,6 +99,7 @@
     <ClCompile Include="exheader.c" />
     <ClCompile Include="filepath.c" />
     <ClCompile Include="firm.c" />
+    <ClCompile Include="oschar.c" />
     <ClCompile Include="windows\getopt.c" />
     <ClCompile Include="windows\getopt1.c" />
     <ClCompile Include="ivfc.c" />
@@ -130,6 +131,7 @@
     <ClInclude Include="exheader.h" />
     <ClInclude Include="filepath.h" />
     <ClInclude Include="firm.h" />
+    <ClInclude Include="oschar.h" />
     <ClInclude Include="windows\getopt.h" />
     <ClInclude Include="info.h" />
     <ClInclude Include="ivfc.h" />
