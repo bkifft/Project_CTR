@@ -1,8 +1,4 @@
 #include "lib.h"
-#ifndef _WIN32
-#include <iconv.h>
-#endif
-
 #include "polarssl/base64.h"
 
 #define IO_BLOCKSIZE 5*MB

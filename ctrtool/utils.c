@@ -1,16 +1,10 @@
-
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <strings.h>
 #include <sys/stat.h>
-#include <sys/types.h>
-#include "utils.h"
-
 #ifdef _WIN32
 #include <direct.h>
-#include <wchar.h>
 #endif
+#include "utils.h"
+
 
 
 u32 align(u32 offset, u32 alignment)

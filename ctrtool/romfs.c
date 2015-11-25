@@ -1,8 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <wchar.h>
-
 #include "types.h"
 #include "romfs.h"
 #include "utils.h"

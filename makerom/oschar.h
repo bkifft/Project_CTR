@@ -3,9 +3,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <sys/stat.h>
-#include <dirent.h>
 #ifdef _WIN32
-#include <direct.h>
 #include <wchar.h>
 #endif
 
@@ -19,7 +17,7 @@ typedef wchar_t oschar_t; // UTF16-LE
 typedef char oschar_t; // UTF8
 #endif
 
-					   // Simple redirect macros for functions and types
+// Simple redirect macros for functions and types
 #ifdef _WIN32
 #define os_strlen wcslen
 #define os_strcmp wcscmp

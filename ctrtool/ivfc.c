@@ -5,7 +5,6 @@
 #include "utils.h"
 #include "ivfc.h"
 #include "ctr.h"
-#include <inttypes.h>
 
 void ivfc_init(ivfc_context* ctx)
 {
