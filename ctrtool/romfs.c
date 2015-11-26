@@ -30,7 +30,41 @@ void romfs_set_usersettings(romfs_context* ctx, settings* usersettings)
 	ctx->usersettings = usersettings;
 }
 
+void romfs_set_encrypted(romfs_context* ctx, u32 encrypted)
+{
+	ctx->encrypted = encrypted;
+}
 
+void romfs_set_key(romfs_context* ctx, u8 key[16])
+{
+	memcpy(ctx->key, key, 16);
+}
+
+void romfs_set_counter(romfs_context* ctx, u8 counter[16])
+{
+	memcpy(ctx->counter, counter, 16);
+}
+
+void romfs_fseek(romfs_context* ctx, u64 offset)
+{
+	u64 data_pos = offset - ctx->offset;
+	fseeko64(ctx->file, offset, SEEK_SET);
+	ctr_init_counter(&ctx->aes, ctx->key, ctx->counter);
+	ctr_add_counter(&ctx->aes, data_pos / 0x10);
+}
+
+size_t romfs_fread(romfs_context* ctx, void* buffer, size_t size, size_t count)
+{
+	size_t read;
+	if ((read = fread(buffer, size, count, ctx->file)) != count) {
+		//printf("romfs_fread() fail\n");
+		return read;
+	}
+	if (ctx->encrypted) {
+		ctr_crypt_counter(&ctx->aes, buffer, buffer, size*read);
+	}
+	return read;
+}
 
 void romfs_process(romfs_context* ctx, u32 actions)
 {
@@ -39,15 +73,17 @@ void romfs_process(romfs_context* ctx, u32 actions)
 	u32 fileblockoffset = 0;
 	u32 fileblocksize = 0;
 
-
 	ivfc_set_offset(&ctx->ivfc, ctx->offset);
 	ivfc_set_size(&ctx->ivfc, ctx->size);
 	ivfc_set_file(&ctx->ivfc, ctx->file);
 	ivfc_set_usersettings(&ctx->ivfc, ctx->usersettings);
+	ivfc_set_counter(&ctx->ivfc, ctx->counter);
+	ivfc_set_key(&ctx->ivfc, ctx->key);
+	ivfc_set_encrypted(&ctx->ivfc, ctx->encrypted);
 	ivfc_process(&ctx->ivfc, actions);
 
-	fseeko64(ctx->file, ctx->offset, SEEK_SET);
-	fread(&ctx->header, 1, sizeof(romfs_header), ctx->file);
+	romfs_fseek(ctx, ctx->offset);
+	romfs_fread(ctx, &ctx->header, 1, sizeof(romfs_header));
 
 	if (getle32(ctx->header.magic) != MAGIC_IVFC)
 	{
@@ -57,8 +93,8 @@ void romfs_process(romfs_context* ctx, u32 actions)
 
 	ctx->infoblockoffset = ctx->offset + 0x1000;
 
-	fseeko64(ctx->file, ctx->infoblockoffset, SEEK_SET);
-	fread(&ctx->infoheader, 1, sizeof(romfs_infoheader), ctx->file);
+	romfs_fseek(ctx, ctx->infoblockoffset);
+	romfs_fread(ctx, &ctx->infoheader, 1, sizeof(romfs_infoheader));
 	
 	if (getle32(ctx->infoheader.headersize) != sizeof(romfs_infoheader))
 	{
@@ -71,24 +107,24 @@ void romfs_process(romfs_context* ctx, u32 actions)
 	fileblockoffset = ctx->infoblockoffset + getle32(ctx->infoheader.section[3].offset);
 	fileblocksize = getle32(ctx->infoheader.section[3].size);
 
+	u32 hdrsize = getle32(ctx->infoheader.dataoffset);
+	u8 *block = malloc(hdrsize);
+	romfs_fseek(ctx, ctx->infoblockoffset);
+	romfs_fread(ctx, block, hdrsize, 1);
+
 	ctx->dirblock = malloc(dirblocksize);
 	ctx->dirblocksize = dirblocksize;
+	if(ctx->dirblock)
+		memcpy(ctx->dirblock, block + getle32(ctx->infoheader.section[1].offset), dirblocksize);
+
 	ctx->fileblock = malloc(fileblocksize);
 	ctx->fileblocksize = fileblocksize;
+	if (ctx->fileblock)
+		memcpy(ctx->fileblock, block + getle32(ctx->infoheader.section[3].offset), fileblocksize);
+
+	free(block);
 
 	ctx->datablockoffset = ctx->infoblockoffset + getle32(ctx->infoheader.dataoffset);
-
-	if (ctx->dirblock)
-	{
-		fseeko64(ctx->file, dirblockoffset, SEEK_SET);
-		fread(ctx->dirblock, 1, dirblocksize, ctx->file);
-	}
-
-	if (ctx->fileblock)
-	{
-		fseeko64(ctx->file, fileblockoffset, SEEK_SET);
-		fread(ctx->fileblock, 1, fileblocksize, ctx->file);
-	}
 
 	if (actions & InfoFlag)
 		romfs_print(ctx);
@@ -315,7 +351,7 @@ void romfs_extract_datafile(romfs_context* ctx, u64 offset, u64 size, const osch
 
 	offset += ctx->datablockoffset;
 
-	fseeko64(ctx->file, offset, SEEK_SET);
+	romfs_fseek(ctx, offset);
 	outfile = os_fopen(path, OS_MODE_WRITE);
 	if (outfile == NULL)
 	{
@@ -329,7 +365,7 @@ void romfs_extract_datafile(romfs_context* ctx, u64 offset, u64 size, const osch
 		if (max > size)
 			max = size;
 
-		if (max != fread(buffer, 1, max, ctx->file))
+		if (max != romfs_fread(ctx, buffer, 1, max))
 		{
 			fprintf(stderr, "Error reading file\n");
 			goto clean;

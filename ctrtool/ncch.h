@@ -7,6 +7,7 @@
 #include "filepath.h"
 #include "ctr.h"
 #include "exefs.h"
+#include "romfs.h"
 #include "exheader.h"
 #include "settings.h"
 
@@ -16,6 +17,7 @@ typedef enum
 	NCCHTYPE_EXEFS = 2,
 	NCCHTYPE_ROMFS = 3,
 	NCCHTYPE_LOGO = 4,
+	NCCHTYPE_PLAINRGN = 5,
 } ctr_ncchtypes;
 
 typedef struct
@@ -63,6 +65,7 @@ typedef struct
 	ctr_ncchheader header;
 	ctr_aes_context aes;
 	exefs_context exefs;
+	romfs_context romfs;
 	exheader_context exheader;
 	int exefshashcheck;
 	int romfshashcheck;
@@ -87,6 +90,8 @@ u64 ncch_get_exheader_offset(ncch_context* ctx);
 u64 ncch_get_exheader_size(ncch_context* ctx);
 u64 ncch_get_logo_offset(ncch_context* ctx);
 u64 ncch_get_logo_size(ncch_context* ctx);
+u64 ncch_get_plainrgn_offset(ncch_context* ctx);
+u64 ncch_get_plainrgn_size(ncch_context* ctx);
 void ncch_print(ncch_context* ctx);
 int ncch_signature_verify(ncch_context* ctx, rsakey2048* key);
 void ncch_verify(ncch_context* ctx, u32 flags);

@@ -64,11 +64,14 @@ static void usage(const char *argv0)
 		   "  --lzssout=file	 Specify lzss output file\n"
 		   "CXI/CCI options:\n"
 		   "  -n, --ncch=index   Specify NCCH partition index.\n"
+		   "  --exheader=file    Specify Extended Header file path.\n"
+		   "  --logo=file        Specify Logo file path.\n"
+		   "  --plainrgn=file    Specify Plain region file path"
 		   "  --exefs=file       Specify ExeFS file path.\n"
 		   "  --exefsdir=dir     Specify ExeFS directory path.\n"
 		   "  --romfs=file       Specify RomFS file path.\n"
-		   "  --exheader=file    Specify Extended Header file path.\n"
-		   "  --logo=file        Specify Logo file path.\n"
+		   "  --romfsdir=dir     Specify RomFS directory path.\n"
+		   "  --listromfs        List files in RomFS.\n" 
 		   "CIA options:\n"
 		   "  --certs=file       Specify Certificate chain file path.\n"
 		   "  --tik=file         Specify Ticket file path.\n"
@@ -83,9 +86,6 @@ static void usage(const char *argv0)
 		   "EXEFS options:\n"
 		   "  --decompresscode   Decompress .code section\n"
 		   "                     (only needed when using raw EXEFS file)\n"
-		   "ROMFS options:\n"
-		   "  --romfsdir=dir     Specify RomFS directory path.\n"
-		   "  --listromfs        List files in RomFS.\n"
            "\n",
 		   __TIME__, __DATE__, argv0);
    exit(1);
@@ -149,6 +149,7 @@ int main(int argc, char* argv[])
 			{"logo", 1, NULL, 20},
 			{"decompresscode", 0, NULL, 21},
 			{"titlekey", 1, NULL, 22},
+			{"plainrgn", 1, NULL, 23},
 			{NULL},
 		};
 
@@ -237,6 +238,7 @@ int main(int argc, char* argv[])
 			case 20: settings_set_logo_path(&ctx.usersettings, optarg); break;
 			case 21: ctx.actions |= DecompressCodeFlag; break;
 			case 22: keyset_parse_titlekey(&tmpkeys, optarg, strlen(optarg)); break;
+			case 23: settings_set_plainrgn_path(&ctx.usersettings, optarg); break;
 
 			default:
 				usage(argv[0]);
@@ -452,6 +454,7 @@ int main(int argc, char* argv[])
 			romfs_set_file(&romfsctx, ctx.infile);
 			romfs_set_size(&romfsctx, ctx.infilesize);
 			romfs_set_usersettings(&romfsctx, &ctx.usersettings);
+			romfs_set_encrypted(&romfsctx, 0);
 			romfs_process(&romfsctx, ctx.actions);
 	
 			break;

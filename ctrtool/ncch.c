@@ -116,6 +116,13 @@ int ncch_extract_prepare(ncch_context* ctx, u32 type, u32 flags)
 		}
 		break;
 
+		case NCCHTYPE_PLAINRGN:
+		{
+			offset = ncch_get_plainrgn_offset(ctx);
+			size = ncch_get_plainrgn_size(ctx);
+		}
+		break;
+
 		default:
 		{
 			fprintf(stderr, "Error invalid NCCH type\n");
@@ -181,6 +188,7 @@ void ncch_save(ncch_context* ctx, u32 type, u32 flags)
 		case NCCHTYPE_ROMFS: path = settings_get_romfs_path(ctx->usersettings); break;
 		case NCCHTYPE_EXHEADER: path = settings_get_exheader_path(ctx->usersettings); break;
 		case NCCHTYPE_LOGO: path = settings_get_logo_path(ctx->usersettings); break;
+		case NCCHTYPE_PLAINRGN: path = settings_get_plainrgn_path(ctx->usersettings); break;
 	}
 
 	if (path == 0 || path->valid == 0)
@@ -199,13 +207,14 @@ void ncch_save(ncch_context* ctx, u32 type, u32 flags)
 		case NCCHTYPE_ROMFS: fprintf(stdout, "Saving RomFS...\n"); break;
 		case NCCHTYPE_EXHEADER: fprintf(stdout, "Saving Extended Header...\n"); break;
 		case NCCHTYPE_LOGO: fprintf(stdout, "Saving Logo...\n"); break;
+		case NCCHTYPE_PLAINRGN: fprintf(stdout, "Saving Plain Region...\n"); break;
 	}
 
 	while(1)
 	{
 		u32 read_len;
 
-		if (0 == ncch_extract_buffer(ctx, buffer, sizeof(buffer), &read_len, type == NCCHTYPE_LOGO))
+		if (0 == ncch_extract_buffer(ctx, buffer, sizeof(buffer), &read_len, type == NCCHTYPE_LOGO || type == NCCHTYPE_PLAINRGN))
 			goto clean;
 
 		if (read_len == 0)
@@ -304,6 +313,7 @@ void ncch_process(ncch_context* ctx, u32 actions)
 {
 	u8 exheadercounter[16];
 	u8 exefscounter[16];
+	u8 romfscounter[16];
 	int result = 1;
 
 
@@ -320,6 +330,7 @@ void ncch_process(ncch_context* ctx, u32 actions)
 
 	ncch_get_counter(ctx, exheadercounter, NCCHTYPE_EXHEADER);
 	ncch_get_counter(ctx, exefscounter, NCCHTYPE_EXEFS);
+	ncch_get_counter(ctx, romfscounter, NCCHTYPE_ROMFS);
 
 
 	exheader_set_file(&ctx->exheader, ctx->file);
@@ -342,6 +353,14 @@ void ncch_process(ncch_context* ctx, u32 actions)
 	exefs_set_key(&ctx->exefs, ctx->key);
 	exefs_set_encrypted(&ctx->exefs, ctx->encrypted);
 
+	romfs_set_file(&ctx->romfs, ctx->file);
+	romfs_set_offset(&ctx->romfs, ncch_get_romfs_offset(ctx));
+	romfs_set_size(&ctx->romfs, ncch_get_romfs_size(ctx));
+	romfs_set_usersettings(&ctx->romfs, ctx->usersettings);
+	romfs_set_counter(&ctx->romfs, romfscounter);
+	romfs_set_key(&ctx->romfs, ctx->key);
+	romfs_set_encrypted(&ctx->romfs, ctx->encrypted);
+
 	exheader_read(&ctx->exheader, actions);
 
 
@@ -357,6 +376,7 @@ void ncch_process(ncch_context* ctx, u32 actions)
 		ncch_save(ctx, NCCHTYPE_ROMFS, actions);
 		ncch_save(ctx, NCCHTYPE_EXHEADER, actions);
 		ncch_save(ctx, NCCHTYPE_LOGO, actions);
+		ncch_save(ctx, NCCHTYPE_PLAINRGN, actions);
 	}
 
 
@@ -373,6 +393,11 @@ void ncch_process(ncch_context* ctx, u32 actions)
 		if(ncch_get_exheader_size(ctx))
 			exefs_set_compressedflag(&ctx->exefs, exheader_get_compressedflag(&ctx->exheader));
 		exefs_process(&ctx->exefs, actions);
+	}
+
+	if (result && ncch_get_romfs_size(ctx))
+	{
+		romfs_process(&ctx->romfs, actions);
 	}
 }
 
@@ -424,6 +449,17 @@ u64 ncch_get_logo_size(ncch_context* ctx)
 {
 	return getle32(ctx->header.logosize) * ncch_get_mediaunit_size(ctx);
 }
+
+u64 ncch_get_plainrgn_offset(ncch_context* ctx)
+{
+	return ctx->offset + getle32(ctx->header.plainregionoffset) * ncch_get_mediaunit_size(ctx);
+}
+
+u64 ncch_get_plainrgn_size(ncch_context* ctx)
+{
+	return getle32(ctx->header.plainregionsize) * ncch_get_mediaunit_size(ctx);
+}
+
 
 u64 ncch_get_mediaunit_size(ncch_context* ctx)
 {
