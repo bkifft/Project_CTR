@@ -697,13 +697,16 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 
 int CheckArgumentCombination(user_settings *set)
 {
+	// If content 0 was not specified, we must build it (a NCCH file)
 	if (set->common.contentPath[0] == NULL) {
 		set->ncch.buildNcch0 = true;
+		// A CXI can contain elements of a CFA, but not the other way round.
 		if (set->ncch.ncchType & CXI)
 			set->ncch.ncchType = CXI;
 		else
 			set->ncch.ncchType = CFA;
 
+		// If we are creating a NCCH file (as opposed to CIA/CCI), specify which NCCH type is the output format
 		if (set->common.outFormat == NCCH) 
 			set->common.outFormat = set->ncch.ncchType;
 	}
