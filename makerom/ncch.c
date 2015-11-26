@@ -338,6 +338,15 @@ int ImportLogo(ncch_settings *set)
 			}
 			memcpy(set->sections.logo.buffer,iQue_without_ISBN_LZ,0x2000);
 		}
+		else if (strcasecmp(set->rsfSet->BasicInfo.Logo, "homebrew") == 0) {
+			set->sections.logo.size = 0x2000;
+			set->sections.logo.buffer = malloc(set->sections.logo.size);
+			if (!set->sections.logo.buffer) {
+				fprintf(stderr, "[NCCH ERROR] Not enough memory\n");
+				return MEM_ERROR;
+			}
+			memcpy(set->sections.logo.buffer, Homebrew_LZ, 0x2000);
+		}
 		else if(strcasecmp(set->rsfSet->BasicInfo.Logo,"none") != 0){
 			fprintf(stderr,"[NCCH ERROR] Invalid logo name\n");
 			return NCCH_BAD_RSF_SET;
