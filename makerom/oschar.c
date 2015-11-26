@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #ifndef _WIN32
+#define LIBICONV_PLUG
 #include <iconv.h>
 #endif
 #include "oschar.h"
@@ -134,6 +135,7 @@ utf16char_t* strcopy_UTF8toUTF16(const char *src)
 
 	iconv_t cd = iconv_open("UTF-16LE", "UTF-8");
 	iconv(cd, &in, &in_bytes, &out, &out_bytes);
+	iconv_close(cd);
 	return dst;
 }
 
@@ -162,6 +164,7 @@ char* strcopy_UTF16toUTF8(const utf16char_t *src)
 
 	iconv_t cd = iconv_open("UTF-8", "UTF-16LE");
 	iconv(cd, &in, &in_bytes, &out, &out_bytes);
+	iconv_close(cd);
 	return dst;
 }
 #endif

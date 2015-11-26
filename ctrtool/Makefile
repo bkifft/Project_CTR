@@ -5,7 +5,7 @@ OBJS = $(foreach dir,$(SRC_DIR),$(subst .c,.o,$(wildcard $(dir)/*.c))) $(foreach
 # Compiler Settings
 LIBS = -static-libgcc -static-libstdc++
 CXXFLAGS = -I. 
-CFLAGS = -O2 -flto -Wall -Wno-unused-variable -Wno-unused-but-set-variable -I.
+CFLAGS = -O2 -flto -Wall -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-result -I.
 OUTPUT = ctrtool
 CC = gcc
 CXX = g++
