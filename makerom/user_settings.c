@@ -175,16 +175,24 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			PrintArgReqParam(argv[i], 1);
 			return USR_ARG_REQ_PARAM;
 		}
-		if (strcasecmp(argv[i + 1], "test") == 0 || strcasecmp(argv[i + 1], "t") == 0)
+		if (strcasecmp(argv[i + 1], "test") == 0 || strcasecmp(argv[i + 1], "t") == 0) {
 			set->common.keys.keyset = pki_TEST;
-		//else if(strcasecmp(argv[i+1],"beta") == 0 || strcasecmp(argv[i+1],"b") == 0)
+			set->common.rsfSet.Option.EnableCrypt = false; // prefer unencrypted output
+		}
+		//else if(strcasecmp(argv[i+1],"beta") == 0 || strcasecmp(argv[i+1],"b") == 0) {
 		//	set->common.keys.keyset = pki_BETA;
-		else if (strcasecmp(argv[i + 1], "debug") == 0 || strcasecmp(argv[i + 1], "development") == 0 || strcasecmp(argv[i + 1], "d") == 0)
+		//}
+		else if (strcasecmp(argv[i + 1], "debug") == 0 || strcasecmp(argv[i + 1], "development") == 0 || strcasecmp(argv[i + 1], "d") == 0) {
 			set->common.keys.keyset = pki_DEVELOPMENT;
-		else if (strcasecmp(argv[i + 1], "retail") == 0 || strcasecmp(argv[i + 1], "production") == 0 || strcasecmp(argv[i + 1], "p") == 0)
+			set->common.rsfSet.Option.EnableCrypt = true; // prefer encrypted output
+		}
+		else if (strcasecmp(argv[i + 1], "retail") == 0 || strcasecmp(argv[i + 1], "production") == 0 || strcasecmp(argv[i + 1], "p") == 0) {
 			set->common.keys.keyset = pki_PRODUCTION;
-		//else if(strcasecmp(argv[i+1],"custom") == 0 || strcasecmp(argv[i+1],"c") == 0)
+			set->common.rsfSet.Option.EnableCrypt = true; // prefer encrypted output
+		}
+		//else if(strcasecmp(argv[i+1],"custom") == 0 || strcasecmp(argv[i+1],"c") == 0) {
 		//	set->common.keys.keyset = pki_CUSTOM;
+		//}
 		else {
 			fprintf(stderr, "[SETTING ERROR] Unrecognised target '%s'\n", argv[i + 1]);
 			return USR_BAD_ARG;
