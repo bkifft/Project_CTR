@@ -82,43 +82,12 @@ typedef struct elf_phdr
 } elf_phdr;
 
 // ELF Functions
-int GetElfSectionEntries(elf_context *elf);
-int GetElfProgramEntries(elf_context *elf);
-void PrintElfContext(elf_context *elf);
-int ReadElfHdr(elf_context *elf);
 
-int CreateElfSegments(elf_context *elf);
-bool IsIgnoreSection(elf_section_entry info);
-
-// ELF Functions
-
-int GetElfContext(elf_context *elf, const u8 *elfFile)
-{
-	elf->file = elfFile;
-	
-	int result;
-
-	if((result = ReadElfHdr(elf))) return result;
-	if((result = GetElfSectionEntries(elf))) return result;
-	if((result = GetElfProgramEntries(elf))) return result;
-	if((result = CreateElfSegments(elf))) return result;
-
-	return 0;
-}
-
-void FreeElfContext(elf_context *elf)
-{
-	for (int i = 0; i < elf->activeSegments; i++)
-		free(elf->segments[i].sections);
-	free(elf->sections);
-	free(elf->programHeaders);
-	free(elf->segments);
-}
-
-int ReadElfHdr(elf_context *elf)
+int elf_ProcessHeader(elf_context *elf)
 {
 	const elf_hdr *hdr = (const elf_hdr*)elf->file;
 
+	/* Check conditions for valid CTR ELF */
 	if (u8_to_u32(hdr->magic, BE) != ELF_MAGIC)
 		return NOT_ELF_FILE;
 	if (hdr->bitFormat != elf_32_bit)
@@ -130,185 +99,96 @@ int ReadElfHdr(elf_context *elf)
 	if (u8_to_u16(hdr->type, LE) != elf_executeable)
 		return NON_EXECUTABLE_ELF;
 
-	elf->programTableOffset = u8_to_u32(hdr->programHeaderTableOffset, LE);
-	elf->programTableEntrySize = u8_to_u16(hdr->programHeaderEntrySize, LE);
-	elf->programTableEntryCount = u8_to_u16(hdr->programHeaderEntryCount, LE);
+	elf->phdrOffset = u8_to_u32(hdr->programHeaderTableOffset, LE);
+	elf->segmentNum = u8_to_u16(hdr->programHeaderEntryCount, LE);
+	elf->segments = calloc(elf->segmentNum, sizeof(elf_segment));
+	if (!elf->segments) {
+		fprintf(stderr, "[ELF ERROR] Not enough memory\n");
+		return MEM_ERROR;
+	}
 
-	elf->sectionTableOffset = u8_to_u32(hdr->sectionHeaderTableOffset, LE);
-	elf->sectionTableEntrySize = u8_to_u16(hdr->sectionTableEntrySize, LE);
-	elf->sectionTableEntryCount = u8_to_u16(hdr->sectionHeaderEntryCount, LE);
-
-	elf->sectionHeaderNameEntryIndex = u8_to_u16(hdr->sectionHeaderNameEntryIndex, LE);
+	elf->shdrOffset = u8_to_u32(hdr->sectionHeaderTableOffset, LE);
+	elf->shdrNameIndex = u8_to_u16(hdr->sectionHeaderNameEntryIndex, LE);
+	elf->sectionNum = u8_to_u16(hdr->sectionHeaderEntryCount, LE);
+	elf->sections = calloc(elf->sectionNum, sizeof(elf_section));
+	if (!elf->sections) {
+		fprintf(stderr, "[ELF ERROR] Not enough memory\n");
+		return MEM_ERROR;
+	}
 
 	return 0;
 }
 
-int GetElfSectionEntries(elf_context *elf)
+void elf_PopulateSections(elf_context *elf)
 {
-	elf->sections = calloc(elf->sectionTableEntryCount,sizeof(elf_section_entry));
-	if(!elf->sections) {
-		fprintf(stderr,"[ELF ERROR] Not enough memory\n"); 
-		return MEM_ERROR;
-	}
+	const elf_shdr *shdr = (const elf_shdr *)(elf->file + elf->shdrOffset);
+	const char *nameTable = (const char*)(elf->file + u8_to_u32(shdr[elf->shdrNameIndex].offset, LE));
 
-	const elf_shdr *shdr = (const elf_shdr *)(elf->file + elf->sectionTableOffset);
-	const char *nameTable = (const char*)(elf->file + u8_to_u32(shdr[elf->sectionHeaderNameEntryIndex].offset, LE));
-
-	for(int i = 0; i < elf->sectionTableEntryCount; i++){
+	for (int i = 0; i < elf->sectionNum; i++) {
 		elf->sections[i].name = nameTable + u8_to_u32(shdr[i].name, LE);
 		elf->sections[i].type = u8_to_u32(shdr[i].type, LE);
 		elf->sections[i].flags = u8_to_u32(shdr[i].flags, LE);
-		elf->sections[i].offsetInFile = u8_to_u32(shdr[i].offset, LE);
+		elf->sections[i].fileOffset = u8_to_u32(shdr[i].offset, LE);
 		elf->sections[i].size = u8_to_u32(shdr[i].size, LE);
-		elf->sections[i].ptr = elf->file + elf->sections[i].offsetInFile;
-		elf->sections[i].address = u8_to_u32(shdr[i].addr, LE);
+		elf->sections[i].ptr = elf->file + elf->sections[i].fileOffset;
+		elf->sections[i].vAddr = u8_to_u32(shdr[i].addr, LE);
 		elf->sections[i].alignment = u8_to_u32(shdr[i].addralign, LE);
 	}
+}
+
+void elf_PopulateSegments(elf_context *elf)
+{
+	const elf_phdr *phdr = (const elf_phdr *)(elf->file + elf->phdrOffset);
+
+	for (int i = 0; i < elf->segmentNum; i++) {
+		elf->segments[i].type = u8_to_u32(phdr[i].type, LE);
+		elf->segments[i].flags = u8_to_u32(phdr[i].flags, LE);
+		elf->segments[i].fileOffset = u8_to_u32(phdr[i].offset, LE);
+		elf->segments[i].fileSize = u8_to_u32(phdr[i].filesz, LE);
+		elf->segments[i].ptr = elf->file + elf->segments[i].fileOffset;
+		elf->segments[i].pAddr = u8_to_u32(phdr[i].paddr, LE);
+		elf->segments[i].vAddr = u8_to_u32(phdr[i].vaddr, LE);
+		elf->segments[i].memSize = u8_to_u32(phdr[i].memsz, LE);
+		elf->segments[i].alignment = u8_to_u32(phdr[i].align, LE);
+	}
+}
+
+int elf_Init(elf_context *elf, const u8 *elfFile)
+{
+	elf->file = elfFile;
+	
+	int result;
+
+	if((result = elf_ProcessHeader(elf))) return result;
+
+	elf_PopulateSections(elf);
+	elf_PopulateSegments(elf);
 	return 0;
 }
 
-int GetElfProgramEntries(elf_context *elf)
+void elf_Free(elf_context *elf)
 {
-	elf->programHeaders = calloc(elf->programTableEntryCount,sizeof(elf_program_entry));
-	if(!elf->programHeaders) {
-		fprintf(stderr,"[ELF ERROR] Not enough memory\n"); 
-		return MEM_ERROR;
-	}
-
-	const elf_phdr *phdr = (const elf_phdr*)(elf->file + elf->programTableOffset);
-
-	for(int i = 0; i < elf->programTableEntryCount; i++){
-		elf->programHeaders[i].type = u8_to_u32(phdr[i].type, LE);
-		elf->programHeaders[i].flags = u8_to_u32(phdr[i].flags, LE);
-		elf->programHeaders[i].offsetInFile = u8_to_u32(phdr[i].offset, LE);
-		elf->programHeaders[i].sizeInFile = u8_to_u32(phdr[i].filesz, LE);
-		elf->programHeaders[i].ptr = elf->file + elf->programHeaders[i].offsetInFile;
-		elf->programHeaders[i].physicalAddress = u8_to_u32(phdr[i].paddr, LE);
-		elf->programHeaders[i].virtualAddress = u8_to_u32(phdr[i].vaddr, LE);
-		elf->programHeaders[i].sizeInMemory = u8_to_u32(phdr[i].memsz, LE);
-		elf->programHeaders[i].alignment = u8_to_u32(phdr[i].align, LE);
-	}
-
-	return 0;
+	free(elf->sections);
+	free(elf->segments);
+	memset(elf, 0, sizeof(elf_context));
 }
 
-/* Section Hdr Functions */
-
-bool IsBss(elf_section_entry *section)
+u16 elf_SectionNum(elf_context *ctx)
 {
-	return (section->type == SHT_NOBITS && section->flags == (SHF_WRITE | SHF_ALLOC));
+	return ctx->sectionNum;
 }
 
-bool IsData(elf_section_entry *section)
+const elf_section* elf_GetSections(elf_context *ctx)
 {
-	return (section->type == SHT_PROGBITS && section->flags == (SHF_WRITE | SHF_ALLOC));
+	return ctx->sections;
 }
 
-bool IsRoData(elf_section_entry *section)
+u16 elf_SegmentNum(elf_context *ctx) 
 {
-	return (section->type == SHT_PROGBITS && section->flags == SHF_ALLOC);
+	return ctx->segmentNum;
 }
 
-bool IsText(elf_section_entry *section)
+const elf_segment* elf_GetSegments(elf_context *ctx)
 {
-	return (section->type == SHT_PROGBITS && section->flags == (SHF_ALLOC | SHF_EXECINSTR));
-}
-
-/* Program Segment Functions */
-void InitSegment(elf_segment *segment)
-{
-	memset(segment, 0, sizeof(elf_segment));
-
-	segment->sectionNumMax = 10;
-	segment->sectionNum = 0;
-	segment->sections = calloc(segment->sectionNumMax, sizeof(elf_section_entry));
-}
-
-void AddSegmentSection(elf_segment *segment, elf_section_entry *section)
-{
-	if (segment->sectionNum < segment->sectionNumMax)
-		memcpy(&segment->sections[segment->sectionNum], section, sizeof(elf_section_entry));
-	else {
-		segment->sectionNumMax *= 2;
-		elf_section_entry *tmp = calloc(segment->sectionNumMax, sizeof(elf_section_entry));
-		for (int k = 0; k < segment->sectionNum; k++)
-			memcpy(&tmp[k], &segment->sections[k], sizeof(elf_section_entry));
-		free(segment->sections);
-		segment->sections = tmp;
-		memcpy(&segment->sections[segment->sectionNum], section, sizeof(elf_section_entry));
-	}
-
-	segment->sectionNum++;
-}
-
-bool IsIgnoreSection(elf_section_entry info)
-{
-	return !(info.flags & SHF_ALLOC);//(info.type != SHT_PROGBITS && info.type != SHT_NOBITS && info.type != SHT_INIT_ARRAY && info.type != SHT_FINI_ARRAY && info.type != SHT_ARM_EXIDX);
-}
-
-int CreateElfSegments(elf_context *elf)
-{
-	// Interate through Each Program Header
-	elf->activeSegments = 0;
-	elf->segments = calloc(elf->programTableEntryCount,sizeof(elf_segment));
-
-	elf_segment segment;
-
-	bool foundFirstSection = false;
-	int curr, prev;
-	u32 padding, size, sizeInMemory;
-
-	for (int i = 0; i < elf->programTableEntryCount; i++){
-		if (elf->programHeaders[i].sizeInMemory != 0 && elf->programHeaders[i].type == PF_X){
-			InitSegment(&segment);
-
-			foundFirstSection = false;
-			size = 0;
-			sizeInMemory = elf->programHeaders[i].sizeInMemory;
-
-			// Itterate Through Section Headers
-			for (curr = 0; curr < elf->sectionTableEntryCount && size != sizeInMemory; curr++){
-				// Skip irrelevant sections
-				if (IsIgnoreSection(elf->sections[curr]))
-					continue;
-
-
-				if (!foundFirstSection) {
-					if (elf->sections[curr].address != elf->programHeaders[i].virtualAddress)
-						continue;
-
-					foundFirstSection = true;
-					segment.vAddr = elf->sections[curr].address;
-					segment.name = elf->sections[curr].name;
-
-					AddSegmentSection(&segment, &elf->sections[curr]);
-					size = elf->sections[curr].size;
-				}
-				else {
-					AddSegmentSection(&segment, &elf->sections[curr]);
-					padding = elf->sections[curr].address - (elf->sections[prev].address + elf->sections[prev].size);
-					size += padding + elf->sections[curr].size;
-				}
-				prev = curr;
-
-				// Catch section parsing fails
-				if (size > sizeInMemory){
-					fprintf(stderr,"[ELF ERROR] Too large section size.\n Segment size = 0x%x\n Section Size = 0x%x\n", sizeInMemory, size);
-					return ELF_SEGMENT_SECTION_SIZE_MISMATCH;
-				}
-            }
-			if(segment.sectionNum){
-				segment.header = &elf->programHeaders[i];
-				memcpy(&elf->segments[elf->activeSegments],&segment,sizeof(elf_segment));
-				elf->activeSegments++;
-			}
-			else{
-				free(segment.sections);
-				fprintf(stderr,"[ELF ERROR] Program Header Has no corresponding Sections, ELF Cannot be proccessed\n");
-				return ELF_SEGMENTS_NOT_FOUND;
-			}
-		}
-	}
-
-	return 0;
+	return ctx->segments;
 }

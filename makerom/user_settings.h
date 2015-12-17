@@ -70,9 +70,6 @@ typedef struct
 		bool EnableCompress;
 		bool FreeProductCode;
 		bool UseOnSD;
-
-		// Strings
-		char *PageSize;
 	} Option;
 	
 	struct{

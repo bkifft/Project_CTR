@@ -5,32 +5,33 @@
 #include "exheader_read.h"
 #include "code.h"
 
-const char *SDK_PLAINREGION_SEGMENT_NAME = ".module_id";
+const u32 CTR_PAGE_SIZE = 0x1000;
+const u32 DEFAULT_STACK_SIZE = 0x4000; // 10KB
 
 typedef struct code_segment
 {
 	u32 address;
+	u32 memSize;
+	u32 pageNum;
+
 	u32 size;
-	u32 maxPageNum;
 	u8 *data;
 } code_segment;
 
-u32 GetPageSize(ncch_settings *set)
+u32 SizeToPage(u32 memorySize)
 {
-	if (set->rsfSet->Option.PageSize)
-		return strtoul(set->rsfSet->Option.PageSize, NULL, 10);
-	return 0x1000;
+	return align(memorySize, CTR_PAGE_SIZE) / CTR_PAGE_SIZE;
 }
 
-u32 SizeToPage(u32 memorySize, elf_context *elf)
+u32 PageToSize(u32 pageNum)
 {
-	return align(memorySize, elf->pageSize) / elf->pageSize;
+	return pageNum * CTR_PAGE_SIZE;
 }
 
 int ImportPlainRegionFromFile(ncch_settings *set)
 {
 	set->sections.plainRegion.size = align(set->componentFilePtrs.plainregionSize, set->options.blockSize);
-	set->sections.plainRegion.buffer = malloc(set->sections.plainRegion.size);
+	set->sections.plainRegion.buffer = calloc(set->sections.plainRegion.size, 1);
 	if (!set->sections.plainRegion.buffer) { fprintf(stderr, "[ELF ERROR] Not enough memory\n"); return MEM_ERROR; }
 	ReadFile64(set->sections.plainRegion.buffer, set->componentFilePtrs.plainregionSize, 0, set->componentFilePtrs.plainregion);
 	return 0;
@@ -99,117 +100,61 @@ int ImportExeFsCodeBinaryFromFile(ncch_settings *set)
 	return 0;
 }
 
-int GetBSSFromElf(elf_context *elf, ncch_settings *set)
+int ImportPlainRegionFromElf(elf_context *elf, ncch_settings *set)
 {
-	set->codeDetails.bssSize = 0;
+	elf_segment segment = elf_GetSegments(elf)[elf_SegmentNum(elf) - 1];
 
-	for (int i = 0; i < elf->sectionTableEntryCount; i++) {
-		if (IsBss(&elf->sections[i]))
-			set->codeDetails.bssSize = elf->sections[i].size;
+	/* Check last segment
+	If the last segment is RO segment, this must be an SDK .module_id segment */
+	if (segment.flags != PF_RODATA) {
+		/* not a RO segment */
+		return 0;
 	}
 
-	return 0;
-}
-
-int ImportPlainRegionFromElf(elf_context *elf, ncch_settings *set) // Doesn't work same as N makerom
-{
-	u64 size = 0;
-	u64 offset = 0;
-	for (u16 i = 0; i < elf->activeSegments; i++) {
-		if (strcmp(elf->segments[i].name, SDK_PLAINREGION_SEGMENT_NAME) == 0) {
-			size = elf->segments[i].header->sizeInFile;
-			offset = elf->segments[i].header->offsetInFile;
-			break;
-		}
-	}
-
-
-	if (size > 0) {
+	if (segment.fileSize > 0) {
 		/* Creating Output Buffer */
-		set->sections.plainRegion.size = align(size, set->options.blockSize);
-		set->sections.plainRegion.buffer = malloc(set->sections.plainRegion.size);
-		if (!set->sections.plainRegion.buffer) { fprintf(stderr, "[ELF ERROR] Not enough memory\n"); return MEM_ERROR; }
-		memset(set->sections.plainRegion.buffer, 0, set->sections.plainRegion.size);
+		set->sections.plainRegion.size = align(segment.fileSize, set->options.blockSize);
+		set->sections.plainRegion.buffer = calloc(set->sections.plainRegion.size, 1);
+		if (!set->sections.plainRegion.buffer) { fprintf(stderr, "[CODE ERROR] Not enough memory\n"); return MEM_ERROR; }
 
 		/* Copy Plain Region */
-		memcpy(set->sections.plainRegion.buffer, elf->file + offset, size);
+		memcpy(set->sections.plainRegion.buffer, segment.ptr, segment.fileSize);
 	}
-
 	return 0;
 }
 
 int CreateCodeSegmentFromElf(code_segment *out, elf_context *elf, u64 segment_flags)
 {
-	memset(out, 0, sizeof(code_segment));
+	u32 segmentNum = elf_SegmentNum(elf);
+	const elf_segment *segments = elf_GetSegments(elf);
 
-	u16 seg_num = 0;
-	elf_segment **seg = calloc(elf->activeSegments, sizeof(elf_segment*));
-
-	for (u16 i = 0; i < elf->activeSegments; i++) {
-		// Skip SDK ELF plain region
-		if (strcmp(elf->segments[i].name, SDK_PLAINREGION_SEGMENT_NAME) == 0)
+	/* Find segment */
+	for (u16 i = 0; i < segmentNum; i++) {
+		/*	Skip SDK ELF plain region
+			The last segment should always be data in valid ELFs, 
+			unless this is an SDK ELF with .module_id segment */
+		if (i == segmentNum-1 && segments[i].flags == PF_RODATA)
 			continue;
 
-		//printf("SegName: %s (flags: %x)\n", elf->segments[i].name, elf->segments[i].header->flags);
-		if ((elf->segments[i].header->flags & ~PF_CTRSDK) == segment_flags) {
-			if (seg_num == 0) {
-				seg[seg_num] = &elf->segments[i];
-				seg_num++;
-			}
-			else if (elf->segments[i].vAddr == (u32)align(seg[seg_num - 1]->vAddr, seg[seg_num - 1]->header->alignment)) {
-				seg[seg_num] = &elf->segments[i];
-				seg_num++;
-			}
+		/* Found segment */
+		if ((segments[i].flags & ~PF_CTRSDK) == segment_flags) {
+			out->address = segments[i].vAddr;
+			out->memSize = segments[i].memSize;
+			out->pageNum = SizeToPage(out->memSize);
+			out->size = segments[i].fileSize;
+			out->data = malloc(out->size);
+			if (!out->data) { fprintf(stderr, "[CODE ERROR] Not enough memory\n"); return MEM_ERROR; }
+			memcpy(out->data, segments[i].ptr, out->size);
+			return 0;
 		}
 	}
 
-	/* Return if there are no applicable segment */
-	if (seg_num == 0)
-		return 0;
-
-	/* Getting Segment Size/Settings */
-	u32 vAddr = 0;
-	u32 memorySize = 0;
-	for (u16 i = 0; i < seg_num; i++) {
-		if (i == 0) {
-			vAddr = seg[i]->vAddr;
-		}
-		else { // Add rounded size from previous segment
-			u32 padding = seg[i]->vAddr - (vAddr + memorySize);
-			memorySize += padding;
-		}
-
-		memorySize += seg[i]->header->sizeInMemory;
-
-		if (IsBss(&seg[i]->sections[seg[i]->sectionNum - 1]))
-			memorySize -= seg[i]->sections[seg[i]->sectionNum - 1].size;
-	}
-
-	// For Check
-#ifdef DEBUG
-	printf("Address: 0x%x\n", vAddr);
-	printf("Size:    0x%x\n", memorySize);
-#endif
-
-	out->address = vAddr;
-	out->size = memorySize;
-	out->maxPageNum = SizeToPage(memorySize, elf);
-	out->data = malloc(memorySize);
-
-	/* Writing Segment to Buffer */
-	for (int i = 0; i < seg_num; i++) {
-
-		for (int j = 0; j < seg[i]->sectionNum; j++) {
-			elf_section_entry *section = &seg[i]->sections[j];
-			if (!IsBss(section)) {
-				u8 *pos = (out->data + (section->address - seg[i]->vAddr));
-				memcpy(pos, section->ptr, section->size);
-				//size += section->size;
-			}
-		}
-	}
-
-	free(seg);
+	/* Stub struct data */
+	out->address = 0;
+	out->memSize = 0;
+	out->pageNum = 0;
+	out->size = 0;
+	out->data = NULL;
 	return 0;
 }
 
@@ -217,37 +162,33 @@ int CreateExeFsCode(elf_context *elf, ncch_settings *set)
 {
 	/* Getting Code Segments */
 	code_segment text;
-	memset(&text, 0, sizeof(code_segment));
 	code_segment rodata;
-	memset(&rodata, 0, sizeof(code_segment));
 	code_segment rwdata;
-	memset(&rwdata, 0, sizeof(code_segment));
 
-	int result = CreateCodeSegmentFromElf(&text, elf, PF_TEXT);
-	if (result) return result;
-	result = CreateCodeSegmentFromElf(&rodata, elf, PF_RODATA);
-	if (result) return result;
-	result = CreateCodeSegmentFromElf(&rwdata, elf, PF_DATA);
-	if (result) return result;
+	if (CreateCodeSegmentFromElf(&text, elf, PF_TEXT) == MEM_ERROR || CreateCodeSegmentFromElf(&rodata, elf, PF_RODATA) == MEM_ERROR || CreateCodeSegmentFromElf(&rwdata, elf, PF_DATA) == MEM_ERROR)
+		return MEM_ERROR;
 
 	/* Checking the existence of essential ELF Segments */
 	if (!text.size) return NOT_FIND_TEXT_SEGMENT;
 	if (!rwdata.size) return NOT_FIND_DATA_SEGMENT;
 
+	/* Calculateing BSS size */
+	set->codeDetails.bssSize = rwdata.memSize - rwdata.size;
+
 	/* Allocating Buffer for ExeFs Code */
-	u32 size = (text.maxPageNum + rodata.maxPageNum + rwdata.maxPageNum)*elf->pageSize;
+	u32 size = PageToSize(text.pageNum + rodata.pageNum + rwdata.pageNum);
 	u8 *code = calloc(1, size);
 
 	/* Writing Code into Buffer */
-	u8 *textPos = (code + 0);
-	u8 *rodataPos = (code + text.maxPageNum*elf->pageSize);
-	u8 *rwdataPos = (code + (text.maxPageNum + rodata.maxPageNum)*elf->pageSize);
+	u8 *textPos = (code + text.address - text.address);
+	u8 *rodataPos = (code + rodata.address - text.address);
+	u8 *rwdataPos = (code + rwdata.address - text.address);
 	if (text.size) memcpy(textPos, text.data, text.size);
 	if (rodata.size) memcpy(rodataPos, rodata.data, rodata.size);
 	if (rwdata.size) memcpy(rwdataPos, rwdata.data, rwdata.size);
 
 
-	/* Compressing If needed */
+	/* Compressing if needed */
 	if (set->options.CompressCode) {
 		if (set->options.verbose)
 			printf("[CODE] Compressing code... ");
@@ -265,31 +206,32 @@ int CreateExeFsCode(elf_context *elf, ncch_settings *set)
 
 	/* Setting code_segment data and freeing original buffers */
 	set->codeDetails.textAddress = text.address;
-	set->codeDetails.textMaxPages = text.maxPageNum;
-	set->codeDetails.textSize = text.size;
+	set->codeDetails.textMaxPages = text.pageNum;
+	set->codeDetails.textSize = text.memSize;
 	if (text.size) free(text.data);
 
 	set->codeDetails.roAddress = rodata.address;
-	set->codeDetails.roMaxPages = rodata.maxPageNum;
-	set->codeDetails.roSize = rodata.size;
+	set->codeDetails.roMaxPages = rodata.pageNum;
+	set->codeDetails.roSize = rodata.memSize;
 	if (rodata.size) free(rodata.data);
 
 	set->codeDetails.rwAddress = rwdata.address;
-	set->codeDetails.rwMaxPages = rwdata.maxPageNum;
-	set->codeDetails.rwSize = rwdata.size;
+	set->codeDetails.rwMaxPages = rwdata.pageNum;
+	set->codeDetails.rwSize = rwdata.memSize;
 	if (rwdata.size) free(rwdata.data);
 
 	if (set->rsfSet->SystemControlInfo.StackSize)
 		set->codeDetails.stackSize = strtoul(set->rsfSet->SystemControlInfo.StackSize, NULL, 0);
 	else {
-		fprintf(stderr, "[CODE ERROR] RSF Parameter Not Found: \"SystemControlInfo/StackSize\"\n");
-		return 1;
+		set->codeDetails.stackSize = DEFAULT_STACK_SIZE;
+		fprintf(stderr, "[CODE WARNING] \"SystemControlInfo/StackSize\" not specified, defaulting to 0x%x bytes\n", DEFAULT_STACK_SIZE);
 	}
 
 	/* Return */
 	return 0;
 }
 
+/*
 void PrintElfContext(elf_context *elf)
 {
 	printf("[ELF] Program Table Data\n");
@@ -303,27 +245,17 @@ void PrintElfContext(elf_context *elf)
 	printf(" Label index: 0x%x\n", elf->sectionHeaderNameEntryIndex);
 	for (int i = 0; i < elf->activeSegments; i++) {
 		printf(" Segment [%d][%s]\n", i, elf->segments[i].name);
-		printf(" > Size :     0x%x\n", elf->segments[i].header->sizeInFile);
-		printf(" > Address :  0x%x\n", elf->segments[i].vAddr);
-		printf(" > Flags:     0x%x\n", elf->segments[i].header->flags);
-		printf(" > Type:      0x%x\n", elf->segments[i].header->type);
-		printf(" > Sections : %d\n", elf->segments[i].sectionNum);
+		printf(" > Size(Memory):   0x%x\n", elf->segments[i].header->sizeInMemory);
+		printf(" > Size(File):     0x%x\n", elf->segments[i].header->sizeInFile);
+		printf(" > Address:        0x%x\n", elf->segments[i].vAddr);
+		printf(" > Flags:          0x%x\n", elf->segments[i].header->flags);
+		printf(" > Type:           0x%x\n", elf->segments[i].header->type);
+		printf(" > Sections: %d\n", elf->segments[i].sectionNum);
 		for (int j = 0; j < elf->segments[i].sectionNum; j++)
 			printf("    > Section [%d][%s][0x%x][0x%x]\n", j, elf->segments[i].sections[j].name, elf->segments[i].sections[j].flags, elf->segments[i].sections[j].type);
-
-		/*
-		char outpath[100];
-		memset(&outpath,0,100);
-		sprintf(outpath,"%s.bin",elf->sections[i].name);
-		chdir("elfsections");
-		FILE *tmp = fopen(outpath,"wb");
-		WriteBuffer(elf->sections[i].ptr,elf->sections[i].size,0,tmp);
-		fclose(tmp);
-		chdir("..");
-		*/
 	}
-
 }
+*/
 
 int BuildExeFsCode(ncch_settings *set)
 {
@@ -331,10 +263,11 @@ int BuildExeFsCode(ncch_settings *set)
 	if (set->options.IsCfa)
 		return result;
 
-	if (set->componentFilePtrs.plainregion) // Import PlainRegion from file
-		if ((result = ImportPlainRegionFromFile(set))) return result;
-	if (!set->options.IsBuildingCodeSection) // Import ExeFs Code from file and return
+	if (!set->options.IsBuildingCodeSection) { // Import ExeFs Code from file and return
+		if (set->componentFilePtrs.plainregion) // Import PlainRegion from file
+			if ((result = ImportPlainRegionFromFile(set))) return result;
 		return ImportExeFsCodeBinaryFromFile(set);
+	}
 
 	/* Import ELF */
 	u8 *elfFile = malloc(set->componentFilePtrs.elfSize);
@@ -345,26 +278,12 @@ int BuildExeFsCode(ncch_settings *set)
 	ReadFile64(elfFile, set->componentFilePtrs.elfSize, 0, set->componentFilePtrs.elf);
 
 	/* Create ELF Context */
-	elf_context *elf = calloc(1, sizeof(elf_context));
-	if (!elf) {
-		fprintf(stderr, "[CODE ERROR] Not enough memory\n");
-		free(elfFile);
-		return MEM_ERROR;
-	}
+	elf_context elf;
 
-	if ((result = GetElfContext(elf, elfFile))) goto finish;
+	if ((result = elf_Init(&elf, elfFile))) goto finish;
 
-	/* Setting Page Size */
-	elf->pageSize = GetPageSize(set);
-
-	if (!set->componentFilePtrs.plainregion)
-		if ((result = ImportPlainRegionFromElf(elf, set))) goto finish;
-
-	if (set->options.verbose)
-		PrintElfContext(elf);
-
-	if ((result = CreateExeFsCode(elf, set))) goto finish;
-	if ((result = GetBSSFromElf(elf, set))) goto finish;
+	if ((result = ImportPlainRegionFromElf(&elf, set))) goto finish;
+	if ((result = CreateExeFsCode(&elf, set))) goto finish;
 
 finish:
 	switch (result) {
@@ -389,8 +308,7 @@ finish:
 		fprintf(stderr, "[CODE ERROR] Failed to process ELF file (%d)\n", result);
 	}
 	
-	FreeElfContext(elf);
+	elf_Free(&elf);
 	free(elfFile);
-	free(elf);
 	return result;
 }

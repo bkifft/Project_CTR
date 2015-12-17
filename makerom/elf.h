@@ -56,17 +56,17 @@ typedef enum elf_section_flag
 	SHF_TLS = 0x400
 } elf_section_flag;
 
-typedef struct elf_section_entry
+typedef struct elf_section
 {
 	const char *name;
 	u32 type;
 	u32 flags;
 	const u8 *ptr;
-	u32 offsetInFile;
+	u32 fileOffset;
 	u32 size;
-	u32 address;
+	u32 vAddr;
 	u32 alignment;
-} elf_section_entry;
+} elf_section;
 
 typedef enum elf_program_type
 {
@@ -91,57 +91,40 @@ typedef enum elf_program_flag
 	PF_RODATA = PF_R
 } elf_program_flag;
 
-typedef struct elf_program_entry
+typedef struct elf_segment
 {
 	u32 type;
 	u32 flags;
 	const u8 *ptr;
-	u32 offsetInFile;
-	u32 sizeInFile;
-	u32 virtualAddress;
-	u32 physicalAddress;
-	u32 sizeInMemory;
-	u32 alignment;
-} elf_program_entry;
-
-typedef struct elf_segment
-{
-	const char *name;
+	u32 fileOffset;
+	u32 fileSize;
+	u32 memSize;
 	u32 vAddr;
-
-	elf_program_entry *header;
-	u32 sectionNum;
-	u32 sectionNumMax;
-	elf_section_entry *sections;
+	u32 pAddr;
+	u32 alignment;
 } elf_segment;
 
 typedef struct elf_context
 {
 	const u8 *file;
 
-	u32 pageSize;
-		
-	u32 programTableOffset;
-	u16 programTableEntrySize;
-	u16 programTableEntryCount;
-	
-	u32 sectionTableOffset;
-	u16 sectionTableEntrySize;
-	u16 sectionTableEntryCount;
-	
-	u16 sectionHeaderNameEntryIndex;
+	u32 shdrOffset;
+	u16 shdrNameIndex;
+	u32 phdrOffset;
 
-	elf_section_entry *sections;
-	elf_program_entry *programHeaders;
+	u16 sectionNum;
+	elf_section *sections;
 
-	u16 activeSegments;
+	u16 segmentNum;
 	elf_segment *segments;
 } elf_context;
 
-bool IsBss(elf_section_entry *section);
-bool IsData(elf_section_entry *section);
-bool IsRoData(elf_section_entry *section);
-bool IsText(elf_section_entry *section);
 
-int GetElfContext(elf_context *elf, const u8 *elfFile);
-void FreeElfContext(elf_context *elf);
+int elf_Init(elf_context *ctx, const u8 *fp);
+void elf_Free(elf_context *ctx);
+
+u16 elf_SectionNum(elf_context *ctx);
+const elf_section* elf_GetSections(elf_context *ctx);
+
+u16 elf_SegmentNum(elf_context *ctx);
+const elf_segment* elf_GetSegments(elf_context *ctx);
