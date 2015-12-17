@@ -123,39 +123,36 @@ int ImportPlainRegionFromElf(elf_context *elf, ncch_settings *set)
 	return 0;
 }
 
-int CreateCodeSegmentFromElf(code_segment *out, elf_context *elf, u64 segment_flags)
+void CreateCodeSegmentFromElf(code_segment *out, elf_context *elf, u64 segment_flags)
 {
 	u32 segmentNum = elf_SegmentNum(elf);
 	const elf_segment *segments = elf_GetSegments(elf);
 
+	/* Initialise struct data */
+	out->address = 0;
+	out->memSize = 0;
+	out->pageNum = 0;
+	out->size = 0;
+	out->data = NULL;
+
 	/* Find segment */
 	for (u16 i = 0; i < segmentNum; i++) {
-		/*	Skip SDK ELF plain region
+		/*	Skip SDK ELF .module_id segment
 			The last segment should always be data in valid ELFs, 
 			unless this is an SDK ELF with .module_id segment */
 		if (i == segmentNum-1 && segments[i].flags == PF_RODATA)
 			continue;
 
 		/* Found segment */
-		if ((segments[i].flags & ~PF_CTRSDK) == segment_flags) {
+		if ((segments[i].flags & ~PF_CTRSDK) == segment_flags && segments[i].type == PT_LOAD) {
 			out->address = segments[i].vAddr;
 			out->memSize = segments[i].memSize;
 			out->pageNum = SizeToPage(out->memSize);
 			out->size = segments[i].fileSize;
-			out->data = malloc(out->size);
-			if (!out->data) { fprintf(stderr, "[CODE ERROR] Not enough memory\n"); return MEM_ERROR; }
-			memcpy(out->data, segments[i].ptr, out->size);
-			return 0;
+			out->data = segments[i].ptr;
+			break;
 		}
 	}
-
-	/* Stub struct data */
-	out->address = 0;
-	out->memSize = 0;
-	out->pageNum = 0;
-	out->size = 0;
-	out->data = NULL;
-	return 0;
 }
 
 int CreateExeFsCode(elf_context *elf, ncch_settings *set)
@@ -165,14 +162,15 @@ int CreateExeFsCode(elf_context *elf, ncch_settings *set)
 	code_segment rodata;
 	code_segment rwdata;
 
-	if (CreateCodeSegmentFromElf(&text, elf, PF_TEXT) == MEM_ERROR || CreateCodeSegmentFromElf(&rodata, elf, PF_RODATA) == MEM_ERROR || CreateCodeSegmentFromElf(&rwdata, elf, PF_DATA) == MEM_ERROR)
-		return MEM_ERROR;
+	CreateCodeSegmentFromElf(&text, elf, PF_TEXT);
+	CreateCodeSegmentFromElf(&rodata, elf, PF_RODATA);
+	CreateCodeSegmentFromElf(&rwdata, elf, PF_DATA);
 
 	/* Checking the existence of essential ELF Segments */
 	if (!text.size) return NOT_FIND_TEXT_SEGMENT;
 	if (!rwdata.size) return NOT_FIND_DATA_SEGMENT;
 
-	/* Calculateing BSS size */
+	/* Calculating BSS size */
 	set->codeDetails.bssSize = rwdata.memSize - rwdata.size;
 
 	/* Allocating Buffer for ExeFs Code */
@@ -208,17 +206,14 @@ int CreateExeFsCode(elf_context *elf, ncch_settings *set)
 	set->codeDetails.textAddress = text.address;
 	set->codeDetails.textMaxPages = text.pageNum;
 	set->codeDetails.textSize = text.memSize;
-	if (text.size) free(text.data);
 
 	set->codeDetails.roAddress = rodata.address;
 	set->codeDetails.roMaxPages = rodata.pageNum;
 	set->codeDetails.roSize = rodata.memSize;
-	if (rodata.size) free(rodata.data);
 
 	set->codeDetails.rwAddress = rwdata.address;
 	set->codeDetails.rwMaxPages = rwdata.pageNum;
 	set->codeDetails.rwSize = rwdata.memSize;
-	if (rwdata.size) free(rwdata.data);
 
 	if (set->rsfSet->SystemControlInfo.StackSize)
 		set->codeDetails.stackSize = strtoul(set->rsfSet->SystemControlInfo.StackSize, NULL, 0);
