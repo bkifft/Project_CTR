@@ -49,14 +49,12 @@ int ParseArgs(int argc, char *argv[], user_settings *set)
 
 	// Parsing Arguments
 	int set_result;
-	int i = 1;
-	while (i < argc) {
+	for (int i = 1; i < argc; i += set_result) {
 		set_result = SetArgument(argc, i, argv, set);
 		if (set_result < 1) {
 			fprintf(stderr, "[RESULT] Invalid arguments, see '%s -help'\n", argv[0]);
 			return set_result;
 		}
-		i += set_result;
 	}
 
 	// Checking arguments
