@@ -327,9 +327,6 @@
     <ClInclude Include="desc\presets.h">
       <Filter>Resource Files\DESC</Filter>
     </ClInclude>
-    <ClInclude Include="desc\prod_sigdata.h">
-      <Filter>Resource Files\DESC</Filter>
-    </ClInclude>
     <ClInclude Include="code.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -338,6 +335,9 @@
     </ClInclude>
     <ClInclude Include="oschar.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="desc\desc.h">
+      <Filter>Resource Files\DESC</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

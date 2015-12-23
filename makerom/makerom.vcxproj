@@ -101,9 +101,9 @@
     <ClInclude Include="crr.h" />
     <ClInclude Include="crypto.h" />
     <ClInclude Include="ctr_utils.h" />
+    <ClInclude Include="desc\desc.h" />
     <ClInclude Include="desc\dev_sigdata.h" />
     <ClInclude Include="desc\presets.h" />
-    <ClInclude Include="desc\prod_sigdata.h" />
     <ClInclude Include="oschar.h" />
     <ClInclude Include="romfs_fs.h" />
     <ClInclude Include="elf.h" />

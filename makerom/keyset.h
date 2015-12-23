@@ -1,4 +1,5 @@
 #pragma once
+#include "desc/desc.h"
 
 typedef enum
 {
@@ -28,16 +29,6 @@ typedef enum
 	pki_CUSTOM,
 } pki_keyset;
 
-typedef enum
-{
-	desc_preset_NONE,
-	desc_preset_APP,
-	desc_preset_EC_APP,
-	desc_preset_DLP,
-	desc_preset_DEMO,
-	desc_preset_FIRM,
-} fixed_accessdesc_type;
-
 // Structs
 
 typedef struct
@@ -48,7 +39,7 @@ typedef struct
 
 	struct
 	{
-		fixed_accessdesc_type presetType;
+		u32 presetType;
 		u32 targetFirmware;
 	} accessDescSign;
 

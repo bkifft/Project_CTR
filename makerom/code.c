@@ -15,7 +15,7 @@ typedef struct code_segment
 	u32 pageNum;
 
 	u32 size;
-	u8 *data;
+	const u8 *data;
 } code_segment;
 
 u32 SizeToPage(u32 memorySize)

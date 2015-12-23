@@ -84,7 +84,7 @@ void SetDefaults(user_settings *set)
 {
 	// Target Info
 	set->common.keys.keyset = pki_TEST;
-	set->common.keys.accessDescSign.presetType = desc_preset_NONE;
+	set->common.keys.accessDescSign.presetType = desc_NotSpecified;
 
 	// Build NCCH Info
 	set->ncch.useSecCrypto = false;
@@ -299,11 +299,13 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 		char *app_type = calloc(app_type_len + 1, sizeof(char));
 		memcpy(app_type, tmp, app_type_len);
 
-		if (strcasecmp(app_type, "App") == 0 || strcasecmp(app_type, "SDApp") == 0) set->common.keys.accessDescSign.presetType = desc_preset_APP;
-		else if (strcasecmp(app_type, "ECApp") == 0) set->common.keys.accessDescSign.presetType = desc_preset_EC_APP;
-		else if (strcasecmp(app_type, "Demo") == 0) set->common.keys.accessDescSign.presetType = desc_preset_DEMO;
-		else if (strcasecmp(app_type, "DlpChild") == 0 || strcasecmp(app_type, "Dlp") == 0) set->common.keys.accessDescSign.presetType = desc_preset_DLP;
-		else if (strcasecmp(app_type, "FIRM") == 0) set->common.keys.accessDescSign.presetType = desc_preset_FIRM;
+		if (strcasecmp(app_type, "App") == 0 || strcasecmp(app_type, "SDApp") == 0) set->common.keys.accessDescSign.presetType = desc_Application;
+		else if (strcasecmp(app_type, "ECApp") == 0) set->common.keys.accessDescSign.presetType = desc_EcApplication;
+		else if (strcasecmp(app_type, "Demo") == 0) set->common.keys.accessDescSign.presetType = desc_Demo;
+		else if (strcasecmp(app_type, "DlpChild") == 0 || strcasecmp(app_type, "Dlp") == 0) set->common.keys.accessDescSign.presetType = desc_DlpChild;
+		else if (strcasecmp(app_type, "ExtApp") == 0) set->common.keys.accessDescSign.presetType = desc_ExtApplication;
+		else if (strcasecmp(app_type, "ExtDemo") == 0) set->common.keys.accessDescSign.presetType = desc_ExtDemo;
+		else if (strcasecmp(app_type, "ExtDlpChild") == 0 || strcasecmp(app_type, "ExtDlp") == 0) set->common.keys.accessDescSign.presetType = desc_ExtDlpChild;
 		else {
 			fprintf(stderr, "[SETTING ERROR] Accessdesc AppType preset '%s' not valid, please manually configure RSF\n", app_type);
 			return USR_BAD_ARG;

@@ -108,7 +108,7 @@ int get_ExHeaderSettingsFromNcchset(exheader_settings *exhdrset, ncch_settings *
 	/* Transfer settings */
 	exhdrset->keys = ncchset->keys;
 	exhdrset->rsf = ncchset->rsfSet;
-	exhdrset->useAccessDescPreset = ncchset->keys->accessDescSign.presetType != desc_preset_NONE;
+	exhdrset->useAccessDescPreset = ncchset->keys->accessDescSign.presetType != desc_NotSpecified;
 
 	/* Creating Output Buffer */
 	ncchset->sections.exhdr.size = sizeof(extended_hdr);
