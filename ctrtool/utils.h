@@ -41,7 +41,12 @@ int makedir(const char* dir);
 
 u64 _fsize(const char *filename);
 
-#ifndef _WIN32
+#ifdef _WIN32
+inline int fseeko64(FILE *__stream, long long __off, int __whence)
+{
+	return _fseeki64(__stream, __off, __whence);
+}
+#else
 extern int fseeko64 (FILE *__stream, __off64_t __off, int __whence);
 #endif
 
