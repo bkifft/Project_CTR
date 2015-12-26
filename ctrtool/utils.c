@@ -136,7 +136,7 @@ void readkeyfile(u8* key, const char* keyfname)
 
 	if (keysize != 16)
 	{
-		fprintf(stdout, "Error key size mismatch, got %"PRId64", expected %d\n", keysize, 16);
+		fprintf(stdout, "Error key size mismatch, got %"PRIu64", expected %d\n", keysize, 16);
 		goto clean;
 	}
 
