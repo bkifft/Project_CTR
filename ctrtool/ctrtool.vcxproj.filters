@@ -117,6 +117,9 @@
     <ClCompile Include="oschar.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="syscalls.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cia.h">
@@ -207,6 +210,9 @@
       <Filter>Header Files\tinyxml</Filter>
     </ClInclude>
     <ClInclude Include="oschar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="syscalls.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

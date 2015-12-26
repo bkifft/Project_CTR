@@ -194,7 +194,7 @@ int exheader_get_compressedflag(exheader_context* ctx);
 void exheader_read(exheader_context* ctx, u32 actions);
 int exheader_process(exheader_context* ctx, u32 actions);
 const char* exheader_getvalidstring(int valid);
-void exheader_print(exheader_context* ctx);
+void exheader_print(exheader_context* ctx, u32 actions);
 void exheader_verify(exheader_context* ctx);
 int exheader_hash_valid(exheader_context* ctx);
 int exheader_programid_valid(exheader_context* ctx);

@@ -58,6 +58,7 @@ static void usage(const char *argv0)
 		   "  --ncchkey=key      Set ncch key.\n"
 		   "  --ncchsyskey=key   Set ncch fixed system key.\n"
 		   "  --showkeys         Show the keys being used.\n"
+		   "  --showsyscalls     Show system call names instead of numbers.\n"
 		   "  -t, --intype=type	 Specify input file type [ncsd, ncch, exheader, cia, tmd, lzss,\n"
 		   "                        firm, cwav, exefs, romfs]\n"
 		   "LZSS options:\n"
@@ -150,6 +151,7 @@ int main(int argc, char* argv[])
 			{"decompresscode", 0, NULL, 21},
 			{"titlekey", 1, NULL, 22},
 			{"plainrgn", 1, NULL, 23},
+			{"showsyscalls", 0, NULL, 24},
 			{NULL},
 		};
 
@@ -239,6 +241,7 @@ int main(int argc, char* argv[])
 			case 21: ctx.actions |= DecompressCodeFlag; break;
 			case 22: keyset_parse_titlekey(&tmpkeys, optarg, strlen(optarg)); break;
 			case 23: settings_set_plainrgn_path(&ctx.usersettings, optarg); break;
+			case 24: ctx.actions |= ShowSyscallsFlag; break;
 
 			default:
 				usage(argv[0]);

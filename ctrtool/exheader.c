@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -5,6 +6,7 @@
 #include "exheader.h"
 #include "utils.h"
 #include "ncch.h"
+#include "syscalls.h"
 #include <inttypes.h>
 
 void exheader_init(exheader_context* ctx)
@@ -193,7 +195,7 @@ int exheader_process(exheader_context* ctx, u32 actions)
 		exheader_verify(ctx);
 
 	if (actions & InfoFlag)
-		exheader_print(ctx);
+		exheader_print(ctx, actions);
 
 	return 1;
 }
@@ -231,7 +233,7 @@ void exheader_print_arm9accesscontrol(exheader_context* ctx)
 	}
 }
 
-void exheader_print_arm11kernelcapabilities(exheader_context* ctx)
+void exheader_print_arm11kernelcapabilities(exheader_context* ctx, u32 actions)
 {
 	unsigned int i, j;
 	unsigned int systemcallmask[8];
@@ -294,42 +296,66 @@ void exheader_print_arm11kernelcapabilities(exheader_context* ctx)
 	}
 
 	fprintf(stdout, "Allowed systemcalls:    ");
-	for(i=0; i<8; i++)
+	if(!(actions & ShowSyscallsFlag))
 	{
-		for(j=0; j<24; j++)
+		for(i=0; i<8; i++)
 		{
-			svcmask = systemcallmask[i];
-
-			if (svcmask & (1<<j))
+			for(j=0; j<24; j++)
 			{
-				unsigned int svcid = i*24+j;
-				if (svccount == 0)
-				{
-					fprintf(stdout, "0x%02X", svcid);
-				}
-				else if ( (svccount & 7) == 0)
-				{
-					fprintf(stdout, "                        ");
-					fprintf(stdout, "0x%02X", svcid);
-				}
-				else
-				{
-					fprintf(stdout, ", 0x%02X", svcid);
-				}
+				svcmask = systemcallmask[i];
 
-				svccount++;
-				if ( (svccount & 7) == 0)
+				if (svcmask & (1<<j))
 				{
-					fprintf(stdout, "\n");
+					unsigned int svcid = i*24+j;
+					if (svccount == 0)
+					{
+						fprintf(stdout, "0x%02X", svcid);
+					}
+					else if ( (svccount & 7) == 0)
+					{
+						fprintf(stdout, "                        ");
+						fprintf(stdout, "0x%02X", svcid);
+					}
+					else
+					{
+						fprintf(stdout, ", 0x%02X", svcid);
+					}
+
+					svccount++;
+					if ( (svccount & 7) == 0)
+					{
+						fprintf(stdout, "\n");
+					}
+				}
+			}
+		}
+		if (svccount & 7)
+			fprintf(stdout, "\n");
+		if (svccount == 0)
+			fprintf(stdout, "none\n");
+	}
+	else
+	{
+		fprintf(stdout, "\n");
+
+		for(i=0; i<8; i++)
+		{
+			for(j=0; j<24; j++)
+			{
+				svcmask = systemcallmask[i];
+
+				if (svcmask & (1 << j))
+				{
+					unsigned int svcid = i * 24 + j;
+					char svcname[128];
+
+					syscall_get_name(svcname, sizeof(svcname), svcid);
+
+					fprintf(stdout, " > 0x%02X %s\n", svcid, svcname);
 				}
 			}
 		}
 	}
-	if (svccount & 7)
-		fprintf(stdout, "\n");
-	if (svccount == 0)
-		fprintf(stdout, "none\n");
-
 
 	fprintf(stdout, "Allowed interrupts:     ");
 	for(i=0; i<0x7F; i++)
@@ -618,7 +644,7 @@ const char* exheader_getsystemmodeextstring(u8 systemmodeext, u8 systemmode)
 }
 
 
-void exheader_print(exheader_context* ctx)
+void exheader_print(exheader_context* ctx, u32 actions)
 {
 	u32 i;
 	u64 savedatasize = getle64(ctx->header.systeminfo.savedatasize);
@@ -679,7 +705,7 @@ void exheader_print(exheader_context* ctx)
 	fprintf(stdout, "Main thread priority:   %d %s\n", ctx->system_local_caps.priority, exheader_getvalidstring(ctx->validpriority));
 	// print resource limit descriptor too? currently mostly zeroes...
 	exheader_print_arm11storageinfo(ctx);
-	exheader_print_arm11kernelcapabilities(ctx);
+	exheader_print_arm11kernelcapabilities(ctx, actions);
 	exheader_print_arm9accesscontrol(ctx);
 
 	fprintf(stdout, "Service access: %s\n", exheader_getvalidstring(ctx->validservicecontrol));
