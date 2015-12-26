@@ -66,7 +66,7 @@ static void usage(const char *argv0)
 		   "  -n, --ncch=index   Specify NCCH partition index.\n"
 		   "  --exheader=file    Specify Extended Header file path.\n"
 		   "  --logo=file        Specify Logo file path.\n"
-		   "  --plainrgn=file    Specify Plain region file path"
+		   "  --plainrgn=file    Specify Plain region file path\n"
 		   "  --exefs=file       Specify ExeFS file path.\n"
 		   "  --exefsdir=dir     Specify ExeFS directory path.\n"
 		   "  --romfs=file       Specify RomFS file path.\n"
