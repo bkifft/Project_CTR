@@ -344,7 +344,7 @@ int main(int argc, char* argv[])
 
 			firm_init(&firmctx);
 			firm_set_file(&firmctx, ctx.infile);
-			firm_set_size(&firmctx, ctx.infilesize);
+			firm_set_size(&firmctx, (u32) ctx.infilesize);
 			firm_set_usersettings(&firmctx, &ctx.usersettings);
 			firm_process(&firmctx, ctx.actions);
 			
@@ -399,7 +399,7 @@ int main(int argc, char* argv[])
 
 			tmd_init(&tmdctx);
 			tmd_set_file(&tmdctx, ctx.infile);
-			tmd_set_size(&tmdctx, ctx.infilesize);
+			tmd_set_size(&tmdctx, (u32) ctx.infilesize);
 			tmd_set_usersettings(&tmdctx, &ctx.usersettings);
 			tmd_process(&tmdctx, ctx.actions);
 	
@@ -412,7 +412,7 @@ int main(int argc, char* argv[])
 
 			lzss_init(&lzssctx);
 			lzss_set_file(&lzssctx, ctx.infile);
-			lzss_set_size(&lzssctx, ctx.infilesize);
+			lzss_set_size(&lzssctx, (u32) ctx.infilesize);
 			lzss_set_usersettings(&lzssctx, &ctx.usersettings);
 			lzss_process(&lzssctx, ctx.actions);
 	

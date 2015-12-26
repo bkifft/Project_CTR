@@ -51,7 +51,7 @@ void ivfc_fseek(ivfc_context* ctx, u64 offset)
 	u64 data_pos = offset - ctx->offset;
 	fseeko64(ctx->file, offset, SEEK_SET);
 	ctr_init_counter(&ctx->aes, ctx->key, ctx->counter);
-	ctr_add_counter(&ctx->aes, data_pos / 0x10);
+	ctr_add_counter(&ctx->aes, (u32) (data_pos / 0x10));
 }
 
 size_t ivfc_fread(ivfc_context* ctx, void* buffer, size_t size, size_t count)
@@ -128,7 +128,7 @@ void ivfc_verify(ivfc_context* ctx, u32 flags)
 	{
 		ivfc_level* level = ctx->level + i;
 
-		blockcount = level->datasize / level->hashblocksize;
+		blockcount = (u32) (level->datasize / level->hashblocksize);
 		if (level->datasize % level->hashblocksize != 0)
 		{
 			fprintf(stderr, "Error, IVFC block size mismatch\n");
@@ -160,7 +160,7 @@ void ivfc_read(ivfc_context* ctx, u64 offset, u64 size, u8* buffer)
 	}
 
 	ivfc_fseek(ctx, ctx->offset + offset);
-	if (size != ivfc_fread(ctx, buffer, 1, size))
+	if (size != ivfc_fread(ctx, buffer, 1, (size_t) size))
 	{
 		fprintf(stderr, "Error, IVFC could not read file\n");
 		return;
@@ -177,7 +177,7 @@ void ivfc_hash(ivfc_context* ctx, u64 offset, u64 size, u8* hash)
 
 	ivfc_read(ctx, offset, size, ctx->buffer);
 
-	ctr_sha_256(ctx->buffer, size, hash);
+	ctr_sha_256(ctx->buffer, (u32) size, hash);
 }
 
 void ivfc_print(ivfc_context* ctx)

@@ -50,7 +50,7 @@ void romfs_fseek(romfs_context* ctx, u64 offset)
 	u64 data_pos = offset - ctx->offset;
 	fseeko64(ctx->file, offset, SEEK_SET);
 	ctr_init_counter(&ctx->aes, ctx->key, ctx->counter);
-	ctr_add_counter(&ctx->aes, data_pos / 0x10);
+	ctr_add_counter(&ctx->aes, (u32) (data_pos / 0x10));
 }
 
 size_t romfs_fread(romfs_context* ctx, void* buffer, size_t size, size_t count)
@@ -91,7 +91,7 @@ void romfs_process(romfs_context* ctx, u32 actions)
 		return;
 	}
 
-	ctx->infoblockoffset = ctx->offset + 0x1000;
+	ctx->infoblockoffset = (u32) (ctx->offset + 0x1000);
 
 	romfs_fseek(ctx, ctx->infoblockoffset);
 	romfs_fread(ctx, &ctx->infoheader, 1, sizeof(romfs_infoheader));
@@ -363,7 +363,7 @@ void romfs_extract_datafile(romfs_context* ctx, u64 offset, u64 size, const osch
 	{
 		max = sizeof(buffer);
 		if (max > size)
-			max = size;
+			max = (u32) size;
 
 		if (max != romfs_fread(ctx, buffer, 1, max))
 		{

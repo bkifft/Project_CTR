@@ -73,59 +73,59 @@ u32 getbe16(const u8* p)
 
 void putle16(u8* p, u16 n)
 {
-	p[0] = n;
-	p[1] = n>>8;
+	p[0] = (u8) n;
+	p[1] = (u8) (n>>8);
 }
 
 void putle32(u8* p, u32 n)
 {
-	p[0] = n;
-	p[1] = n>>8;
-	p[2] = n>>16;
-	p[3] = n>>24;
+	p[0] = (u8) n;
+	p[1] = (u8) (n>>8);
+	p[2] = (u8) (n>>16);
+	p[3] = (u8) (n>>24);
 }
 
 void putle64(u8* p, u64 n)
 {
-	p[0] = n;
-	p[1] = n >> 8;
-	p[2] = n >> 16;
-	p[3] = n >> 24;
-	p[4] = n >> 32;
-	p[5] = n >> 40;
-	p[6] = n >> 48;
-	p[7] = n >> 56;
+	p[0] = (u8) n;
+	p[1] = (u8) (n >> 8);
+	p[2] = (u8) (n >> 16);
+	p[3] = (u8) (n >> 24);
+	p[4] = (u8) (n >> 32);
+	p[5] = (u8) (n >> 40);
+	p[6] = (u8) (n >> 48);
+	p[7] = (u8) (n >> 56);
 }
 
 void putbe16(u8* p, u16 n)
 {
-	p[1] = n;
-	p[0] = n >> 8;
+	p[1] = (u8) n;
+	p[0] = (u8) (n >> 8);
 }
 
 void putbe32(u8* p, u32 n)
 {
-	p[3] = n;
-	p[2] = n >> 8;
-	p[1] = n >> 16;
-	p[0] = n >> 24;
+	p[3] = (u8) n;
+	p[2] = (u8) (n >> 8);
+	p[1] = (u8) (n >> 16);
+	p[0] = (u8) (n >> 24);
 }
 
 void putbe64(u8* p, u64 n)
 {
-	p[7] = n;
-	p[6] = n >> 8;
-	p[5] = n >> 16;
-	p[4] = n >> 24;
-	p[3] = n >> 32;
-	p[2] = n >> 40;
-	p[1] = n >> 48;
-	p[0] = n >> 56;
+	p[7] = (u8) n;
+	p[6] = (u8) (n >> 8);
+	p[5] = (u8) (n >> 16);
+	p[4] = (u8) (n >> 24);
+	p[3] = (u8) (n >> 32);
+	p[2] = (u8) (n >> 40);
+	p[1] = (u8) (n >> 48);
+	p[0] = (u8) (n >> 56);
 }
 
 void readkeyfile(u8* key, const char* keyfname)
 {
-	u32 keysize = _fsize(keyfname);
+	u64 keysize = _fsize(keyfname);
 	FILE* f = fopen(keyfname, "rb");
 	
 	if (0 == f)
@@ -136,7 +136,7 @@ void readkeyfile(u8* key, const char* keyfname)
 
 	if (keysize != 16)
 	{
-		fprintf(stdout, "Error key size mismatch, got %d, expected %d\n", keysize, 16);
+		fprintf(stdout, "Error key size mismatch, got %"PRId64", expected %d\n", keysize, 16);
 		goto clean;
 	}
 
