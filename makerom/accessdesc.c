@@ -132,7 +132,7 @@ int accessdesc_GetSignFromPreset(exheader_settings *exhdrset)
 		return CANNOT_SIGN_ACCESSDESC;
 	}
 
-	if(!pre_sign->modulus && exhdrset->keys->rsa.requiresPresignedDesc){
+	if(!pre_sign && exhdrset->keys->rsa.requiresPresignedDesc){
 		fprintf(stderr,"[ACEXDESC ERROR] This AccessDesc template needs to be signed, the current keyset is incapable of doing so. Please configure RSF file with the appropriate signature data.\n");
 		return CANNOT_SIGN_ACCESSDESC;
 	}
