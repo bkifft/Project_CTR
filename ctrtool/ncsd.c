@@ -120,7 +120,7 @@ void ncsd_print(ncsd_context* ctx)
 	char magic[5];
 	ctr_ncsdheader* header = &ctx->header;
 	unsigned int i;
-	unsigned int mediaunitsize = ncsd_get_mediaunit_size(ctx);
+	unsigned int mediaunitsize = (unsigned int) ncsd_get_mediaunit_size(ctx);
 
 
 	memcpy(magic, header->magic, 4);

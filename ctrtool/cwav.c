@@ -429,7 +429,7 @@ int cwav_dspadpcm_setup(cwav_dspadpcmstate* state, cwav_context* ctx, int isloop
 		}
 
 		state->channelstate[i].samplebuffer = state->samplebuffer + SAMPLECOUNT * i;
-		state->channelstate[i].sampleoffset = ctx->offset + getle32(adpcmchannel->info.sampleref.offset) + getle32(ctx->header.datablockref.offset) + 8 + startoffset;
+		state->channelstate[i].sampleoffset = (u32) (ctx->offset + getle32(adpcmchannel->info.sampleref.offset) + getle32(ctx->header.datablockref.offset) + 8 + startoffset);
 		if (isloop)
 		{
 			state->channelstate[i].yn1 = getle16(adpcminfo->loopyn1);
@@ -627,7 +627,7 @@ int cwav_imaadpcm_setup(cwav_imaadpcmstate* state, cwav_context* ctx, int isloop
 		}
 
 		state->channelstate[i].samplebuffer = state->samplebuffer + SAMPLECOUNT * i;
-		state->channelstate[i].sampleoffset = ctx->offset + getle32(adpcmchannel->info.sampleref.offset) + getle32(ctx->header.datablockref.offset) + 8 + startoffset;
+		state->channelstate[i].sampleoffset = (u32) (ctx->offset + getle32(adpcmchannel->info.sampleref.offset) + getle32(ctx->header.datablockref.offset) + 8 + startoffset);
 		if (isloop)
 		{
 			state->channelstate[i].data = getle16(adpcminfo->loopdata);
@@ -826,7 +826,7 @@ int cwav_pcm_setup(cwav_pcmstate* state, cwav_context* ctx, int isloop)
 		cwav_channel* pcmchannel = &ctx->channel[i];
 
 		state->channelstate[i].samplebuffer = state->samplebuffer + SAMPLECOUNT * i;
-		state->channelstate[i].sampleoffset = ctx->offset + getle32(pcmchannel->info.sampleref.offset) + getle32(ctx->header.datablockref.offset) + 8 + startoffset;
+		state->channelstate[i].sampleoffset = (u32) (ctx->offset + getle32(pcmchannel->info.sampleref.offset) + getle32(ctx->header.datablockref.offset) + 8 + startoffset);
 		stream_in_allocate(&state->channelstate[i].instreamctx, BUFFERSIZE, ctx->file);
 		stream_in_seek(&state->channelstate[i].instreamctx, state->channelstate[i].sampleoffset);
 	}
@@ -932,7 +932,7 @@ void cwav_print(cwav_context* ctx)
 	cwav_header* header = &ctx->header;
 	cwav_infoheader* infoheader = &ctx->infoheader;
 	u32 i;
-	u32 infoheaderoffset = ctx->offset + getle32(ctx->header.infoblockref.offset);
+	u32 infoheaderoffset = (u32) (ctx->offset + getle32(ctx->header.infoblockref.offset));
 	u32 channelcount = getle32(infoheader->channelcount);
 
 	fprintf(stdout, "Header:                 %c%c%c%c\n", header->magic[0], header->magic[1], header->magic[2], header->magic[3]);
@@ -962,7 +962,7 @@ void cwav_print(cwav_context* ctx)
 		{
 			u32 channeloffset = infoheaderoffset + 0x1C + getle32(ctx->channel[i].inforef.offset);
 			u32 codecoffset = channeloffset + getle32(ctx->channel[i].info.codecref.offset);
-			u32 sampleoffset = ctx->offset + getle32(ctx->channel[i].info.sampleref.offset) + getle32(ctx->header.datablockref.offset) + 8;
+			u32 sampleoffset = (u32) (ctx->offset + getle32(ctx->channel[i].info.sampleref.offset) + getle32(ctx->header.datablockref.offset) + 8);
 
 			fprintf(stdout, "Channel %d:\n", i);
 			fprintf(stdout, " > Channel ref idtype:  0x%04X\n", getle16(ctx->channel[i].inforef.idtype));
