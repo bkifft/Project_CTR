@@ -46,7 +46,7 @@ void cia_save(cia_context* ctx, u32 type, u32 flags)
 	filepath* path = 0;
 	ctr_tmd_body *body;
 	ctr_tmd_contentchunk *chunk;
-	int i;
+	unsigned int i;
 	char tmpname[255];
 
 	switch(type)
@@ -151,7 +151,7 @@ void cia_save_blob(cia_context *ctx, char *out_path, u64 offset, u64 size, int d
 	{
 		u32 max = sizeof(buffer);
 		if (max > size)
-			max = size;
+			max = (u32) size;
 
 		if (max != fread(buffer, 1, max, ctx->file))
 		{
@@ -195,9 +195,9 @@ void cia_process(cia_context* ctx, u32 actions)
 	ctx->sizemeta = getle32(ctx->header.metasize);
 	
 	ctx->offsetcerts = align(ctx->sizeheader, 64);
-	ctx->offsettik = align(ctx->offsetcerts + ctx->sizecert, 64);
-	ctx->offsettmd = align(ctx->offsettik + ctx->sizetik, 64);
-	ctx->offsetcontent = align(ctx->offsettmd + ctx->sizetmd, 64);
+	ctx->offsettik = align((u32) (ctx->offsetcerts + ctx->sizecert), 64);
+	ctx->offsettmd = align((u32) (ctx->offsettik + ctx->sizetik), 64);
+	ctx->offsetcontent = align((u32) (ctx->offsettmd + ctx->sizetmd), 64);
 	ctx->offsetmeta = align64(ctx->offsetcontent + ctx->sizecontent, 64);
 
 	if (actions & InfoFlag)
@@ -253,7 +253,7 @@ void cia_verify_contents(cia_context *ctx, u32 actions)
 	ctr_tmd_contentchunk *chunk;
 	u8 *verify_buf;
 	u32 content_size=0;
-	int i;
+	unsigned i;
 
 	// verify TMD content hashes, requires decryption ..
 	body  = tmd_get_body(&ctx->tmd);

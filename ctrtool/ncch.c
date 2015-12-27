@@ -48,7 +48,7 @@ void ncch_set_file(ncch_context* ctx, FILE* file)
 void ncch_get_counter(ncch_context* ctx, u8 counter[16], u8 type)
 {
 	u32 version = getle16(ctx->header.version);
-	u32 mediaunitsize = ncch_get_mediaunit_size(ctx);
+	u32 mediaunitsize = (u32) ncch_get_mediaunit_size(ctx);
 	u8* partitionid = ctx->header.partitionid;
 	u32 i;
 	u64 x = 0;
@@ -73,7 +73,7 @@ void ncch_get_counter(ncch_context* ctx, u8 counter[16], u8 type)
 		for(i=0; i<8; i++)
 			counter[i] = partitionid[i];
 		for(i=0; i<4; i++)
-			counter[12+i] = x>>((3-i)*8);
+			counter[12+i] = (u8) (x>>((3-i)*8));
 	}
 }
 
@@ -148,7 +148,7 @@ int ncch_extract_buffer(ncch_context* ctx, u8* buffer, u32 buffersize, u32* outs
 	u32 read_len = buffersize;
 
 	if (read_len > ctx->extractsize)
-		read_len = ctx->extractsize;
+		read_len = (u32) ctx->extractsize;
 
 	*outsize = read_len;
 
@@ -234,7 +234,7 @@ clean:
 
 void ncch_verify(ncch_context* ctx, u32 flags)
 {
-	u32 mediaunitsize = ncch_get_mediaunit_size(ctx);
+	u32 mediaunitsize = (u32) ncch_get_mediaunit_size(ctx);
 	u32 exefshashregionsize = getle32(ctx->header.exefshashregionsize) * mediaunitsize;
 	u32 romfshashregionsize = getle32(ctx->header.romfshashregionsize) * mediaunitsize;
 	u32 exheaderhashregionsize = getle32(ctx->header.extendedheadersize);

@@ -244,7 +244,7 @@ int ctr_rsa_verify_hash(const u8 signature[0x100], const u8 hash[0x20], rsakey20
 {
 	ctr_rsa_context ctx;
 	u32 result;
-	u8 output[0x100];
+//	u8 output[0x100];
 
 	if (key->keytype == RSAKEY_INVALID)
 		return Fail;

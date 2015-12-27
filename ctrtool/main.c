@@ -58,6 +58,7 @@ static void usage(const char *argv0)
 		   "  --ncchkey=key      Set ncch key.\n"
 		   "  --ncchsyskey=key   Set ncch fixed system key.\n"
 		   "  --showkeys         Show the keys being used.\n"
+		   "  --showsyscalls     Show system call names instead of numbers.\n"
 		   "  -t, --intype=type	 Specify input file type [ncsd, ncch, exheader, cia, tmd, lzss,\n"
 		   "                        firm, cwav, exefs, romfs]\n"
 		   "LZSS options:\n"
@@ -66,7 +67,7 @@ static void usage(const char *argv0)
 		   "  -n, --ncch=index   Specify NCCH partition index.\n"
 		   "  --exheader=file    Specify Extended Header file path.\n"
 		   "  --logo=file        Specify Logo file path.\n"
-		   "  --plainrgn=file    Specify Plain region file path"
+		   "  --plainrgn=file    Specify Plain region file path\n"
 		   "  --exefs=file       Specify ExeFS file path.\n"
 		   "  --exefsdir=dir     Specify ExeFS directory path.\n"
 		   "  --romfs=file       Specify RomFS file path.\n"
@@ -150,6 +151,7 @@ int main(int argc, char* argv[])
 			{"decompresscode", 0, NULL, 21},
 			{"titlekey", 1, NULL, 22},
 			{"plainrgn", 1, NULL, 23},
+			{"showsyscalls", 0, NULL, 24},
 			{NULL},
 		};
 
@@ -239,6 +241,7 @@ int main(int argc, char* argv[])
 			case 21: ctx.actions |= DecompressCodeFlag; break;
 			case 22: keyset_parse_titlekey(&tmpkeys, optarg, strlen(optarg)); break;
 			case 23: settings_set_plainrgn_path(&ctx.usersettings, optarg); break;
+			case 24: ctx.actions |= ShowSyscallsFlag; break;
 
 			default:
 				usage(argv[0]);
@@ -344,7 +347,7 @@ int main(int argc, char* argv[])
 
 			firm_init(&firmctx);
 			firm_set_file(&firmctx, ctx.infile);
-			firm_set_size(&firmctx, ctx.infilesize);
+			firm_set_size(&firmctx, (u32) ctx.infilesize);
 			firm_set_usersettings(&firmctx, &ctx.usersettings);
 			firm_process(&firmctx, ctx.actions);
 			
@@ -399,7 +402,7 @@ int main(int argc, char* argv[])
 
 			tmd_init(&tmdctx);
 			tmd_set_file(&tmdctx, ctx.infile);
-			tmd_set_size(&tmdctx, ctx.infilesize);
+			tmd_set_size(&tmdctx, (u32) ctx.infilesize);
 			tmd_set_usersettings(&tmdctx, &ctx.usersettings);
 			tmd_process(&tmdctx, ctx.actions);
 	
@@ -412,7 +415,7 @@ int main(int argc, char* argv[])
 
 			lzss_init(&lzssctx);
 			lzss_set_file(&lzssctx, ctx.infile);
-			lzss_set_size(&lzssctx, ctx.infilesize);
+			lzss_set_size(&lzssctx, (u32) ctx.infilesize);
 			lzss_set_usersettings(&lzssctx, &ctx.usersettings);
 			lzss_process(&lzssctx, ctx.actions);
 	

@@ -23,7 +23,8 @@ enum flags
 	VerifyFlag = (1<<4),
 	RawFlag = (1<<5),
 	ShowKeysFlag = (1<<6),
-	DecompressCodeFlag = (1<<7)
+	DecompressCodeFlag = (1<<7),
+	ShowSyscallsFlag = (1<<8),
 };
 
 enum validstate
