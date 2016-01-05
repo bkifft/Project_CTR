@@ -339,6 +339,9 @@
     <ClInclude Include="desc\desc.h">
       <Filter>Resource Files\DESC</Filter>
     </ClInclude>
+    <ClInclude Include="aes_keygen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="accessdesc.c">
@@ -477,6 +480,9 @@
       <Filter>Source Files\polarssl</Filter>
     </ClCompile>
     <ClCompile Include="oschar.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="aes_keygen.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

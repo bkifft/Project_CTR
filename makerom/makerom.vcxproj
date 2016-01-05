@@ -91,6 +91,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="accessdesc.h" />
+    <ClInclude Include="aes_keygen.h" />
     <ClInclude Include="blz.h" />
     <ClInclude Include="cardinfo.h" />
     <ClInclude Include="certs.h" />
@@ -194,6 +195,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="accessdesc.c" />
+    <ClCompile Include="aes_keygen.c" />
     <ClCompile Include="blz.c" />
     <ClCompile Include="cardinfo.c" />
     <ClCompile Include="certs.c" />

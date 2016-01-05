@@ -1,4 +1,5 @@
 #include "lib.h"
+#include "aes_keygen.h"
 
 // KeyData
 #include "pki/test.h" // Test PKI
@@ -49,16 +50,10 @@ void PrintBadKeySize(char *path, u32 size)
 
 u8* AesKeyScrambler(u8 *key, const u8 *keyX, const u8 *keyY)
 {
-	// Process keyX/keyY to get raw normal key
-	for(int i = 0; i < 16; i++)
-		key[i] = keyX[i] ^ ((keyY[i] >> 2) | ((keyY[i < 15 ? i+1 : 0] & 3) << 6)); // keyX[i] ^
-
-	const u8 SCRAMBLE_SECRET[16] = {0x51, 0xD7, 0x5D, 0xBE, 0xFD, 0x07, 0x57, 0x6A, 0x1C, 0xFC, 0x2A, 0xF0, 0x94, 0x4B, 0xD5, 0x6C};
-
-	// Apply Secret to get final normal key
-	for(int i = 0; i < 16; i++)
-		key[i] = key[i] ^ SCRAMBLE_SECRET[i];
-
+	static const uint8_t CTR_KEYGEN_CONST[16] = { 0xEE, 0x2E, 0xA9, 0x3B, 0x45, 0x0F, 0xFC, 0xF4, 0xD5, 0x62, 0xFF, 0x02, 0x04, 0x01, 0x22, 0xC8 };
+	static const uint8_t CTR_KEYX_SHIFT = 39;
+	static const uint8_t CTR_KEYY_SHIFT = 41;
+	n_aes_keygen(keyX, CTR_KEYX_SHIFT, keyY, CTR_KEYY_SHIFT, CTR_KEYGEN_CONST, key);
 	return key;
 }
 
