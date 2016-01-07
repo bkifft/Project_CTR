@@ -47,7 +47,7 @@ inline int fseeko64(FILE *__stream, long long __off, int __whence)
 	return _fseeki64(__stream, __off, __whence);
 }
 #else
-extern int fseeko64 (FILE *__stream, __off64_t __off, int __whence);
+extern int fseeko64 (FILE *__stream, off64_t __off, int __whence);
 #endif
 
 #ifdef __cplusplus
