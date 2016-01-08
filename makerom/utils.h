@@ -18,7 +18,7 @@ u64 min64(u64 a, u64 b);
 u64 max64(u64 a, u64 b);
 
 // Strings
-void memdump(FILE* fout, const char* prefix, const const u8* data, u32 size);
+void memdump(FILE* fout, const char* prefix, const u8* data, u32 size);
 char* replace_filextention(const char *input, const char *extention);
 
 // Base64
@@ -53,5 +53,3 @@ u64 u8_to_u64(const u8 *value, u8 endianness);
 int u16_to_u8(u8 *out_value, u16 in_value, u8 endianness);
 int u32_to_u8(u8 *out_value, u32 in_value, u8 endianness);
 int u64_to_u8(u8 *out_value, u64 in_value, u8 endianness);
-
-
