@@ -16,7 +16,7 @@ else
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S),Darwin)
         # OS X
-        CFLAGS += -Wno-unused-local-typedef
+        CFLAGS +=
         LIBS += -liconv
     else
         # Linux
