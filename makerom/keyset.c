@@ -48,15 +48,6 @@ void PrintBadKeySize(char *path, u32 size)
 	fprintf(stderr,"[KEYSET ERROR] %s has invalid size (0x%x)\n",path,size);
 }
 
-u8* AesKeyScrambler(u8 *key, const u8 *keyX, const u8 *keyY)
-{
-	static const uint8_t CTR_KEYGEN_CONST[16] = { 0xEE, 0x2E, 0xA9, 0x3B, 0x45, 0x0F, 0xFC, 0xF4, 0xD5, 0x62, 0xFF, 0x02, 0x04, 0x01, 0x22, 0xC8 };
-	static const uint8_t CTR_KEYX_SHIFT = 39;
-	static const uint8_t CTR_KEYY_SHIFT = 41;
-	n_aes_keygen(keyX, CTR_KEYX_SHIFT, keyY, CTR_KEYY_SHIFT, CTR_KEYGEN_CONST, key);
-	return key;
-}
-
 int SetKeys(keys_struct *keys)
 {	
 	int result = 0;
@@ -135,7 +126,7 @@ int LoadKeysFromResources(keys_struct *keys)
 		// CIA
 		//for(int i = 0; i < 6; i++){
 		//	keys->aes.commonKey[i] = malloc(16);
-		//	AesKeyScrambler(keys->aes.commonKey[i], ctr_common_etd_keyX_ppki, ctr_common_etd_keyY_ppki[i]);
+		//	ctr_aes_keygen(ctr_common_etd_keyX_ppki, ctr_common_etd_keyY_ppki[i], keys->aes.commonKey[i]);
 		//}
 		if(keys->aes.currentCommonKey > 0xff)
 			SetCurrentCommonKey(keys,0);

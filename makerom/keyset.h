@@ -97,5 +97,3 @@ int SetCommonKey(keys_struct *keys, const u8 *key, u8 Index);
 int SetCurrentCommonKey(keys_struct *keys, u8 Index);
 int SetNormalKey(keys_struct *keys, const u8 *key);
 int SetSystemFixedKey(keys_struct *keys, const u8 *key);
-
-u8* AesKeyScrambler(u8 *key, const u8 *keyX, const u8 *keyY);

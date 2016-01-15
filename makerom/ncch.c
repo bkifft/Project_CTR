@@ -1,4 +1,5 @@
 #include "lib.h"
+#include "aes_keygen.h"
 #include "ncch_build.h"
 #include "exheader_build.h"
 #include "exheader_read.h"
@@ -1043,12 +1044,12 @@ bool SetNcchKeys(keys_struct *keys, ncch_hdr *hdr)
 	}
 	
 	if(keys->aes.ncchKeyX[0])
-		AesKeyScrambler(keys->aes.ncchKey0,keys->aes.ncchKeyX[0],hdr->signature);
+		ctr_aes_keygen(keys->aes.ncchKeyX[0],hdr->signature,keys->aes.ncchKey0);
 	else
 		return false;
 	
 	if(keys->aes.ncchKeyX[hdr->flags[ncchflag_CONTENT_KEYX]])
-		AesKeyScrambler(keys->aes.ncchKey1,keys->aes.ncchKeyX[hdr->flags[ncchflag_CONTENT_KEYX]],hdr->signature);
+		ctr_aes_keygen(keys->aes.ncchKeyX[ncchflag_CONTENT_KEYX], hdr->signature, keys->aes.ncchKey0);
 	else
 		return false;
 		
