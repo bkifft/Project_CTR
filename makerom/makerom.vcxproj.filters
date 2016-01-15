@@ -342,6 +342,9 @@
     <ClInclude Include="aes_keygen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="pki\rsa_key.h">
+      <Filter>Resource Files\PKI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="accessdesc.c">

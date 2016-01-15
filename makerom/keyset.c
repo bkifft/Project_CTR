@@ -108,12 +108,12 @@ int LoadKeysFromResources(keys_struct *keys)
 
 		/* RSA Keys */
 		// CIA
-		SetTIK_RsaKey(keys, xs9_dpki_rsa_priv, xs9_dpki_rsa_pub);
-		SetTMD_RsaKey(keys, cpA_dpki_rsa_priv, cpA_dpki_rsa_pub);
+		SetTIK_RsaKey(keys, xs9_dpki_rsa.priv_exponent, xs9_dpki_rsa.modulus);
+		SetTMD_RsaKey(keys, cpA_dpki_rsa.priv_exponent, cpA_dpki_rsa.modulus);
 		// CCI/CFA
-		Set_CCI_CFA_RsaKey(keys, dev_ncsd_cfa_priv, dev_ncsd_cfa_pub);
+		Set_CCI_CFA_RsaKey(keys, dev_ncsd_cfa_rsa.priv_exponent, dev_ncsd_cfa_rsa.modulus);
 		// CXI
-		SetAccessDesc_RsaKey(keys, dev_acex_priv, dev_acex_pub);
+		SetAccessDesc_RsaKey(keys, dev_accessdesc_rsa.priv_exponent, dev_accessdesc_rsa.modulus);
 	
 		/* Certs */
 		SetCaCert(keys, ca4_dpki_cert);
@@ -141,12 +141,12 @@ int LoadKeysFromResources(keys_struct *keys)
 
 		/* RSA Keys */
 		// CIA
-		SetTIK_RsaKey(keys, xsC_ppki_rsa_priv, xsC_ppki_rsa_pub);
-		SetTMD_RsaKey(keys, cpB_ppki_rsa_priv, cpB_ppki_rsa_pub);
+		SetTIK_RsaKey(keys, xsC_ppki_rsa.priv_exponent, xsC_ppki_rsa.modulus);
+		SetTMD_RsaKey(keys, cpB_ppki_rsa.priv_exponent, cpB_ppki_rsa.modulus);
 		// CCI/CFA
-		Set_CCI_CFA_RsaKey(keys, prod_ncsd_cfa_priv, prod_ncsd_cfa_pub);
+		Set_CCI_CFA_RsaKey(keys, prod_ncsd_cfa_rsa.priv_exponent, prod_ncsd_cfa_rsa.modulus);
 		// CXI
-		SetAccessDesc_RsaKey(keys, prod_acex_priv, prod_acex_pub);
+		SetAccessDesc_RsaKey(keys, prod_accessdesc_rsa.priv_exponent, prod_accessdesc_rsa.modulus);
 	
 		/* Certs */
 		SetCaCert(keys, ca3_ppki_cert);
@@ -159,15 +159,15 @@ int LoadKeysFromResources(keys_struct *keys)
 void SetDummyRsaData(keys_struct *keys)
 {
 	if(!keys->rsa.xsPvt || !keys->rsa.xsPub)
-		SetTIK_RsaKey(keys, tpki_rsa_privExp, tpki_rsa_pubMod);
+		SetTIK_RsaKey(keys, tpki_rsa.priv_exponent, tpki_rsa.modulus);
 	if(!keys->rsa.cpPvt || !keys->rsa.cpPub)
-		SetTMD_RsaKey(keys, tpki_rsa_privExp, tpki_rsa_pubMod);
+		SetTMD_RsaKey(keys, tpki_rsa.priv_exponent, tpki_rsa.modulus);
 		
 	if(!keys->rsa.cciCfaPvt || !keys->rsa.cciCfaPub)
-		Set_CCI_CFA_RsaKey(keys, tpki_rsa_privExp, tpki_rsa_pubMod);
+		Set_CCI_CFA_RsaKey(keys, tpki_rsa.priv_exponent, tpki_rsa.modulus);
 	
 	if(!keys->rsa.acexPvt || !keys->rsa.acexPub)
-		SetAccessDesc_RsaKey(keys, tpki_rsa_privExp, tpki_rsa_pubMod);
+		SetAccessDesc_RsaKey(keys, tpki_rsa.priv_exponent, tpki_rsa.modulus);
 
 	/* Certs */
 	if(!keys->certs.caCert)
