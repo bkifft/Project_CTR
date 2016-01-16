@@ -169,7 +169,7 @@ int CreateExeFsCode(elf_context *elf, ncch_settings *set)
 	if (!text.fileSize) return NOT_FIND_TEXT_SEGMENT;
 	if (!rwdata.fileSize) return NOT_FIND_DATA_SEGMENT;
 
-	/* Calculating BSS fileSize */
+	/* Calculating BSS size */
 	set->codeDetails.bssSize = rwdata.memSize - rwdata.fileSize;
 
 	/* Allocating Buffer for ExeFs Code */
