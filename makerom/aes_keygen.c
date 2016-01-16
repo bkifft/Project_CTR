@@ -140,7 +140,7 @@ void ctr_aes_keygen(const uint8_t *x, const uint8_t *y, uint8_t *key)
 	n128_xor(x_rot, y, key_xy);
 
 	// key_xyc = key_xy + KEYGEN_CONST
-	n128_add(key_xy, KEYGEN_CONST, key);
+	n128_add(key_xy, KEYGEN_CONST, key_xyc);
 
 	n128_rrot(key_xyc, 41, key);
 }
