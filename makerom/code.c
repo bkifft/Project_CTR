@@ -12,9 +12,8 @@ typedef struct code_segment
 {
 	u32 address;
 	u32 memSize;
+	u32 fileSize;
 	u32 pageNum;
-
-	u32 size;
 	const u8 *data;
 } code_segment;
 
@@ -132,7 +131,7 @@ void CreateCodeSegmentFromElf(code_segment *out, elf_context *elf, u64 segment_f
 	out->address = 0;
 	out->memSize = 0;
 	out->pageNum = 0;
-	out->size = 0;
+	out->fileSize = 0;
 	out->data = NULL;
 
 	/* Find segment */
@@ -147,8 +146,8 @@ void CreateCodeSegmentFromElf(code_segment *out, elf_context *elf, u64 segment_f
 		if ((segments[i].flags & ~PF_CTRSDK) == segment_flags && segments[i].type == PT_LOAD) {
 			out->address = segments[i].vAddr;
 			out->memSize = segments[i].memSize;
-			out->pageNum = SizeToPage(out->memSize);
-			out->size = segments[i].fileSize;
+			out->fileSize = segments[i].fileSize;
+			out->pageNum = SizeToPage(out->fileSize);
 			out->data = segments[i].ptr;
 			break;
 		}
@@ -167,23 +166,23 @@ int CreateExeFsCode(elf_context *elf, ncch_settings *set)
 	CreateCodeSegmentFromElf(&rwdata, elf, PF_DATA);
 
 	/* Checking the existence of essential ELF Segments */
-	if (!text.size) return NOT_FIND_TEXT_SEGMENT;
-	if (!rwdata.size) return NOT_FIND_DATA_SEGMENT;
+	if (!text.fileSize) return NOT_FIND_TEXT_SEGMENT;
+	if (!rwdata.fileSize) return NOT_FIND_DATA_SEGMENT;
 
-	/* Calculating BSS size */
-	set->codeDetails.bssSize = rwdata.memSize - rwdata.size;
+	/* Calculating BSS fileSize */
+	set->codeDetails.bssSize = rwdata.memSize - rwdata.fileSize;
 
 	/* Allocating Buffer for ExeFs Code */
 	u32 size = PageToSize(text.pageNum + rodata.pageNum + rwdata.pageNum);
 	u8 *code = calloc(1, size);
 
 	/* Writing Code into Buffer */
-	u8 *textPos = (code + text.address - text.address);
-	u8 *rodataPos = (code + rodata.address - text.address);
-	u8 *rwdataPos = (code + rwdata.address - text.address);
-	if (text.size) memcpy(textPos, text.data, text.size);
-	if (rodata.size) memcpy(rodataPos, rodata.data, rodata.size);
-	if (rwdata.size) memcpy(rwdataPos, rwdata.data, rwdata.size);
+	u8 *textPos = (code + PageToSize(0));
+	u8 *rodataPos = (code + PageToSize(text.pageNum));
+	u8 *rwdataPos = (code + PageToSize(text.pageNum + rodata.pageNum));
+	if (text.fileSize) memcpy(textPos, text.data, text.fileSize);
+	if (rodata.fileSize) memcpy(rodataPos, rodata.data, rodata.fileSize);
+	if (rwdata.fileSize) memcpy(rwdataPos, rwdata.data, rwdata.fileSize);
 
 
 	/* Compressing if needed */
