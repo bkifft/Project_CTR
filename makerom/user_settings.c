@@ -880,7 +880,7 @@ void PrintNoNeedParam(char *arg)
 
 void DisplayBanner(void)
 {
-	printf("CTR MAKEROM v0.14 (C) 3DSGuy 2014\n");
+	printf("CTR MAKEROM v0.15 (C) 3DSGuy 2014\n");
 	printf("Built: %s %s\n\n", __TIME__, __DATE__);
 }
 
