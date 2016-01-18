@@ -91,7 +91,7 @@ int LoadKeysFromResources(keys_struct *keys)
 		keys->keysetLoaded = true;
 		/* AES Keys */
 		// CIA
-		for(int i = 0; i < 2; i++)
+		for(int i = 0; i < 6; i++)
 			SetCommonKey(keys, ctr_common_etd_key_dpki[i],i);
 
 		if(keys->aes.currentCommonKey > 0xff)
