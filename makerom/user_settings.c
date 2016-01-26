@@ -96,7 +96,7 @@ void SetDefaults(user_settings *set)
 	// RSF Settings
 	clrmem(&set->common.rsfSet, sizeof(rsf_settings));
 	set->common.rsfSet.Option.EnableCompress = true;
-	set->common.rsfSet.Option.EnableCrypt = true;
+	set->common.rsfSet.Option.EnableCrypt = false;
 	set->common.rsfSet.Option.UseOnSD = false;
 	set->common.rsfSet.Option.FreeProductCode = false;
 
@@ -175,18 +175,15 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 		}
 		if (strcasecmp(argv[i + 1], "test") == 0 || strcasecmp(argv[i + 1], "t") == 0) {
 			set->common.keys.keyset = pki_TEST;
-			set->common.rsfSet.Option.EnableCrypt = false; // prefer unencrypted output
 		}
 		//else if(strcasecmp(argv[i+1],"beta") == 0 || strcasecmp(argv[i+1],"b") == 0) {
 		//	set->common.keys.keyset = pki_BETA;
 		//}
 		else if (strcasecmp(argv[i + 1], "debug") == 0 || strcasecmp(argv[i + 1], "development") == 0 || strcasecmp(argv[i + 1], "d") == 0) {
 			set->common.keys.keyset = pki_DEVELOPMENT;
-			set->common.rsfSet.Option.EnableCrypt = true; // prefer encrypted output
 		}
 		else if (strcasecmp(argv[i + 1], "retail") == 0 || strcasecmp(argv[i + 1], "production") == 0 || strcasecmp(argv[i + 1], "p") == 0) {
 			set->common.keys.keyset = pki_PRODUCTION;
-			set->common.rsfSet.Option.EnableCrypt = true; // prefer encrypted output
 		}
 		//else if(strcasecmp(argv[i+1],"custom") == 0 || strcasecmp(argv[i+1],"c") == 0) {
 		//	set->common.keys.keyset = pki_CUSTOM;
@@ -883,7 +880,7 @@ void PrintNoNeedParam(char *arg)
 
 void DisplayBanner(void)
 {
-	printf("CTR MAKEROM v0.14 (C) 3DSGuy 2014\n");
+	printf("CTR MAKEROM v0.15 (C) 3DSGuy 2014\n");
 	printf("Built: %s %s\n\n", __TIME__, __DATE__);
 }
 

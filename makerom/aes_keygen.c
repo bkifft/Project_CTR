@@ -106,6 +106,7 @@ void n128_xor(const uint8_t *a, const uint8_t *b, uint8_t *out)
 }
 
 // keygen algorithm
+/*
 void n_aes_keygen(const uint8_t *x, uint8_t x_shift, const uint8_t *y, uint8_t y_shift, const uint8_t *keygen_constant, uint8_t *key)
 {
 	// overall algo:
@@ -121,4 +122,25 @@ void n_aes_keygen(const uint8_t *x, uint8_t x_shift, const uint8_t *y, uint8_t y
 
 	// Add secret
 	n128_add(key_xy, keygen_constant, key);
+}
+*/
+
+void ctr_aes_keygen(const uint8_t *x, const uint8_t *y, uint8_t *key)
+{
+	static const uint8_t KEYGEN_CONST[16] = { 0x1F, 0xF9, 0xE9, 0xAA, 0xC5, 0xFE, 0x04, 0x08, 0x02, 0x45, 0x91, 0xDC, 0x5D, 0x52, 0x76, 0x8A };
+
+	// overall algo:
+	// key = (((x <<< 2) ^ y) + KEYGEN_CONST) >>> 41
+	uint8_t x_rot[16], key_xy[16], key_xyc[16];
+
+	// x_rot = x <<< 2
+	n128_lrot(x, 2, x_rot);
+
+	// key_xy = x_rot ^ y
+	n128_xor(x_rot, y, key_xy);
+
+	// key_xyc = key_xy + KEYGEN_CONST
+	n128_add(key_xy, KEYGEN_CONST, key_xyc);
+
+	n128_rrot(key_xyc, 41, key);
 }

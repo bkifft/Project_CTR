@@ -346,8 +346,8 @@ int SetARM11SystemLocalInfoFlags(exhdr_ARM11SystemLocalCapabilities *arm11, rsf_
 	/* flag[2] */
 	if(rsf->AccessControlInfo.AffinityMask){
 		arm11->affinityMask = strtol(rsf->AccessControlInfo.AffinityMask,NULL,0);
-		if(arm11->affinityMask > 1){
-			fprintf(stderr,"[EXHEADER ERROR] Unexpected AffinityMask: %d. Expected range: 0x0 - 0x1\n", arm11->affinityMask);
+		if(arm11->affinityMask > 3){
+			fprintf(stderr,"[EXHEADER ERROR] Unexpected AffinityMask: %d. Expected range: 0x0 - 0x3\n", arm11->affinityMask);
 			return EXHDR_BAD_RSF_OPT;
 		}
 	}

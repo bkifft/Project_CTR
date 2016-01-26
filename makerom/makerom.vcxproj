@@ -106,6 +106,7 @@
     <ClInclude Include="desc\dev_sigdata.h" />
     <ClInclude Include="desc\presets.h" />
     <ClInclude Include="oschar.h" />
+    <ClInclude Include="pki\rsa_key.h" />
     <ClInclude Include="romfs_fs.h" />
     <ClInclude Include="elf.h" />
     <ClInclude Include="exefs.h" />
