@@ -1242,7 +1242,7 @@ int GetSaveDataSizeFromString(u64 *out, char *string, char *moduleName)
 			fprintf(stderr,"[ERROR] Invalid save data size format.\n");
 		return EXHDR_BAD_RSF_OPT;
 	}
-	if((SaveDataSize & 65536) != 0){
+	if((SaveDataSize % 65536) != 0){
 		if(moduleName)
 			fprintf(stderr,"[%s ERROR] Save data size must be aligned to 64K.\n",moduleName);
 		else
@@ -1280,7 +1280,7 @@ int GetSaveDataSize_rsf(u64 *SaveDataSize, user_settings *usrset)
 			fprintf(stderr,"[EXHEADER ERROR] Invalid save data size format.\n");
 			return EXHDR_BAD_RSF_OPT;
 		}
-		if((*SaveDataSize & 65536) != 0){
+		if((*SaveDataSize % 65536) != 0){
 			fprintf(stderr,"[EXHEADER ERROR] Save data size must be aligned to 64K.\n");
 			return EXHDR_BAD_RSF_OPT;
 		}
