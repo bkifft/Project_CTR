@@ -702,8 +702,8 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 
 int CheckArgumentCombination(user_settings *set)
 {
-	// If content 0 was not specified, we must build it (a NCCH file)
-	if (set->common.contentPath[0] == NULL) {
+	// If content 0 was not specified (and a special file aka SRL,CIA,CCI was not specified), we must build it (a NCCH file)
+	if (set->common.contentPath[0] == NULL && set->common.workingFilePath == NULL) {
 		set->ncch.buildNcch0 = true;
 		// A CXI can contain elements of a CFA, but not the other way round.
 		if (set->ncch.ncchType & CXI)
@@ -717,6 +717,7 @@ int CheckArgumentCombination(user_settings *set)
 	}
 	else {
 		set->ncch.buildNcch0 = false;
+		set->ncch.ncchType = 0;
 	}
 
 	for (int i = 0; i < CIA_MAX_CONTENT; i++) {
