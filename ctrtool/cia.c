@@ -299,7 +299,7 @@ void cia_print(cia_context* ctx)
 	fprintf(stdout, "Version                 %04x\n", getle16(header->version));
 	fprintf(stdout, "Certificates offset:    0x%"PRIx64"\n", ctx->offsetcerts);
 	fprintf(stdout, "Certificates size:      0x%x\n", ctx->sizecert);
-	fprintf(stdout, "Ticket offset:          0x%"PRIx64"n", ctx->offsettik);
+	fprintf(stdout, "Ticket offset:          0x%"PRIx64"\n", ctx->offsettik);
 	fprintf(stdout, "Ticket size             0x%x\n", ctx->sizetik);
 	fprintf(stdout, "TMD offset:             0x%"PRIx64"\n", ctx->offsettmd);
 	fprintf(stdout, "TMD size:               0x%x\n", ctx->sizetmd);
