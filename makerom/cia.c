@@ -155,7 +155,7 @@ int GetSettingsFromUsrset(cia_settings *ciaset, user_settings *usrset)
 	ciaset->ciaSections.content.buffer = usrset->common.workingFile.buffer;
 	ciaset->ciaSections.content.size = usrset->common.workingFile.size;
 	usrset->common.workingFile.buffer = NULL;
-	ciaset->ciaSections.content.size = 0;
+	usrset->common.workingFile.size = 0;
 	ciaset->content.includeUpdateNcch = usrset->cia.includeUpdateNcch;
 	ciaset->verbose = usrset->common.verbose;
 	
@@ -473,7 +473,7 @@ int GetSettingsFromSrl(cia_settings *ciaset)
 		fprintf(stderr,"[CIA ERROR] Invalid TWL SRL File\n");
 		return FAILED_TO_IMPORT_FILE;
 	}
-	
+
 	// Check if TWL SRL File
 	if(u8_to_u16(&hdr->title_id[6],LE) != 0x0003){
 		fprintf(stderr,"[CIA ERROR] Invalid TWL SRL File\n");
