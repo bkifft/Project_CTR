@@ -169,7 +169,7 @@ void tmd_print(tmd_context* ctx)
 		fprintf(stdout, "\n");
 		fprintf(stdout, "Content size:           %016"PRIx64"\n", getbe64(chunk->size));
 
-		switch(ctx->content_hash_stat[getbe16(chunk->index)]) {
+		switch(ctx->content_hash_stat[i]) {
 			case 1:  memdump(stdout, "Content hash [OK]:      ", chunk->hash, 32); break;
 			case 2:  memdump(stdout, "Content hash [FAIL]:    ", chunk->hash, 32); break;
 			default: memdump(stdout, "Content hash:           ", chunk->hash, 32); break; 
