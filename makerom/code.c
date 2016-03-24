@@ -173,13 +173,20 @@ int CreateExeFsCode(elf_context *elf, ncch_settings *set)
 	set->codeDetails.bssSize = rwdata.memSize - rwdata.fileSize;
 
 	/* Allocating Buffer for ExeFs Code */
-	u32 size = PageToSize(text.pageNum + rodata.pageNum + rwdata.pageNum);
+	bool noCodePadding = set->options.noCodePadding;
+	u32 size;
+	if (noCodePadding) {
+		size = text.fileSize + rodata.fileSize + rwdata.fileSize;
+	}
+	else {
+		size = PageToSize(text.pageNum + rodata.pageNum + rwdata.pageNum);
+	}
 	u8 *code = calloc(1, size);
 
 	/* Writing Code into Buffer */
-	u8 *textPos = (code + PageToSize(0));
-	u8 *rodataPos = (code + PageToSize(text.pageNum));
-	u8 *rwdataPos = (code + PageToSize(text.pageNum + rodata.pageNum));
+	u8 *textPos = code;
+	u8 *rodataPos = (textPos + (noCodePadding ? text.fileSize : PageToSize(text.pageNum)));
+	u8 *rwdataPos = (rodataPos + (noCodePadding ? rodata.fileSize : PageToSize(rodata.pageNum)));
 	if (text.fileSize) memcpy(textPos, text.data, text.fileSize);
 	if (rodata.fileSize) memcpy(rodataPos, rodata.data, rodata.fileSize);
 	if (rwdata.fileSize) memcpy(rwdataPos, rwdata.data, rwdata.fileSize);
@@ -204,15 +211,15 @@ int CreateExeFsCode(elf_context *elf, ncch_settings *set)
 	/* Setting code_segment data and freeing original buffers */
 	set->codeDetails.textAddress = text.address;
 	set->codeDetails.textMaxPages = text.pageNum;
-	set->codeDetails.textSize = text.memSize;
+	set->codeDetails.textSize = text.fileSize;
 
 	set->codeDetails.roAddress = rodata.address;
 	set->codeDetails.roMaxPages = rodata.pageNum;
-	set->codeDetails.roSize = rodata.memSize;
+	set->codeDetails.roSize = rodata.fileSize;
 
 	set->codeDetails.rwAddress = rwdata.address;
 	set->codeDetails.rwMaxPages = rwdata.pageNum;
-	set->codeDetails.rwSize = rwdata.memSize;
+	set->codeDetails.rwSize = rwdata.fileSize;
 
 	if (set->rsfSet->SystemControlInfo.StackSize)
 		set->codeDetails.stackSize = strtoul(set->rsfSet->SystemControlInfo.StackSize, NULL, 0);

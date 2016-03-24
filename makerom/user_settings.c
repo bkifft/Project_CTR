@@ -92,6 +92,7 @@ void SetDefaults(user_settings *set)
 	set->ncch.includeExefsLogo = false;
 	set->common.outFormat = NCCH;
 	set->ncch.ncchType = format_not_set;
+	set->ncch.noCodePadding = false;
 
 	// RSF Settings
 	clrmem(&set->common.rsfSet, sizeof(rsf_settings));
@@ -350,6 +351,14 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 		}
 		set->ncch.includeExefsLogo = true;
 		set->ncch.ncchType |= CFA;
+		return 1;
+	}
+	else if (strcmp(argv[i], "-nocodepadding") == 0) {
+		if (ParamNum) {
+			PrintNoNeedParam(argv[i]);
+			return USR_BAD_ARG;
+		}
+		set->ncch.noCodePadding = true;
 		return 1;
 	}
 
@@ -941,6 +950,7 @@ void DisplayExtendedHelp(char *app_name)
 	printf(" -logo          <file>              Logo file (Overrides \"BasicInfo/Logo\" in RSF)\n");
 	printf(" -desc          <apptype>:<fw>      Specify Access Descriptor template\n");
 	printf(" -exefslogo                         Include Logo in ExeFS (Required for usage on <5.0 systems)\n");
+	printf(" -nocodepadding                     For building sysmodules, do not pad .code segments\n");
 	printf("NCCH REBUILD OPTIONS:\n");
 	printf(" -code          <file>              Decompressed ExeFS \".code\"\n");
 	printf(" -exheader      <file>              Exheader template\n");
