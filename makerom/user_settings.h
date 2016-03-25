@@ -267,6 +267,7 @@ typedef struct
 		char *exheaderPath; // for .code details
 		char *plainRegionPath; // prebuilt Plain Region
 		char *romfsPath; // Prebuild _cleartext_ romfs binary
+		bool noCodePadding; // do not pad code.bin for sysmodule
 		
 		bool useSecCrypto;
 		u8 keyXID;

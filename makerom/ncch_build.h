@@ -19,6 +19,7 @@ typedef struct
 		bool IsCfa;
 		bool IsBuildingCodeSection;
 		bool UseRomFS;
+		bool noCodePadding;
 		
 		bool useSecCrypto;
 		u8 keyXID;
