@@ -88,6 +88,7 @@ typedef enum
 	fsaccess_SHOP = (1 << 18), // 0x00040000 probably used by eshop
 	fsaccess_SHELL = (1 << 19), // 0x00080000 reference to "Nintendo [User Interface] Shell" (NS)?
 	fsaccess_CATEGORY_HOME_MENU = (1 << 20), // 0x00100000 used by homemenu
+	fsaccess_SEEDDB = (1 << 21), // 0x00200000 seeddb access
 } file_system_access;
 
 typedef enum
