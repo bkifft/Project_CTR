@@ -464,6 +464,9 @@ char* exheader_print_accessinfobit(u32 bit, char *str)
 		case 20 : 
 			sprintf(str,"Category HomeMenu");
 			break;
+		case 21 : 
+			sprintf(str,"Seed DB");
+			break;
 		default : 
 			sprintf(str,"Bit %d (unknown)",bit);
 			break;

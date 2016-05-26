@@ -490,6 +490,8 @@ int SetARM11StorageInfoFsAccessInfo(exhdr_ARM11SystemLocalCapabilities *arm11, r
 			accessInfo |= fsaccess_SHELL;
 		else if(strcmp(rsf->AccessControlInfo.FileSystemAccess[i],"CategoryHomeMenu") == 0)
 			accessInfo |= fsaccess_CATEGORY_HOME_MENU;
+		else if(strcmp(rsf->AccessControlInfo.FileSystemAccess[i],"SeedDB") == 0)
+			accessInfo |= fsaccess_SEEDDB;
 		else{
 			fprintf(stderr,"[EXHEADER ERROR] Invalid FileSystemAccess Name: \"%s\"\n",rsf->AccessControlInfo.FileSystemAccess[i]);
 			return EXHDR_BAD_RSF_OPT;
