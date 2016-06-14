@@ -61,10 +61,12 @@ void		ctr_add_counter( ctr_aes_context* ctx,
 void		ctr_set_counter( ctr_aes_context* ctx, 
 						 u8 ctr[16] );
 
+void		ctr_init_key(ctr_aes_context* ctx,
+						 u8 key[16]);
+
 
 void		ctr_init_counter( ctr_aes_context* ctx, 
-						  u8 key[16], 
-						  u8 ctr[16] );
+						 u8 ctr[16] );
 
 
 void		ctr_crypt_counter_block( ctr_aes_context* ctx, 

@@ -45,7 +45,6 @@ typedef struct
 	u64 size;
 	settings* usersettings;
 	u8 counter[16];
-	u8 key[16];
 	ctr_aes_context aes;
 	int encrypted;
 

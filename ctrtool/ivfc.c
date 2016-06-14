@@ -38,7 +38,7 @@ void ivfc_set_encrypted(ivfc_context* ctx, u32 encrypted)
 
 void ivfc_set_key(ivfc_context* ctx, u8 key[16])
 {
-	memcpy(ctx->key, key, 16);
+	ctr_init_key(&ctx->aes, key);
 }
 
 void ivfc_set_counter(ivfc_context* ctx, u8 counter[16])
@@ -50,8 +50,14 @@ void ivfc_fseek(ivfc_context* ctx, u64 offset)
 {
 	u64 data_pos = offset - ctx->offset;
 	fseeko64(ctx->file, offset, SEEK_SET);
-	ctr_init_counter(&ctx->aes, ctx->key, ctx->counter);
-	ctr_add_counter(&ctx->aes, (u32) (data_pos / 0x10));
+
+	if (ctx->encrypted) {
+		//printf("start fseek encrypted prep\n");
+		ctr_init_counter(&ctx->aes, ctx->counter);
+		//printf("middle fseek encrypted prep\n");
+		ctr_add_counter(&ctx->aes, (u32)(data_pos / 0x10));
+		//printf("finish fseek encrypted prep\n");
+	}
 }
 
 size_t ivfc_fread(ivfc_context* ctx, void* buffer, size_t size, size_t count)
@@ -124,30 +130,53 @@ void ivfc_verify(ivfc_context* ctx, u32 flags)
 		level->hashcheck = Fail;
 	}
 
-	for(i=0; i<ctx->levelcount; i++)
-	{
-		ivfc_level* level = ctx->level + i;
+	// Import IVFC level hashes
+	uint8_t *levelhash[IVFC_MAX_LEVEL] = { NULL };
 
-		blockcount = (u32) (level->datasize / level->hashblocksize);
-		if (level->datasize % level->hashblocksize != 0)
+	for (i=0; i<ctx->levelcount; i++)
+	{
+		blockcount = (u32)(ctx->level[i].datasize / ctx->level[i].hashblocksize);
+		u32 read_size = align(blockcount * 0x20, ctx->level[i].hashblocksize);
+		levelhash[i] = malloc(read_size);
+		ivfc_read(ctx, ctx->level[i].hashoffset, read_size, levelhash[i]);
+	}
+
+	// Verify blocks
+	for (i=0; i<ctx->levelcount; i++)
+	{
+		blockcount = (u32) (ctx->level[i].datasize / ctx->level[i].hashblocksize);
+		if (ctx->level[i].datasize % ctx->level[i].hashblocksize != 0)
 		{
 			fprintf(stderr, "Error, IVFC block size mismatch\n");
 			return;
 		}
 
-		level->hashcheck = Good;
+		ctx->level[i].hashcheck = Good;
 
-		for(j=0; j<blockcount; j++)
+		for (j=0; j<blockcount; j++)
 		{
 			u8 calchash[32];
-			u8 testhash[32];
 			
-			ivfc_hash(ctx, level->dataoffset + level->hashblocksize * j, level->hashblocksize, calchash);
-			ivfc_read(ctx, level->hashoffset + 0x20 * j, 0x20, testhash);
+			// a hash level
+			if (i < 2) {
+				ctr_sha_256(levelhash[i+1] + ctx->level[i].hashblocksize * j, ctx->level[i].hashblocksize, calchash);
+			}
+			// a data level
+			else {
+				ivfc_read(ctx, ctx->level[i].dataoffset + j * ctx->level[i].hashblocksize, ctx->level[i].hashblocksize, ctx->buffer);
+				ctr_sha_256(ctx->buffer, (u32)ctx->level[i].hashblocksize, calchash);
+			}
 
-			if (memcmp(calchash, testhash, 0x20) != 0)
-				level->hashcheck = Fail;
+			if (memcmp(calchash, levelhash[i] + 0x20 * j, 0x20) != 0) {
+				ctx->level[i].hashcheck = Fail;
+			}
+				
 		}
+	}
+
+	// Free level hashes
+	for (int i = 0; i < 3; i++) {
+		free(levelhash[i]);
 	}
 }
 

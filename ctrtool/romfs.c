@@ -38,6 +38,7 @@ void romfs_set_encrypted(romfs_context* ctx, u32 encrypted)
 void romfs_set_key(romfs_context* ctx, u8 key[16])
 {
 	memcpy(ctx->key, key, 16);
+	ctr_init_key(&ctx->aes, key);
 }
 
 void romfs_set_counter(romfs_context* ctx, u8 counter[16])
@@ -49,8 +50,11 @@ void romfs_fseek(romfs_context* ctx, u64 offset)
 {
 	u64 data_pos = offset - ctx->offset;
 	fseeko64(ctx->file, offset, SEEK_SET);
-	ctr_init_counter(&ctx->aes, ctx->key, ctx->counter);
-	ctr_add_counter(&ctx->aes, (u32) (data_pos / 0x10));
+
+	if (ctx->encrypted) {
+		ctr_init_counter(&ctx->aes, ctx->counter);
+		ctr_add_counter(&ctx->aes, (u32)(data_pos / 0x10));
+	}
 }
 
 size_t romfs_fread(romfs_context* ctx, void* buffer, size_t size, size_t count)

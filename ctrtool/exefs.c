@@ -124,7 +124,8 @@ void exefs_save(exefs_context* ctx, u32 index, u32 flags)
 	}
 
 	fseeko64(ctx->file, ctx->offset + offset, SEEK_SET);
-	ctr_init_counter(&ctx->aes, ctx->key, ctx->counter);
+	ctr_init_key(&ctx->aes, ctx->key);
+	ctr_init_counter(&ctx->aes, ctx->counter);
 	ctr_add_counter(&ctx->aes, offset / 0x10);
 
 	if (index == 0 && (ctx->compressedflag || (flags & DecompressCodeFlag)) && ((flags & RawFlag) == 0))
@@ -210,10 +211,12 @@ void exefs_read_header(exefs_context* ctx, u32 flags)
 	fseeko64(ctx->file, ctx->offset, SEEK_SET);
 	fread(&ctx->header, 1, sizeof(exefs_header), ctx->file);
 
-	ctr_init_counter(&ctx->aes, ctx->key, ctx->counter);
-
-	if (ctx->encrypted)
+	if (ctx->encrypted) {
+		ctr_init_key(&ctx->aes, ctx->key);
+		ctr_init_counter(&ctx->aes, ctx->counter);
 		ctr_crypt_counter(&ctx->aes, (u8*)&ctx->header, (u8*)&ctx->header, sizeof(exefs_header));
+	}
+		
 }
 
 void exefs_calculate_hash(exefs_context* ctx, u8 hash[32])
@@ -269,7 +272,8 @@ int exefs_verify(exefs_context* ctx, u32 index, u32 flags)
 		return 0;
 
 	fseeko64(ctx->file, ctx->offset + offset, SEEK_SET);
-	ctr_init_counter(&ctx->aes, ctx->key, ctx->counter);
+	ctr_init_key(&ctx->aes, ctx->key);
+	ctr_init_counter(&ctx->aes, ctx->counter);
 	ctr_add_counter(&ctx->aes, offset / 0x10);
 
 	ctr_sha_256_init(&ctx->sha);

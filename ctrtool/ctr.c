@@ -4,6 +4,7 @@
 #include <time.h>
 
 #include "ctr.h"
+#include "utils.h"
 
 
 void ctr_set_iv( ctr_aes_context* ctx,
@@ -15,23 +16,30 @@ void ctr_set_iv( ctr_aes_context* ctx,
 void ctr_add_counter( ctr_aes_context* ctx,
 				      u32 block_num )
 {
-	u32 i, j;
-	for (i = 0; i < block_num; i++) {
-		for (j = 0x10; j > 0; j--) {
-			// increment u8 by 1
-			ctx->ctr[j - 1]++;
+	u32 ctr[4];
+	ctr[3] = getbe32(&ctx->ctr[0]);
+	ctr[2] = getbe32(&ctx->ctr[4]);
+	ctr[1] = getbe32(&ctx->ctr[8]);
+	ctr[0] = getbe32(&ctx->ctr[12]);
 
-			// if it didn't overflow to 0, then we can exit now
-			if (ctx->ctr[j - 1])
-				break;
-
-			// if we reach here, the next u8 needs to be incremented
-
-			// Loop to beginning back if needed
-			if (j == 1)
-				j = 0x10;
+	for (u32 i = 0; i < 4; i++) {
+		u64 total = ctr[i] + block_num;
+		// if there wasn't a wrap around, add the two together and exit
+		if (total <= 0xffffffff) {
+			ctr[i] += block_num;
+			break;
 		}
+
+		// add the difference
+		ctr[i] = (u32)(total - 0x100000000);
+		// carry to next word
+		block_num = (u32)(total >> 32);
 	}
+	
+	putbe32(ctx->ctr + 0x00, ctr[3]);
+	putbe32(ctx->ctr + 0x04, ctr[2]);
+	putbe32(ctx->ctr + 0x08, ctr[1]);
+	putbe32(ctx->ctr + 0x0C, ctr[0]);
 }
 				  
 void ctr_set_counter( ctr_aes_context* ctx,
@@ -41,11 +49,15 @@ void ctr_set_counter( ctr_aes_context* ctx,
 }
 
 
-void ctr_init_counter( ctr_aes_context* ctx,
-				       u8 key[16],
-				       u8 ctr[16] )
+void ctr_init_key(ctr_aes_context* ctx,
+				       u8 key[16])
 {
 	aes_setkey_enc(&ctx->aes, key, 128);
+}
+
+void ctr_init_counter( ctr_aes_context* ctx,
+				       u8 ctr[16] )
+{
 	ctr_set_counter(ctx, ctr);
 }
 

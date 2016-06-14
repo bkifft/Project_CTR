@@ -135,7 +135,8 @@ int ncch_extract_prepare(ncch_context* ctx, u32 type, u32 flags)
 	ctx->extractflags = flags;
 	fseeko64(ctx->file, offset, SEEK_SET);
 	ncch_get_counter(ctx, counter, type);
-	ctr_init_counter(&ctx->aes, ctx->key, counter);
+	ctr_init_key(&ctx->aes, ctx->key);
+	ctr_init_counter(&ctx->aes, counter);
 
 	return 1;
 
