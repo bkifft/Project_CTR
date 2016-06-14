@@ -143,8 +143,7 @@ int SetPIDCategoryFromFlags(u16 *cat, char **CategoryFlags, u32 FlagNum)
 		else if(strcmp(CategoryFlags[i],"CanSkipConvertJumpId") == 0)
 			ret = SetPIDCategoryFromFlag(cat,PROGRAM_ID_CATEGORY_FLAG_CAN_SKIP_CONVERT_JUMP_ID,"CanSkipConvertJumpId");
 		
-		if(ret == PID_INVALID_CATEGORY) break;
-		
+
 		else {
 			fprintf(stderr,"[ID ERROR] Invalid CategoryFlag: \"%s\"\n",CategoryFlags[i]);
 			return PID_INVALID_CATEGORY;
