@@ -614,7 +614,15 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			PrintArgReqParam(argv[i], 1);
 			return USR_ARG_REQ_PARAM;
 		}
-		char *pos = strstr(argv[i + 1], ":");
+		int count = 0;
+		char *pos = argv[i + 1];
+		while ((pos = strstr(pos + 1, ":")))
+			count++;
+
+		pos = argv[i + 1];
+		while (count-- > 1)
+			pos = strstr(pos + 1, ":");
+
 		if (!pos || strlen(pos) < 2) {
 			fprintf(stderr, "[SETTING ERROR] Bad argument '%s %s', correct format:\n", argv[i], argv[i + 1]);
 			fprintf(stderr, "	%s <CONTENT PATH>:<INDEX>\n", argv[i]);
