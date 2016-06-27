@@ -245,3 +245,4 @@ int GetSaveDataSizeFromString(u64 *out, char *string, char *moduleName);
 int GetRemasterVersion_rsf(u16 *RemasterVersion, user_settings *usrset);
 
 void ErrorParamNotFound(char *string);
+void WarnParamNotFound(char *string);

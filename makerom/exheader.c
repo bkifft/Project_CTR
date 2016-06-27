@@ -617,8 +617,7 @@ int SetARM11ServiceAccessControl(exhdr_ARM11SystemLocalCapabilities *arm11, rsf_
 		}
 	}
 	else{
-		ErrorParamNotFound("AccessControlInfo/ServiceAccessControl");
-		return EXHDR_BAD_RSF_OPT;
+		WarnParamNotFound("AccessControlInfo/ServiceAccessControl");
 	}
 	return 0;
 }
@@ -1162,6 +1161,11 @@ int get_ExHeaderARM9AccessControlInfo(exhdr_ARM9AccessControlInfo *arm9, rsf_set
 void ErrorParamNotFound(char *string)
 {
 	fprintf(stderr,"[EXHEADER ERROR] Parameter Not Found: \"%s\"\n",string);
+}
+
+void WarnParamNotFound(char *string)
+{
+	fprintf(stderr, "[EXHEADER WARNING] Parameter Not Found: \"%s\"\n", string);
 }
 
 /* ExHeader Binary Print Functions */
