@@ -104,18 +104,18 @@ filepath* settings_get_tmd_path(settings* usersettings)
 		return 0;
 }
 
-filepath* settings_get_meta_path(settings* usersettings)
-{
-	if (usersettings)
-		return &usersettings->metapath;
-	else
-		return 0;
-}
-
 filepath* settings_get_content_path(settings* usersettings)
 {
 	if (usersettings)
 		return &usersettings->contentpath;
+	else
+		return 0;
+}
+
+filepath* settings_get_meta_path(settings* usersettings)
+{
+	if (usersettings)
+		return &usersettings->metapath;
 	else
 		return 0;
 }
@@ -243,14 +243,14 @@ void settings_set_tmd_path(settings* usersettings, const char* path)
 	filepath_set(&usersettings->tmdpath, path);
 }
 
-void settings_set_meta_path(settings* usersettings, const char* path)
-{
-	filepath_set(&usersettings->metapath, path);
-}
-
 void settings_set_content_path(settings* usersettings, const char* path)
 {
 	filepath_set(&usersettings->contentpath, path);
+}
+
+void settings_set_meta_path(settings* usersettings, const char* path)
+{
+	filepath_set(&usersettings->metapath, path);
 }
 
 void settings_set_exefs_dir_path(settings* usersettings, const char* path)

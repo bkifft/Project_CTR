@@ -224,7 +224,7 @@ int main(int argc, char* argv[])
 			case 4: settings_set_tik_path(&ctx.usersettings, optarg); break;
 			case 5: settings_set_tmd_path(&ctx.usersettings, optarg); break;
 			case 6: settings_set_content_path(&ctx.usersettings, optarg); break;
-			case 7: settings_set_content_path(&ctx.usersettings, optarg); break;
+			case 7: settings_set_meta_path(&ctx.usersettings, optarg); break;
 			case 8: settings_set_exefs_dir_path(&ctx.usersettings, optarg); break;
 			case 9: settings_set_mediaunit_size(&ctx.usersettings, strtoul(optarg, 0, 0)); break;
 			case 10: ctx.actions |= ShowKeysFlag; break;
