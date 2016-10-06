@@ -383,7 +383,7 @@ int SetupNcch(ncch_settings *set, romfs_buildctx *romfs)
 	else
 		acexSize = 0;
 
-	if(set->sections.logo.size){
+	if(set->sections.logo.size && set->options.IncludeExeFsLogo == false){
 		logoSize = set->sections.logo.size;
 		logoOffset = align(ncchSize,set->options.blockSize);
 		ncchSize = logoOffset + logoSize;
