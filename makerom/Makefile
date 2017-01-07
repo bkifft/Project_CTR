@@ -3,7 +3,7 @@ SRC_DIR = . polarssl libyaml
 OBJS = $(foreach dir,$(SRC_DIR),$(subst .c,.o,$(wildcard $(dir)/*.c)))
 
 # Compiler Settings
-CFLAGS = --std=c99 -O2 -flto -Wall -Wno-unused-value -Wno-unused-result -I.
+CFLAGS = --std=c99 -O2 -Wall -Wno-unused-value -Wno-unused-result -I.
 CC = gcc
 ifeq ($(OS),Windows_NT)
     #Windows Build CFG

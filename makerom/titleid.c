@@ -61,6 +61,11 @@ int GetProgramID(u64 *dest, rsf_settings *rsf, bool IsForExheader)
 	else
 		uniqueId = DEFAULT_UNIQUE_ID;
 
+	if(uniqueId & 0xFFF00000u){
+		fprintf(stderr,"[ID ERROR] Unique ID is out of range.\n");
+		return PID_BAD_RSF_SET;
+	}
+
 	// Getting Variation
 	if(SetTitleVariation(&variation,category,rsf) == PID_INVALID_VARIATION)
 		return PID_BAD_RSF_SET;
