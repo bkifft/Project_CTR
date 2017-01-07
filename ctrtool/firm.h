@@ -13,7 +13,7 @@ typedef struct
 	u8 offset[4];
 	u8 address[4];
 	u8 size[4];
-	u8 type[4];
+	u8 copyMethod[4];
 	u8 hash[32];
 } firm_sectionheader;
 
@@ -23,10 +23,10 @@ typedef struct
 typedef struct
 {
 	u8 magic[4];
-	u8 reserved1[4];
+	u8 priority[4];
 	u8 entrypointarm11[4];
 	u8 entrypointarm9[4];
-	u8 reserved2[0x30];
+	u8 reserved1[0x30];
 	firm_sectionheader section[4];
 	u8 signature[0x100];
 } firm_header;

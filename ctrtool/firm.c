@@ -206,9 +206,10 @@ void firm_print(firm_context* ctx)
 {
 	u32 i;
 	u32 address;
-	u32 type;
+	u32 copyMethod;
 	u32 offset;
 	u32 size;
+	u32 priority = getle32(ctx->header.priority);
 	u32 entrypointarm11 = getle32(ctx->header.entrypointarm11);
 	u32 entrypointarm9 = getle32(ctx->header.entrypointarm9);
 
@@ -221,6 +222,7 @@ void firm_print(firm_context* ctx)
 		memdump(stdout, "Signature (FAIL):       ", ctx->header.signature, 0x100);
 
 	fprintf(stdout, "\n");
+	fprintf(stdout, "Priority:               %u\n", priority);
 	fprintf(stdout, "Entrypoint ARM9:        0x%08X\n", entrypointarm9);
 	fprintf(stdout, "Entrypoint ARM11:       0x%08X\n", entrypointarm11);
 	fprintf(stdout, "\n");
@@ -234,12 +236,13 @@ void firm_print(firm_context* ctx)
 		offset = getle32(section->offset);
 		size = getle32(section->size);
 		address = getle32(section->address);
-		type = getle32(section->type);
+		copyMethod = getle32(section->copyMethod);
 
 		if (size)
 		{
 			fprintf(stdout, "Section %d              \n", i);
-			fprintf(stdout, " Type:                  %s\n", type==0? "ARM9" : type==1? "ARM11" : "UNKNOWN");
+			fprintf(stdout, " Copy Method:           %s\n", copyMethod==0 ? "NDMA" : copyMethod==1 ? "XDMA" :
+															copyMethod==2 ? "memcpy" : "UNKNOWN");
 			fprintf(stdout, " Address:               0x%08X\n", address);
 			fprintf(stdout, " Offset:                0x%08X\n", offset);
 			fprintf(stdout, " Size:                  0x%08X\n", size);			

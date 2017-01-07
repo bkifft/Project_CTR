@@ -5,7 +5,7 @@ OBJS = $(foreach dir,$(SRC_DIR),$(subst .c,.o,$(wildcard $(dir)/*.c))) $(foreach
 # Compiler Settings
 OUTPUT = ctrtool
 CXXFLAGS = -I.
-CFLAGS = -O2 -flto -Wall -Wno-unused-variable  -Wno-unused-result -I. -std=c99
+CFLAGS = -O2 -Wall -Wno-unused-variable  -Wno-unused-result -I. -std=c99
 CC = gcc
 CXX = g++
 ifeq ($(OS),Windows_NT)
