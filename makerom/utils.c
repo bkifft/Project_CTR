@@ -309,7 +309,7 @@ int fseek_64(FILE *fp, u64 file_pos)
 //Data Size conversion
 u16 u8_to_u16(const u8 *value, u8 endianness)
 {
-	u16 new_value;
+	u16 new_value = 0;
 	switch(endianness){
 		case(BE): new_value =  (value[1]<<0) | (value[0]<<8); break;
 		case(LE): new_value = (value[0]<<0) | (value[1]<<8); break;
@@ -319,7 +319,7 @@ u16 u8_to_u16(const u8 *value, u8 endianness)
 
 u32 u8_to_u32(const u8 *value, u8 endianness)
 {
-	u32 new_value;
+	u32 new_value = 0;
 	switch(endianness){
 		case(BE): new_value = (value[3]<<0) | (value[2]<<8) | (value[1]<<16) | (value[0]<<24); break;
 		case(LE): new_value = (value[0]<<0) | (value[1]<<8) | (value[2]<<16) | (value[3]<<24); break;
