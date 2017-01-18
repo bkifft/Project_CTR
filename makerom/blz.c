@@ -184,7 +184,7 @@ u8* BLZ_Encode(char *filename, u32* pak_len, int mode) {
 u8 *BLZ_Code(u8 *raw_buffer, int raw_len, u32 *new_len, int best) {
   u8 *pak_buffer, *pak, *raw, *raw_end, *flg = NULL, *tmp;
   u32   pak_len, inc_len, hdr_len, enc_len, len, pos, max;
-  u32   len_best, pos_best, len_next, pos_next, len_post, pos_post;
+  u32   len_best, pos_best = 0, len_next, pos_next, len_post, pos_post;
   u32   pak_tmp, raw_tmp;
   u8  mask;
 

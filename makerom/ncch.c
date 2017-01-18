@@ -361,7 +361,7 @@ int SetupNcch(ncch_settings *set, romfs_buildctx *romfs)
 {
 	u64 ncchSize = 0;
 	u64 exhdrSize,acexSize,logoSize,plnRgnSize,exefsSize,romfsSize;
-	u64 exhdrOffset,acexOffset,logoOffset,plnRgnOffset,exefsOffset,romfsOffset;
+	u64 exhdrOffset,acexOffset = 0,logoOffset,plnRgnOffset,exefsOffset,romfsOffset;
 	u32 exefsHashSize,romfsHashSize;
 
 	ncchSize += sizeof(ncch_hdr); // Sig+Hdr
