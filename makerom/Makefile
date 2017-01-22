@@ -31,5 +31,9 @@ rebuild: clean build
 build: $(OBJS)
 	$(CC) -o $(OUTPUT) $(LIBS) $(OBJS)
 
+install: $(OUTPUT)
+	@cp ./$(OUTPUT) -t $(DEVKITARM)/bin/
+	@echo "Installed."
+
 clean:
 	rm -rf $(OUTPUT) $(OBJS)
