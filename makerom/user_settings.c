@@ -508,6 +508,8 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			PrintArgReqParam(argv[i], 1);
 			return USR_ARG_REQ_PARAM;
 		}
+		set->cia.useFullTitleVer = true;
+		set->cia.useNormTitleVer = false;
 		u32 ver = strtoul(argv[i + 1], NULL, 0);
 		if (ver > VER_MICRO_MAX) {
 			fprintf(stderr, "[SETTING ERROR] Micro version: '%d' is too large, max: '%d'\n", ver, VER_MICRO_MAX);
