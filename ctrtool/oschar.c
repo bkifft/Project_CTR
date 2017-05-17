@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #ifndef _WIN32
+#ifndef __CYGWIN__
 #define LIBICONV_PLUG
+#endif
 #include <iconv.h>
 #endif
 #include "oschar.h"
