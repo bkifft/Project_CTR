@@ -214,8 +214,8 @@ void cia_process(cia_context* ctx, u32 actions)
 
 	
 
-	if (settings_get_common_key(ctx->usersettings))
-		tik_get_decrypted_titlekey(&ctx->tik, ctx->titlekey);
+	if (settings_get_common_keyX(ctx->usersettings))
+		tik_get_titlekey(&ctx->tik, ctx->titlekey);
 	else if(settings_get_title_key(ctx->usersettings))
 		memcpy(ctx->titlekey, settings_get_title_key(ctx->usersettings), 16);
 		

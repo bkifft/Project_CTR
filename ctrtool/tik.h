@@ -54,7 +54,7 @@ void tik_set_file(tik_context* ctx, FILE* file);
 void tik_set_offset(tik_context* ctx, u64 offset);
 void tik_set_size(tik_context* ctx, u32 size);
 void tik_set_usersettings(tik_context* ctx, settings* usersettings);
-void tik_get_decrypted_titlekey(tik_context* ctx, u8 decryptedkey[0x10]);
+void tik_get_titlekey(tik_context* ctx, u8 key[0x10]);
 void tik_get_titleid(tik_context* ctx, u8 titleid[8]);
 void tik_get_iv(tik_context* ctx, u8 iv[0x10]);
 void tik_decrypt_titlekey(tik_context* ctx, u8 decryptedkey[0x10]);

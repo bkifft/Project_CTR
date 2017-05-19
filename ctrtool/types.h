@@ -25,6 +25,7 @@ enum flags
 	ShowKeysFlag = (1<<6),
 	DecompressCodeFlag = (1<<7),
 	ShowSyscallsFlag = (1<<8),
+	DevFlag = (1<<9),
 };
 
 enum validstate
