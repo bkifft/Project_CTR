@@ -8,25 +8,25 @@ CXXFLAGS = -I.
 CFLAGS = -O2 -Wall -Wno-unused-variable  -Wno-unused-result -I. -std=c99
 CC = gcc
 CXX = g++
-ifeq ($(OS),Windows_NT)
+SYS := $(shell gcc -dumpmachine)
+ifneq (, $(findstring linux, $(SYS)))
+    # Linux
+    CFLAGS += -Wno-unused-but-set-variable
+else ifneq(, $(findstring cygwin, $(SYS)))
+    # Cygwin
+    CFLAGS += -Wno-unused-but-set-variable -DUSE_FILE32API
+    LIBS += -liconv
+else ifneq(, $(findstring darwin, $(SYS)))
+    # OS X
+    LIBS += -liconv
+else
     #Windows Build CFG
     CFLAGS += -Wno-unused-but-set-variable
-    LIBS += -static-libgcc -static-libstdc++
-else
-    UNAME_S := $(shell uname -s)
-    ifeq ($(UNAME_S),Darwin)
-        # OS X
-        CFLAGS +=
-        LIBS += -liconv
-    else
-        # Linux
-        CFLAGS += -Wno-unused-but-set-variable
-        LIBS +=
-    endif
+    LIBS += -static-libgcc
 endif
 
 main: $(OBJS)
-	$(CXX) -o $(OUTPUT) $(LIBS) $(OBJS)
+	$(CXX) -o $(OUTPUT) $(OBJS) $(LIBS)
 
 clean:
 	rm -rf $(OUTPUT) $(OBJS)

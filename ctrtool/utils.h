@@ -46,7 +46,7 @@ inline int fseeko64(FILE *__stream, long long __off, int __whence)
 {
 	return _fseeki64(__stream, __off, __whence);
 }
-#elif __APPLE__
+#elif __APPLE__ || __CYGWIN__
     #define fseeko64 fseek // OS X file I/O is 64bit
 #elif __linux__
     extern int fseeko64 (FILE *__stream, __off64_t __off, int __whence);
