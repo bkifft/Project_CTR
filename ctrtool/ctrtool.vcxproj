@@ -91,6 +91,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="aes_keygen.c" />
     <ClCompile Include="cia.c" />
     <ClCompile Include="ctr.c" />
     <ClCompile Include="cwav.c" />
@@ -124,6 +125,7 @@
     <ClCompile Include="tinyxml\tinyxmlparser.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="aes_keygen.h" />
     <ClInclude Include="cia.h" />
     <ClInclude Include="ctr.h" />
     <ClInclude Include="cwav.h" />
