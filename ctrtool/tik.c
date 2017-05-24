@@ -34,7 +34,7 @@ void tik_set_usersettings(tik_context* ctx, settings* usersettings)
 
 void tik_get_titlekey(tik_context* ctx, u8 key[0x10])
 {
-	memcpy(ctx->titlekey, key, 16);
+	memcpy(key, ctx->titlekey, 0x10);
 }
 
 void tik_get_titleid(tik_context* ctx, u8 titleid[8])
