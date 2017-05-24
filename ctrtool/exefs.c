@@ -48,30 +48,15 @@ void exefs_set_encrypted(exefs_context* ctx, u32 encrypted)
 	ctx->encrypted = encrypted;
 }
 
-void exefs_set_key(exefs_context* ctx, u8 key[16])
+void exefs_set_keys(exefs_context* ctx, u8 key[16], u8 special_key[16])
 {
 	memcpy(ctx->key, key, 16);
+	memcpy(ctx->special_key, special_key, 16);
 }
 
 void exefs_set_counter(exefs_context* ctx, u8 counter[16])
 {
 	memcpy(ctx->counter, counter, 16);
-}
-
-void exefs_determine_key(exefs_context* ctx, u32 actions)
-{
-	u8* key = settings_get_ncch_key(ctx->usersettings);
-
-	if (actions & PlainFlag)
-		ctx->encrypted = 0;
-	else
-	{
-		if (key)
-		{
-			ctx->encrypted = 1;
-			memcpy(ctx->key, key, 0x10);
-		}
-	}
 }
 
 void exefs_save(exefs_context* ctx, u32 index, u32 flags)
@@ -146,8 +131,14 @@ void exefs_save(exefs_context* ctx, u32 index, u32 flags)
 			goto clean;
 		}
 
-		if (ctx->encrypted)
+		if (ctx->encrypted) {
+			// .code and .firm use a special key on 7.0+
+			if (ctx->encrypted & NCCHCRYPTO_SPECIAL_FSES)
+				ctr_init_key(&ctx->aes, ctx->special_key);
 			ctr_crypt_counter(&ctx->aes, compressedbuffer, compressedbuffer, compressedsize);
+			if (ctx->encrypted & NCCHCRYPTO_SPECIAL_FSES)
+				ctr_init_key(&ctx->aes, ctx->key);
+		}
 
 
 		decompressedsize = lzss_get_decompressed_size(compressedbuffer, compressedsize);
@@ -228,8 +219,6 @@ void exefs_process(exefs_context* ctx, u32 actions)
 {
 	u32 i;
 
-	exefs_determine_key(ctx, actions);
-
 	exefs_read_header(ctx, actions);
 
 	if (actions & VerifyFlag)
@@ -272,7 +261,10 @@ int exefs_verify(exefs_context* ctx, u32 index, u32 flags)
 		return 0;
 
 	fseeko64(ctx->file, ctx->offset + offset, SEEK_SET);
-	ctr_init_key(&ctx->aes, ctx->key);
+	if (index == 0 && (ctx->encrypted & NCCHCRYPTO_SPECIAL_FSES))
+		ctr_init_key(&ctx->aes, ctx->special_key);
+	else
+		ctr_init_key(&ctx->aes, ctx->key);
 	ctr_init_counter(&ctx->aes, ctx->counter);
 	ctr_add_counter(&ctx->aes, offset / 0x10);
 

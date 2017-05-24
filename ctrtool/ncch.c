@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "ctr.h"
 #include "settings.h"
+#include "aes_keygen.h"
 #include <inttypes.h>
 
 static int programid_is_system(u8 programid[8])
@@ -333,6 +334,14 @@ void ncch_process(ncch_context* ctx, u32 actions)
 	ncch_get_counter(ctx, exefscounter, NCCHTYPE_EXEFS);
 	ncch_get_counter(ctx, romfscounter, NCCHTYPE_ROMFS);
 
+	if (actions & ShowKeysFlag)
+	{
+		fprintf(stdout, "Counter(s):\n");
+		memdump(stdout, "  exheader: ", exheadercounter, 0x10);
+		memdump(stdout, "  ExeFS: ", exefscounter, 0x10);
+		memdump(stdout, "  RomFS: ", romfscounter, 0x10);
+	}
+
 
 	exheader_set_file(&ctx->exheader, ctx->file);
 	exheader_set_offset(&ctx->exheader, ncch_get_exheader_offset(ctx) );
@@ -351,7 +360,7 @@ void ncch_process(ncch_context* ctx, u32 actions)
 	exefs_set_partitionid(&ctx->exefs, ctx->header.partitionid);
 	exefs_set_usersettings(&ctx->exefs, ctx->usersettings);
 	exefs_set_counter(&ctx->exefs, exefscounter);
-	exefs_set_key(&ctx->exefs, ctx->key);
+	exefs_set_keys(&ctx->exefs, ctx->key, ctx->special_key);
 	exefs_set_encrypted(&ctx->exefs, ctx->encrypted);
 
 	romfs_set_file(&ctx->romfs, ctx->file);
@@ -359,7 +368,10 @@ void ncch_process(ncch_context* ctx, u32 actions)
 	romfs_set_size(&ctx->romfs, ncch_get_romfs_size(ctx));
 	romfs_set_usersettings(&ctx->romfs, ctx->usersettings);
 	romfs_set_counter(&ctx->romfs, romfscounter);
-	romfs_set_key(&ctx->romfs, ctx->key);
+	if (ctx->encrypted & NCCHCRYPTO_SPECIAL_FSES)
+		romfs_set_key(&ctx->romfs, ctx->special_key);
+	else
+		romfs_set_key(&ctx->romfs, ctx->key);
 	romfs_set_encrypted(&ctx->romfs, ctx->encrypted);
 
 	exheader_read(&ctx->exheader, actions);
@@ -370,6 +382,23 @@ void ncch_process(ncch_context* ctx, u32 actions)
 
 	if (actions & InfoFlag)
 		ncch_print(ctx);		
+
+	if (ctx->encrypted == NCCHCRYPTO_BROKEN)
+	{
+		fprintf(stderr, "Error, NCCH encryption broken.\n");
+		return;
+	}
+
+	if ((actions & ShowKeysFlag) && ctx->encrypted)
+	{
+		fprintf(stdout, "Using key(s):\n");
+		memdump(stdout, "  0x2C: ", ctx->key, 0x10);
+		if (ctx->encrypted & NCCHCRYPTO_SPECIAL_FSES)
+		{
+			fprintf(stdout, "  special (%02x): ", ctx->header.flags[3]);
+			memdump(stdout, "", ctx->special_key, 0x10);
+		}
+	}
 
 	if (actions & ExtractFlag)
 	{
@@ -482,8 +511,12 @@ u64 ncch_get_mediaunit_size(ncch_context* ctx)
 void ncch_determine_key(ncch_context* ctx, u32 actions)
 {
 	exheader_header exheader;
-	u8* key = settings_get_ncch_key(ctx->usersettings);
+	u8* key;
+	u8* seed;
 	ctr_ncchheader* header = &ctx->header;
+	u8 seedbuf[0x20];
+	u8 seedhash[0x20];
+	u8 keyX[0x10], keyY[0x10], seedKeyY[0x10];
 
 	ctx->encrypted = 0;
 	memset(ctx->key, 0, 0x10);
@@ -492,17 +525,58 @@ void ncch_determine_key(ncch_context* ctx, u32 actions)
 	{
 		ctx->encrypted = 0;
 	} 
-	else if (key != 0)
-	{
-		ctx->encrypted = 1;
-		memcpy(ctx->key, key, 0x10);
-	}
 	else
 	{
 		// No explicit NCCH key defined, so we try to decide
-		
+		// In almost all of these scenarios, the normal 0x2C NCCH keyX will be the default,
+		// except for the old fixedkey crypto, where we'll override it anyway, so let's just
+		// set the 0x2C keyX first.
+		key = settings_get_ncchkeyX_old(ctx->usersettings);
+		if (key)
+			memcpy(keyX, key, 0x10);
+		else
+			fprintf(stderr, "Warning, could not read NCCH base key. Decryption will likely fail.\n");
 
-		// Firstly, check if the NCCH is already decrypted, by reading the programid in the exheader
+		// The keyY is normally the beginning of the NCCH header signature. In case seed crypto
+		// changes that, we'll override it below.
+		memcpy(keyY, header->signature, 0x10);
+		memcpy(seedKeyY, keyY, 0x10);
+
+		// 0x2c crypto is normally used; we override it where necessary
+		ctr_aes_keygen(keyX, keyY, ctx->key);
+
+		// Seed crypto can be used alongside any other crypto type, so we'll need to figure this out early.
+		if (header->flags[7] & 0x20)
+		{
+			ctx->encrypted = NCCHCRYPTO_SEED;
+			seed = settings_get_seed(ctx->usersettings);
+			if (!seed)
+			{
+				fprintf(stderr, "This title uses seed crypto, but no seed is set, unable to decrypt.\n"
+						"Use -p to avoid decryption or use --seed=SEEDHERE to provide the seed.\n");
+				ctx->encrypted = NCCHCRYPTO_BROKEN;
+				return;
+			}
+
+			memcpy(seedbuf, seed, 0x10);
+			// Assumes running on little endian
+			memcpy(seedbuf + 0x10, header->programid, sizeof(header->programid));
+			ctr_sha_256(seedbuf, 0x18, seedhash);
+			if (memcmp(seedhash, header->seedcheck, sizeof(header->seedcheck))) {
+				fprintf(stderr, "Seed check mismatch. (Got: %02x%02x%02x%02x, expected: %02x%02x%02x%02x)\n",
+						seedhash[0], seedhash[1], seedhash[2], seedhash[3],
+						header->seedcheck[0], header->seedcheck[1], header->seedcheck[2], header->seedcheck[3]);
+				ctx->encrypted = NCCHCRYPTO_BROKEN;
+				return;
+			}
+
+			memcpy(seedbuf, header->signature, 0x10);
+			memcpy(seedbuf + 0x10, seed, 0x10);
+			ctr_sha_256(seedbuf, 0x20, seedhash);
+			memcpy(seedKeyY, seedhash, 0x10);
+		}
+
+		// Check if the NCCH is already decrypted, by reading the programid in the exheader
 		// Otherwise, use determination rules
 		fseeko64(ctx->file, ncch_get_exheader_offset(ctx), SEEK_SET);
 		memset(&exheader, 0, sizeof(exheader));
@@ -511,37 +585,74 @@ void ncch_determine_key(ncch_context* ctx, u32 actions)
 		if (!memcmp(exheader.arm11systemlocalcaps.programid, ctx->header.programid, 8))
 		{
 			// program id's match, so it's probably not encrypted
-			ctx->encrypted = 0;
+			ctx->encrypted = NCCHCRYPTO_NONE;
+			if (!(header->flags[7] & 4))
+				fprintf(stderr, "Warning, exheader seems decrypted but the NCCH says it isn't.\n"
+						"This NCCH will likely break on console.\n");
 		}
-		else if (header->flags[7] & 4)
+		else if (header->flags[7] & 4) // no crypto
 		{
-			ctx->encrypted = 0; // not encrypted
+			ctx->encrypted = NCCHCRYPTO_NONE;
 		}
-		else if (header->flags[7] & 1)
+		else if (header->flags[7] & 1) // fixed key crypto
 		{
+			ctx->encrypted = NCCHCRYPTO_FIXED;
 			if (programid_is_system(header->programid))
 			{
 				// fixed system key
-				ctx->encrypted = 1;
 				key = settings_get_ncch_fixedsystemkey(ctx->usersettings);
-				if (!key)
-					fprintf(stdout, "Warning, could not read system fixed key.\n");
-				else
+				if (!key) {
+					fprintf(stderr, "Error, could not read system fixed key.\n");
+					ctx->encrypted = NCCHCRYPTO_BROKEN;
+				} else {
 					memcpy(ctx->key, key, 0x10);
+				}
 			}
 			else
 			{
 				// null key
-				ctx->encrypted = 1;
 				memset(ctx->key, 0, 0x10);
 			}
 		}
+		else if (header->flags[3] == 0x01) // 7.0 crypto
+		{
+			ctx->encrypted = NCCHCRYPTO_SEVEN;
+			key = settings_get_ncchkeyX_seven(ctx->usersettings);
+			if (!key) {
+				fprintf(stderr, "Error, could not read NCCH 7.0 keyX.\n");
+				return;
+			}
+			ctr_aes_keygen(key, seedKeyY, ctx->special_key);
+		}
+		else if (header->flags[3] == 0x0A) // N9.3 crypto
+		{
+			ctx->encrypted = NCCHCRYPTO_NINETHREE;
+			key = settings_get_ncchkeyX_ninethree(ctx->usersettings);
+			if (!key) {
+				fprintf(stderr, "Error, could not read NCCH 9.3 keyX.\n");
+				return;
+			}
+			ctr_aes_keygen(key, seedKeyY, ctx->special_key);
+		}
+		else if (header->flags[3] == 0x0B) // N9.6 crypto
+		{
+			ctx->encrypted = NCCHCRYPTO_NINESIX;
+			key = settings_get_ncchkeyX_ninesix(ctx->usersettings);
+			if (!key) {
+				fprintf(stderr, "Error, could not read NCCH 9.6 keyX.\n");
+				return;
+			}
+			ctr_aes_keygen(key, seedKeyY, ctx->special_key);
+		}
+		else if (header->flags[3] != 0) // unknown special crypto
+		{
+			fprintf(stderr, "Warning, unknown NCCH crypto method.\n");
+			ctx->encrypted = NCCHCRYPTO_BROKEN;
+		}
 		else
 		{
-			// secure key (cannot decrypt!)
-			fprintf(stdout, "Warning, could not read secure key.\n");
-			ctx->encrypted = 1;
-			memset(ctx->key, 0, 0x10);
+			// old/normal NCCH crypto
+			ctx->encrypted = NCCHCRYPTO_OLD;
 		}
 	}
 }

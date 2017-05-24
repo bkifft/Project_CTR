@@ -42,27 +42,31 @@ typedef struct
 
 typedef struct
 {
-	key128 commonkey;
 	key128 titlekey;
-	key128 ncchkey;
+	key128 seed;
+	key128 commonkeyX;
 	key128 ncchfixedsystemkey;
+	key128 ncchkeyX_old;
+	key128 ncchkeyX_seven;
+	key128 ncchkeyX_ninethree;
+	key128 ncchkeyX_ninesix;
 	rsakey2048 ncsdrsakey;
 	rsakey2048 ncchrsakey;
 	rsakey2048 ncchdescrsakey;
 	rsakey2048 firmrsakey;
 } keyset;
 
-void keyset_init(keyset* keys);
+void keyset_init(keyset* keys, u32 actions);
 int keyset_load(keyset* keys, const char* fname, int verbose);
 void keyset_merge(keyset* keys, keyset* src);
-void keyset_set_commonkey(keyset* keys, unsigned char* keydata);
-void keyset_parse_commonkey(keyset* keys, char* keytext, int keylen);
-void keyset_set_titlekey(keyset* keys, unsigned char* keydata);
+void keyset_parse_commonkeyX(keyset* keys, char* keytext, int keylen);
 void keyset_parse_titlekey(keyset* keys, char* keytext, int keylen);
-void keyset_set_ncchkey(keyset* keys, unsigned char* keydata);
-void keyset_parse_ncchkey(keyset* keys, char* keytext, int keylen);
-void keyset_set_ncchfixedsystemkey(keyset* keys, unsigned char* keydata);
+void keyset_parse_ncchkeyX_old(keyset* keys, char* keytext, int keylen);
 void keyset_parse_ncchfixedsystemkey(keyset* keys, char* keytext, int keylen);
+void keyset_parse_ncchkeyX_seven(keyset* keys, char* keytext, int keylen);
+void keyset_parse_ncchkeyX_ninethree(keyset* keys, char* keytext, int keylen);
+void keyset_parse_ncchkeyX_ninesix(keyset* keys, char* keytext, int keylen);
+void keyset_parse_seed(keyset* keys, char* keytext, int keylen);
 void keyset_dump(keyset* keys);
 
 #ifdef __cplusplus

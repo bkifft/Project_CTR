@@ -33,9 +33,57 @@ static unsigned char hextobin(char c)
 	return 0;
 }
 
-void keyset_init(keyset* keys)
+void keyset_init(keyset* keys, u32 actions)
 {
+	const key128 defaultkeys_retail[] = {
+		// common keyX
+		{{0x61, 0x70, 0x85, 0x71, 0x9b, 0x7c, 0xfb, 0x31, 0x6d, 0xf4, 0xdf, 0x2e, 0x83, 0x62, 0xc6, 0xe2}, 1},
+		// fixed system key - unknown if used/correct?
+		{{0x52, 0x7c, 0xe6, 0x30, 0xa9, 0xca, 0x30, 0x5f, 0x36, 0x96, 0xf3, 0xcd, 0xe9, 0x54, 0x19, 0x4b}, 1},
+		// NCCH 0x2c keyX
+		{{0xb9, 0x8e, 0x95, 0xce, 0xca, 0x3e, 0x4d, 0x17, 0x1f, 0x76, 0xa9, 0x4d, 0xe9, 0x34, 0xc0, 0x53}, 1},
+		// NCCH 0x25 keyX 7.x
+		{{0xce, 0xe7, 0xd8, 0xab, 0x30, 0xc0, 0x0d, 0xae, 0x85, 0x0e, 0xf5, 0xe3, 0x82, 0xac, 0x5a, 0xf3}, 1},
+		// NCCH 0x18 keyX N9.3
+		{{0x82, 0xe9, 0xc9, 0xbe, 0xbf, 0xb8, 0xbd, 0xb8, 0x75, 0xec, 0xc0, 0xa0, 0x7d, 0x47, 0x43, 0x74}, 1},
+		// NCCH 0x1B keyX N9.6
+		{{0x45, 0xad, 0x04, 0x95, 0x39, 0x92, 0xc7, 0xc8, 0x93, 0x72, 0x4a, 0x9a, 0x7b, 0xce, 0x61, 0x82}, 1}
+	};
+	const key128 defaultkeys_dev[] = {
+		// common keyX
+		{{0xbd, 0x4f, 0xe7, 0xe7, 0x33, 0xc7, 0x55, 0xfc, 0xe7, 0x54, 0x0e, 0xab, 0xbd, 0x8a, 0xc3, 0x0d}, 1},
+		// fixed system key
+		{{0x52, 0x7c, 0xe6, 0x30, 0xa9, 0xca, 0x30, 0x5f, 0x36, 0x96, 0xf3, 0xcd, 0xe9, 0x54, 0x19, 0x4b}, 1},
+		// NCCH 0x2c keyX
+		{{0x51, 0x02, 0x07, 0x51, 0x55, 0x07, 0xcb, 0xb1, 0x8e, 0x24, 0x3d, 0xcb, 0x85, 0xe2, 0x3a, 0x1d}, 1},
+		// NCCH 0x25 keyX 7.x
+		{{0x81, 0x90, 0x7a, 0x4b, 0x6f, 0x1b, 0x47, 0x32, 0x3a, 0x67, 0x79, 0x74, 0xce, 0x4a, 0xd7, 0x1b}, 1},
+		// NCCH 0x18 keyX N9.3
+		{{0x30, 0x4b, 0xf1, 0x46, 0x83, 0x72, 0xee, 0x64, 0x11, 0x5e, 0xbd, 0x40, 0x93, 0xd8, 0x42, 0x76}, 1},
+		// NCCH 0x1B keyX N9.6
+		{{0x6c, 0x8b, 0x29, 0x44, 0xa0, 0x72, 0x60, 0x35, 0xf9, 0x41, 0xdf, 0xc0, 0x18, 0x52, 0x4f, 0xb6}, 1}
+	};
+
 	memset(keys, 0, sizeof(keyset));
+
+	if (actions & PlainFlag)
+		return;
+
+	if (!(actions & DevFlag)) {
+		memcpy(&keys->commonkeyX, &defaultkeys_retail[0], sizeof(key128));
+		memcpy(&keys->ncchfixedsystemkey, &defaultkeys_retail[1], sizeof(key128));
+		memcpy(&keys->ncchkeyX_old, &defaultkeys_retail[2], sizeof(key128));
+		memcpy(&keys->ncchkeyX_seven, &defaultkeys_retail[3], sizeof(key128));
+		memcpy(&keys->ncchkeyX_ninethree, &defaultkeys_retail[4], sizeof(key128));
+		memcpy(&keys->ncchkeyX_ninesix, &defaultkeys_retail[5], sizeof(key128));
+	} else {
+		memcpy(&keys->commonkeyX, &defaultkeys_dev[0], sizeof(key128));
+		memcpy(&keys->ncchfixedsystemkey, &defaultkeys_dev[1], sizeof(key128));
+		memcpy(&keys->ncchkeyX_old, &defaultkeys_dev[2], sizeof(key128));
+		memcpy(&keys->ncchkeyX_seven, &defaultkeys_dev[3], sizeof(key128));
+		memcpy(&keys->ncchkeyX_ninethree, &defaultkeys_dev[4], sizeof(key128));
+		memcpy(&keys->ncchkeyX_ninesix, &defaultkeys_dev[5], sizeof(key128));
+	}
 }
 
 int keyset_load_key(TiXmlHandle node, unsigned char* key, unsigned int size, int* valid)
@@ -158,9 +206,12 @@ int keyset_load(keyset* keys, const char* fname, int verbose)
 	keyset_load_rsakey2048(root.FirstChild("ncchrsakey"), &keys->ncchrsakey);
 	keyset_load_rsakey2048(root.FirstChild("ncchdescrsakey"), &keys->ncchdescrsakey);
 	keyset_load_rsakey2048(root.FirstChild("firmrsakey"), &keys->firmrsakey);
-	keyset_load_key128(root.FirstChild("commonkey"), &keys->commonkey);
-	keyset_load_key128(root.FirstChild("ncchkey"), &keys->ncchkey);
+	keyset_load_key128(root.FirstChild("commonkeyx"), &keys->commonkeyX);
 	keyset_load_key128(root.FirstChild("ncchfixedsystemkey"), &keys->ncchfixedsystemkey);
+	keyset_load_key128(root.FirstChild("ncchkeyxold"), &keys->ncchkeyX_old);
+	keyset_load_key128(root.FirstChild("ncchkeyxseven"), &keys->ncchkeyX_seven);
+	keyset_load_key128(root.FirstChild("ncchkeyxninethree"), &keys->ncchkeyX_ninethree);
+	keyset_load_key128(root.FirstChild("ncchkeyxninesix"), &keys->ncchkeyX_ninesix);
 
 
 	return 1;
@@ -169,14 +220,21 @@ int keyset_load(keyset* keys, const char* fname, int verbose)
 
 void keyset_merge(keyset* keys, keyset* src)
 {
-	if (src->ncchkey.valid)
-		keyset_set_key128(&keys->ncchkey, src->ncchkey.data);
-	if (src->ncchfixedsystemkey.valid)
-		keyset_set_key128(&keys->ncchfixedsystemkey, src->ncchfixedsystemkey.data);
-	if (src->commonkey.valid)
-		keyset_set_key128(&keys->commonkey, src->commonkey.data);
-	if (src->titlekey.valid)
-		keyset_set_key128(&keys->titlekey, src->titlekey.data);
+#define COPY_IF_VALID(v) do {\
+	if (src->v.valid && !keys->v.valid)\
+		keyset_set_key128(&keys->v, src->v.data);\
+} while (0)
+
+	COPY_IF_VALID(titlekey);
+	COPY_IF_VALID(commonkeyX);
+	COPY_IF_VALID(ncchfixedsystemkey);
+	COPY_IF_VALID(ncchkeyX_old);
+	COPY_IF_VALID(ncchkeyX_seven);
+	COPY_IF_VALID(ncchkeyX_ninethree);
+	COPY_IF_VALID(ncchkeyX_ninesix);
+	COPY_IF_VALID(seed);
+
+#undef COPY_IF_VALID
 }
 
 void keyset_set_key128(key128* key, unsigned char* keydata)
@@ -190,19 +248,9 @@ void keyset_parse_key128(key128* key, char* keytext, int keylen)
 	keyset_parse_key(keytext, keylen, key->data, 16, &key->valid);
 }
 
-void keyset_set_commonkey(keyset* keys, unsigned char* keydata)
+void keyset_parse_commonkeyX(keyset* keys, char* keytext, int keylen)
 {
-	keyset_set_key128(&keys->commonkey, keydata);
-}
-
-void keyset_parse_commonkey(keyset* keys, char* keytext, int keylen)
-{
-	keyset_parse_key128(&keys->commonkey, keytext, keylen);
-}
-
-void keyset_set_titlekey(keyset* keys, unsigned char* keydata)
-{
-	keyset_set_key128(&keys->titlekey, keydata);
+	keyset_parse_key128(&keys->commonkeyX, keytext, keylen);
 }
 
 void keyset_parse_titlekey(keyset* keys, char* keytext, int keylen)
@@ -210,24 +258,34 @@ void keyset_parse_titlekey(keyset* keys, char* keytext, int keylen)
 	keyset_parse_key128(&keys->titlekey, keytext, keylen);
 }
 
-void keyset_set_ncchkey(keyset* keys, unsigned char* keydata)
+void keyset_parse_ncchkeyX_old(keyset* keys, char* keytext, int keylen)
 {
-	keyset_set_key128(&keys->ncchkey, keydata);
-}
-
-void keyset_parse_ncchkey(keyset* keys, char* keytext, int keylen)
-{
-	keyset_parse_key128(&keys->ncchkey, keytext, keylen);
-}
-
-void keyset_set_ncchfixedsystemkey(keyset* keys, unsigned char* keydata)
-{
-	keyset_set_key128(&keys->ncchfixedsystemkey, keydata);
+	keyset_parse_key128(&keys->ncchkeyX_old, keytext, keylen);
 }
 
 void keyset_parse_ncchfixedsystemkey(keyset* keys, char* keytext, int keylen)
 {
 	keyset_parse_key128(&keys->ncchfixedsystemkey, keytext, keylen);
+}
+
+void keyset_parse_ncchkeyX_seven(keyset* keys, char* keytext, int keylen)
+{
+	keyset_parse_key128(&keys->ncchkeyX_seven, keytext, keylen);
+}
+
+void keyset_parse_ncchkeyX_ninethree(keyset* keys, char* keytext, int keylen)
+{
+	keyset_parse_key128(&keys->ncchkeyX_ninethree, keytext, keylen);
+}
+
+void keyset_parse_ncchkeyX_ninesix(keyset* keys, char* keytext, int keylen)
+{
+	keyset_parse_key128(&keys->ncchkeyX_ninesix, keytext, keylen);
+}
+
+void keyset_parse_seed(keyset* keys, char* keytext, int keylen)
+{
+	keyset_parse_key128(&keys->seed, keytext, keylen);
 }
 
 void keyset_dump_rsakey(rsakey2048* key, const char* keytitle)
@@ -261,10 +319,17 @@ void keyset_dump_key128(key128* key, const char* keytitle)
 
 void keyset_dump(keyset* keys)
 {
+#define DUMP_KEY(n, s) do {\
+	keyset_dump_key128(&keys->n, (s));\
+} while(0)
 	fprintf(stdout, "Current keyset:          \n");
-	keyset_dump_key128(&keys->ncchkey, "NCCH KEY");
-	keyset_dump_key128(&keys->ncchfixedsystemkey, "NCCH FIXEDSYSTEMKEY");
-	keyset_dump_key128(&keys->commonkey, "COMMON KEY");
+	DUMP_KEY(ncchkeyX_old, "NCCH OLD KEYX");
+	DUMP_KEY(ncchkeyX_seven, "NCCH 7.0 KEYX");
+	DUMP_KEY(ncchkeyX_ninethree, "NCCH N9.3 KEYX");
+	DUMP_KEY(ncchkeyX_ninesix, "NCCH N9.6 KEYX");
+	DUMP_KEY(ncchfixedsystemkey, "NCCH FIXEDSYSTEMKEY");
+	DUMP_KEY(commonkeyX, "COMMON KEYX");
+#undef DUMP_KEY
 
 	keyset_dump_rsakey(&keys->ncsdrsakey, "NCSD RSA KEY");
 	keyset_dump_rsakey(&keys->ncchdescrsakey, "NCCH DESC RSA KEY");

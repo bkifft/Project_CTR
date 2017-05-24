@@ -136,37 +136,54 @@ unsigned int settings_get_mediaunit_size(settings* usersettings)
 		return 0;
 }
 
-unsigned char* settings_get_ncch_key(settings* usersettings)
-{
-	if (usersettings && usersettings->keys.ncchkey.valid)
-		return usersettings->keys.ncchkey.data;
-	else
-		return 0;
-}
+#define GETKEY(s, k)	do {\
+	if ((s) && (s)->keys.k.valid)\
+		return (s)->keys.k.data;\
+	else\
+		return NULL;\
+} while (0)
 
 unsigned char* settings_get_ncch_fixedsystemkey(settings* usersettings)
 {
-	if (usersettings && usersettings->keys.ncchfixedsystemkey.valid)
-		return usersettings->keys.ncchfixedsystemkey.data;
-	else
-		return 0;
+	GETKEY(usersettings, ncchfixedsystemkey);
 }
 
-unsigned char* settings_get_common_key(settings* usersettings)
+unsigned char* settings_get_ncchkeyX_old(settings* usersettings)
 {
-	if (usersettings && usersettings->keys.commonkey.valid)
-		return usersettings->keys.commonkey.data;
-	else
-		return 0;
+	GETKEY(usersettings, ncchkeyX_old);
+}
+
+unsigned char* settings_get_ncchkeyX_seven(settings* usersettings)
+{
+	GETKEY(usersettings, ncchkeyX_seven);
+}
+
+unsigned char* settings_get_ncchkeyX_ninethree(settings* usersettings)
+{
+	GETKEY(usersettings, ncchkeyX_ninethree);
+}
+
+unsigned char* settings_get_ncchkeyX_ninesix(settings* usersettings)
+{
+	GETKEY(usersettings, ncchkeyX_ninesix);
+}
+
+unsigned char* settings_get_common_keyX(settings* usersettings)
+{
+	GETKEY(usersettings, commonkeyX);
+}
+
+unsigned char* settings_get_seed(settings* usersettings)
+{
+	GETKEY(usersettings, seed);
 }
 
 unsigned char* settings_get_title_key(settings* usersettings)
 {
-	if (usersettings && usersettings->keys.titlekey.valid)
-		return usersettings->keys.titlekey.data;
-	else
-		return 0;
+	GETKEY(usersettings, titlekey);
 }
+
+#undef GETKEY
 
 int settings_get_ignore_programid(settings* usersettings)
 {

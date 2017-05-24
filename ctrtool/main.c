@@ -52,11 +52,13 @@ static void usage(const char *argv0)
 		   "  -k, --keyset=file  Specify keyset file.\n"
 		   "  -v, --verbose      Give verbose output.\n"
 		   "  -y, --verify       Verify hashes and signatures.\n"
+		   "  -d, --dev          Decrypt with development keys instead of retail.\n"
 		   "  --unitsize=size    Set media unit size (default 0x200).\n"
 		   "  --commonkey=key    Set common key.\n"
 		   "  --titlekey=key     Set tik title key.\n"
 		   "  --ncchkey=key      Set ncch key.\n"
 		   "  --ncchsyskey=key   Set ncch fixed system key.\n"
+		   "  --seed=key         Set seed for ncch seed crypto.\n"
 		   "  --showkeys         Show the keys being used.\n"
 		   "  --showsyscalls     Show system call names instead of numbers.\n"
 		   "  -t, --intype=type	 Specify input file type [ncsd, ncch, exheader, cia, tmd, lzss,\n"
@@ -109,8 +111,7 @@ int main(int argc, char* argv[])
 	ctx.filetype = FILETYPE_UNKNOWN;
 
 	settings_init(&ctx.usersettings);
-	keyset_init(&ctx.usersettings.keys);
-	keyset_init(&tmpkeys);
+	keyset_init(&tmpkeys, 0);
 
 
 	while (1) 
@@ -137,8 +138,8 @@ int main(int argc, char* argv[])
 			{"raw", 0, NULL, 'r'},
 			{"unitsize", 1, NULL, 9},
 			{"showkeys", 0, NULL, 10},
-			{"commonkey", 1, NULL, 11},
-			{"ncchkey", 1, NULL, 12},
+			{"commonkeyx", 1, NULL, 11},
+			{"ncchkeyxold", 1, NULL, 12},
 			{"intype", 1, NULL, 't'},
 			{"lzssout", 1, NULL, 13},
 			{"firmdir", 1, NULL, 14},
@@ -152,10 +153,14 @@ int main(int argc, char* argv[])
 			{"titlekey", 1, NULL, 22},
 			{"plainrgn", 1, NULL, 23},
 			{"showsyscalls", 0, NULL, 24},
+			{"ncchkeyxseven", 1, NULL, 25},
+			{"ncchkeyxninethree", 1, NULL, 26},
+			{"ncchkeyxninesix", 1, NULL, 27},
+			{"seed", 1, NULL, 28},
 			{NULL},
 		};
 
-		c = getopt_long(argc, argv, "ryxivpk:n:t:", long_options, &option_index);
+		c = getopt_long(argc, argv, "dryxivpk:n:t:", long_options, &option_index);
 		if (c == -1)
 			break;
 
@@ -171,6 +176,10 @@ int main(int argc, char* argv[])
 
 			case 'y':
 				ctx.actions |= VerifyFlag;
+			break;
+
+			case 'd':
+				ctx.actions |= DevFlag;
 			break;
 
 			case 'p':
@@ -228,8 +237,8 @@ int main(int argc, char* argv[])
 			case 8: settings_set_exefs_dir_path(&ctx.usersettings, optarg); break;
 			case 9: settings_set_mediaunit_size(&ctx.usersettings, strtoul(optarg, 0, 0)); break;
 			case 10: ctx.actions |= ShowKeysFlag; break;
-			case 11: keyset_parse_commonkey(&tmpkeys, optarg, strlen(optarg)); break;
-			case 12: keyset_parse_ncchkey(&tmpkeys, optarg, strlen(optarg)); break;
+			case 11: keyset_parse_commonkeyX(&tmpkeys, optarg, strlen(optarg)); break;
+			case 12: keyset_parse_ncchkeyX_old(&tmpkeys, optarg, strlen(optarg)); break;
 			case 13: settings_set_lzss_path(&ctx.usersettings, optarg); break;
 			case 14: settings_set_firm_dir_path(&ctx.usersettings, optarg); break;
 			case 15: keyset_parse_ncchfixedsystemkey(&tmpkeys, optarg, strlen(optarg)); break;
@@ -242,6 +251,10 @@ int main(int argc, char* argv[])
 			case 22: keyset_parse_titlekey(&tmpkeys, optarg, strlen(optarg)); break;
 			case 23: settings_set_plainrgn_path(&ctx.usersettings, optarg); break;
 			case 24: ctx.actions |= ShowSyscallsFlag; break;
+			case 25: keyset_parse_ncchkeyX_seven(&tmpkeys, optarg, strlen(optarg)); break;
+			case 26: keyset_parse_ncchkeyX_ninethree(&tmpkeys, optarg, strlen(optarg)); break;
+			case 27: keyset_parse_ncchkeyX_ninesix(&tmpkeys, optarg, strlen(optarg)); break;
+			case 28: keyset_parse_seed(&tmpkeys, optarg, strlen(optarg)); break;
 
 			default:
 				usage(argv[0]);
@@ -259,6 +272,7 @@ int main(int argc, char* argv[])
 		usage(argv[0]);
 	}
 
+	keyset_init(&ctx.usersettings.keys, ctx.actions);
 	keyset_load(&ctx.usersettings.keys, keysetfname, (ctx.actions & VerboseFlag) | checkkeysetfile);
 	keyset_merge(&ctx.usersettings.keys, &tmpkeys);
 	if (ctx.actions & ShowKeysFlag)

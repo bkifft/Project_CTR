@@ -70,22 +70,6 @@ void exheader_set_key(exheader_context* ctx, u8 key[16])
 }
 
 
-void exheader_determine_key(exheader_context* ctx, u32 actions)
-{
-	u8* key = settings_get_ncch_key(ctx->usersettings);
-
-	if (actions & PlainFlag)
-		ctx->encrypted = 0;
-	else
-	{
-		if (key)
-		{
-			ctx->encrypted = 1;
-			memcpy(ctx->key, key, 0x10);
-		}
-	}
-}
-
 void exheader_read(exheader_context* ctx, u32 actions)
 {
 	if (ctx->haveread == 0)
@@ -183,8 +167,6 @@ void exheader_deserialise_arm11localcaps_permissions(exheader_arm11systemlocalca
 
 int exheader_process(exheader_context* ctx, u32 actions)
 {
-	exheader_determine_key(ctx, actions);
-
 	exheader_read(ctx, actions);
 
 	if (ctx->header.codesetinfo.flags.flag & 1)

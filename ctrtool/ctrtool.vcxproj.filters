@@ -120,6 +120,9 @@
     <ClCompile Include="syscalls.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="aes_keygen.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cia.h">
@@ -213,6 +216,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="syscalls.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="aes_keygen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
