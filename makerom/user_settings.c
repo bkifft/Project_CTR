@@ -87,7 +87,7 @@ void SetDefaults(user_settings *set)
 	set->common.keys.accessDescSign.presetType = desc_NotSpecified;
 
 	// Build NCCH Info
-	set->ncch.useSecCrypto = false;
+	set->ncch.useSecCrypto = true;
 	set->ncch.buildNcch0 = true;
 	set->ncch.includeExefsLogo = false;
 	set->common.outFormat = NCCH;
@@ -900,7 +900,7 @@ void PrintNoNeedParam(char *arg)
 
 void DisplayBanner(void)
 {
-	printf("CTR MAKEROM v0.15 (C) 3DSGuy 2014\n");
+	printf("CTR MAKEROM v0.16 (C) 3DSGuy 2017\n");
 	printf("Built: %s %s\n\n", __TIME__, __DATE__);
 }
 

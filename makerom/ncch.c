@@ -1024,33 +1024,49 @@ bool IsNcchEncrypted(ncch_hdr *hdr)
 
 bool SetNcchKeys(keys_struct *keys, ncch_hdr *hdr)
 {
-	if(!IsNcchEncrypted(hdr)) 
+	if (!IsNcchEncrypted(hdr))
 		return true;
-		
-	if((hdr->flags[ncchflag_OTHER_FLAG] & otherflag_FixedCryptoKey) == otherflag_FixedCryptoKey){
-		if((hdr->programId[4] & 0x10) == 0x10){
-			if(!keys->aes.systemFixedKey)
+
+	if ((hdr->flags[ncchflag_OTHER_FLAG] & otherflag_FixedCryptoKey) == otherflag_FixedCryptoKey) {
+		if ((hdr->programId[4] & 0x10) == 0x10) {
+			if (!keys->aes.systemFixedKey)
 				return false;
-			memcpy(keys->aes.ncchKey0,keys->aes.systemFixedKey,AES_128_KEY_SIZE);
-			memcpy(keys->aes.ncchKey1,keys->aes.systemFixedKey,AES_128_KEY_SIZE);
+			memcpy(keys->aes.ncchKey0, keys->aes.systemFixedKey, AES_128_KEY_SIZE);
+			memcpy(keys->aes.ncchKey1, keys->aes.systemFixedKey, AES_128_KEY_SIZE);
 			return true;
 		}
-		else{
-			if(!keys->aes.normalKey)
+		else {
+			if (!keys->aes.normalKey)
 				return false;
-			memcpy(keys->aes.ncchKey0,keys->aes.normalKey,AES_128_KEY_SIZE);
-			memcpy(keys->aes.ncchKey1,keys->aes.normalKey,AES_128_KEY_SIZE);
+			memcpy(keys->aes.ncchKey0, keys->aes.normalKey, AES_128_KEY_SIZE);
+			memcpy(keys->aes.ncchKey1, keys->aes.normalKey, AES_128_KEY_SIZE);
 			return true;
 		}
 	}
-	
+
+	u8 ncch_keyx_index = 0;
+	switch (hdr->flags[ncchflag_CONTENT_KEYX])
+	{
+	case (keyx_7_0):
+		ncch_keyx_index = 1;
+		break;
+	case (keyx_9_3):
+		ncch_keyx_index = 2;
+		break;
+	case (keyx_9_6):
+		ncch_keyx_index = 3;
+		break;
+	default:
+		ncch_keyx_index = 0;
+	}
+
 	if(keys->aes.ncchKeyX[0])
 		ctr_aes_keygen(keys->aes.ncchKeyX[0],hdr->signature,keys->aes.ncchKey0);
 	else
 		return false;
-	
-	if(keys->aes.ncchKeyX[hdr->flags[ncchflag_CONTENT_KEYX]])
-		ctr_aes_keygen(keys->aes.ncchKeyX[ncchflag_CONTENT_KEYX], hdr->signature, keys->aes.ncchKey0);
+
+	if(keys->aes.ncchKeyX[ncch_keyx_index])
+		ctr_aes_keygen(keys->aes.ncchKeyX[ncch_keyx_index], hdr->signature, keys->aes.ncchKey0);
 	else
 		return false;
 		

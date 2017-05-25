@@ -101,10 +101,10 @@ int LoadKeysFromResources(keys_struct *keys)
 		SetNormalKey(keys, dev_fixed_ncch_key[0]);
 		SetSystemFixedKey(keys, dev_fixed_ncch_key[1]);
 		
-		/*
-		for(int i = 0; i < 2; i++)
+		
+		for(int i = 0; i < 4; i++)
 			SetNcchKeyX(keys, dev_unfixed_ncch_keyX[i],i);
-		*/
+		
 
 		/* RSA Keys */
 		// CIA
@@ -124,20 +124,19 @@ int LoadKeysFromResources(keys_struct *keys)
 		keys->keysetLoaded = true;
 		/* AES Keys */
 		// CIA
-		//for(int i = 0; i < 6; i++){
-		//	keys->aes.commonKey[i] = malloc(16);
-		//	ctr_aes_keygen(ctr_common_etd_keyX_ppki, ctr_common_etd_keyY_ppki[i], keys->aes.commonKey[i]);
-		//}
+		for (int i = 0; i < 6; i++)
+			SetCommonKey(keys, ctr_common_etd_key_ppki[i], i);
+
 		if(keys->aes.currentCommonKey > 0xff)
 			SetCurrentCommonKey(keys,0);
 	
 		// NCCH
 		keys->aes.normalKey = NULL;
 		keys->aes.systemFixedKey = NULL;
-		/*
-		for(int i = 0; i < 2; i++)
+		
+		for(int i = 0; i < 4; i++)
 			SetNcchKeyX(keys, prod_unfixed_ncch_keyX[i],i);
-		*/
+		
 
 		/* RSA Keys */
 		// CIA
@@ -200,9 +199,17 @@ void DumpKeyset(keys_struct *keys)
 {
 	bool showNcchFixedKeys = (keys->aes.normalKey || keys->aes.systemFixedKey);
 	bool showCommonKeys = false;
+	bool showNcchKeyXs = false;
 	for(int i = 0; i < 256; i++){
 		if(keys->aes.commonKey[i]){
 			showCommonKeys = true;
+			break;
+		}
+	}
+
+	for (int i = 0; i < 256; i++) {
+		if (keys->aes.ncchKeyX[i]) {
+			showNcchKeyXs = true;
 			break;
 		}
 	}
@@ -218,6 +225,17 @@ void DumpKeyset(keys_struct *keys)
 			}
 		}
 	}
+
+	if (showNcchKeyXs) {
+		printf(" > Unfixed NCCH KeyXs\n");
+		for (int i = 0; i < 256; i++) {
+			if (keys->aes.ncchKeyX[i]) {
+				printf(" [0x%02x]     ", i);
+				memdump(stdout, "", keys->aes.ncchKeyX[i], 16);
+			}
+		}
+	}
+
 	if(showNcchFixedKeys){
 		printf(" > Fixed NCCH Keys\n");
 		if(keys->aes.normalKey)

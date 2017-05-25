@@ -72,6 +72,14 @@ typedef enum
 	platform_SNAKE = 0x2
 } ncch_platform;
 
+typedef enum
+{
+	keyx_regular = 0x00,
+	keyx_7_0 = 0x01,
+	keyx_9_3 = 0x0A,
+	keyx_9_6 = 0x0B,
+} ncch_keyx_id;
+
 typedef struct
 {
 	u16 formatVersion;
