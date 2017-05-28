@@ -80,6 +80,15 @@ int LoadKeysFromResources(keys_struct *keys)
 		SetNormalKey(keys,zeros_aesKey);
 		SetSystemFixedKey(keys,zeros_aesKey);
 
+		/* RSA Keys */
+		// CIA
+		Rsa2048Key_Set(&keys->rsa.xs, tpki_rsa.priv_exponent, tpki_rsa.modulus);
+		Rsa2048Key_Set(&keys->rsa.cp, tpki_rsa.priv_exponent, tpki_rsa.modulus);
+		// CCI/CFA
+		Rsa2048Key_Set(&keys->rsa.cciCfa, tpki_rsa.priv_exponent, tpki_rsa.modulus);
+		// CXI
+		Rsa2048Key_Set(&keys->rsa.acex, tpki_rsa.priv_exponent, tpki_rsa.modulus);
+
 		/* Certs */
 		SetCaCert(keys, ca3_tpki_cert);
 		SetTikCert(keys, xsC_tpki_cert);
