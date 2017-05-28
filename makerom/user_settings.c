@@ -85,6 +85,7 @@ void SetDefaults(user_settings *set)
 	// Target Info
 	set->common.keys.keyset = pki_TEST;
 	set->common.keys.accessDescSign.presetType = desc_NotSpecified;
+	set->common.keys.ignore_sign = false;
 
 	// Build NCCH Info
 	set->ncch.useSecCrypto = true;
@@ -195,6 +196,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 		}
 		return 2;
 	}
+	/*
 	else if (strcmp(argv[i], "-ckeyid") == 0) {
 		if (ParamNum != 1) {
 			PrintArgReqParam(argv[i], 1);
@@ -222,6 +224,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 		}
 		return 2;
 	}
+	*/
 	else if (strcmp(argv[i], "-showkeys") == 0) {
 		if (ParamNum) {
 			PrintNoNeedParam(argv[i]);
@@ -230,12 +233,12 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 		set->common.keys.dumpkeys = true;
 		return 1;
 	}
-	else if (strcmp(argv[i], "-fsign") == 0) {
+	else if (strcmp(argv[i], "-ignoresign") == 0) {
 		if (ParamNum) {
 			PrintNoNeedParam(argv[i]);
 			return USR_BAD_ARG;
 		}
-		set->common.keys.rsa.isFalseSign = true;
+		set->common.keys.ignore_sign = true;
 		return 1;
 	}
 
@@ -949,10 +952,11 @@ void DisplayExtendedHelp(char *app_name)
 	printf("                                    't' Test(false) Keys & prod Certs\n");
 	printf("                                    'd' Development Keys & Certs\n");
 	printf("                                    'p' Production Keys & Certs\n");
-	printf(" -ckeyid        <index>             Override the automatic common key selection\n");
-	printf(" -ncchseckey    <index>             Ncch keyX index ('0'=1.0+, '1'=7.0+)\n");
+	//printf(" -ckeyid        <index>             Override the automatic common key selection\n");
+	//printf(" -ncchseckey    <index>             Ncch keyX index ('0'=1.0+, '1'=7.0+)\n");
 	printf(" -showkeys                          Display the loaded key chain\n");
-	printf(" -fsign                             Ignore invalid signatures\n");
+	//printf(" -fsign                             False sign digital signatures\n");
+	printf(" -ignoresign                        Ignore invalid signatures\n");
 	printf("NCCH OPTIONS:\n");
 	printf(" -elf           <file>              ELF file\n");
 	printf(" -icon          <file>              Icon file\n");

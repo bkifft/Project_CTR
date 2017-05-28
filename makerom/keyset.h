@@ -33,9 +33,16 @@ typedef enum
 
 typedef struct
 {
+	u8 *pub;
+	u8 *pvt;
+} rsa2048_key;
+
+typedef struct
+{
 	pki_keyset keyset;
 	bool keysetLoaded;
 	bool dumpkeys;
+	bool ignore_sign;
 
 	struct
 	{
@@ -60,23 +67,16 @@ typedef struct
 	
 	struct
 	{
-		bool isFalseSign;
 		// CIA RSA
-		u8 *cpPvt;
-		u8 *cpPub;
-		u8 *xsPvt;
-		u8 *xsPub;
+		rsa2048_key cp;
+		rsa2048_key xs;
 		
 		// CCI/CFA
-		u8 *cciCfaPvt;
-		u8 *cciCfaPub;
-		
+		rsa2048_key cciCfa;
+
 		// CXI
-		bool requiresPresignedDesc;
-		u8 *acexPvt;
-		u8 *acexPub;
-		u8 *cxiHdrPub;
-		u8 *cxiHdrPvt;
+		rsa2048_key acex;
+		rsa2048_key cxi;
 	} rsa;
 	
 	struct
@@ -97,3 +97,8 @@ int SetCommonKey(keys_struct *keys, const u8 *key, u8 Index);
 int SetCurrentCommonKey(keys_struct *keys, u8 Index);
 int SetNormalKey(keys_struct *keys, const u8 *key);
 int SetSystemFixedKey(keys_struct *keys, const u8 *key);
+
+void Rsa2048Key_Alloc(rsa2048_key* key);
+void Rsa2048Key_Free(rsa2048_key* key);
+void Rsa2048Key_Set(rsa2048_key* key, const u8* pvt, const u8* pub);
+bool Rsa2048Key_CanSign(const rsa2048_key* key);

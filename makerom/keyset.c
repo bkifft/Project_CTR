@@ -15,12 +15,6 @@ int SetNcchKeyX(keys_struct *keys, const u8 *keyX, u8 index);
 void keysetOpenError(char *file);
 FILE* keyset_OpenFile(char *dir, char *name, bool FileRequired);
 
-int SetTIK_RsaKey(keys_struct *keys, const u8 *priv_exp, const u8 *modulus);
-int SetTMD_RsaKey(keys_struct *keys, const u8 *priv_exp, const u8 *modulus);
-int Set_CCI_CFA_RsaKey(keys_struct *keys, const u8 *priv_exp, const u8 *modulus);
-int SetAccessDesc_RsaKey(keys_struct *keys, const u8 *priv_exp, const u8 *modulus);
-int SetCXI_RsaKey(keys_struct *keys, const u8 *priv_exp, const u8 *modulus);
-
 int SetCaCert(keys_struct *keys, const u8 *cert);
 int SetTikCert(keys_struct *keys, const u8 *cert);
 int SetTmdCert(keys_struct *keys, const u8 *cert);
@@ -28,8 +22,9 @@ int SetTmdCert(keys_struct *keys, const u8 *cert);
 int LoadKeysFromResources(keys_struct *keys);
 void SetDummyRsaData(keys_struct *keys);
 int LoadKeysFromKeyfile(keys_struct *keys);
-void CheckAccessDescKey(keys_struct *keys);
 void DumpKeyset(keys_struct *keys);
+
+
 
 // Code
 void InitKeys(keys_struct *keys)
@@ -37,8 +32,11 @@ void InitKeys(keys_struct *keys)
 	memset(keys,0,sizeof(keys_struct));
 	InitCommonKeySlots(keys);
 	InitNcchKeyXSlots(keys);
-	keys->rsa.cxiHdrPub = malloc(RSA_2048_KEY_SIZE);
-	keys->rsa.cxiHdrPvt = malloc(RSA_2048_KEY_SIZE);
+	Rsa2048Key_Alloc(&keys->rsa.xs);
+	Rsa2048Key_Alloc(&keys->rsa.cp);
+	Rsa2048Key_Alloc(&keys->rsa.cciCfa);
+	Rsa2048Key_Alloc(&keys->rsa.acex);
+	Rsa2048Key_Alloc(&keys->rsa.cxi);
 	keys->aes.ncchKey0 = malloc(AES_128_KEY_SIZE);
 	keys->aes.ncchKey1 = malloc(AES_128_KEY_SIZE);
 }
@@ -50,23 +48,21 @@ void PrintBadKeySize(char *path, u32 size)
 
 int SetKeys(keys_struct *keys)
 {	
-	int result = 0;
-	result = LoadKeysFromResources(keys);
-	if(result) return KEYSET_ERROR;
-
-	if(!keys->keysetLoaded){
-		result = LoadKeysFromKeyfile(keys);
-		if(result) return KEYSET_ERROR;
+	if (LoadKeysFromResources(keys) != 0)
+	{
+		return KEYSET_ERROR;
 	}
-	
-	if(keys->rsa.isFalseSign)
-		SetDummyRsaData(keys);
 
-	CheckAccessDescKey(keys);
-	
-	if(keys->dumpkeys)
+	if (!keys->keysetLoaded)
+	{
+		return KEYSET_ERROR;
+	}
+
+	if (keys->dumpkeys)
+	{
 		DumpKeyset(keys);
-
+	}
+		
 	return 0;
 }
 
@@ -84,8 +80,10 @@ int LoadKeysFromResources(keys_struct *keys)
 		SetNormalKey(keys,zeros_aesKey);
 		SetSystemFixedKey(keys,zeros_aesKey);
 
-		/* RSA Keys */
-		keys->rsa.isFalseSign = true;		
+		/* Certs */
+		SetCaCert(keys, ca3_tpki_cert);
+		SetTikCert(keys, xsC_tpki_cert);
+		SetTmdCert(keys, cpB_tpki_cert);
 	}
 	else if(keys->keyset == pki_DEVELOPMENT){
 		keys->keysetLoaded = true;
@@ -105,15 +103,14 @@ int LoadKeysFromResources(keys_struct *keys)
 		for(int i = 0; i < 4; i++)
 			SetNcchKeyX(keys, dev_unfixed_ncch_keyX[i],i);
 		
-
 		/* RSA Keys */
 		// CIA
-		SetTIK_RsaKey(keys, xs9_dpki_rsa.priv_exponent, xs9_dpki_rsa.modulus);
-		SetTMD_RsaKey(keys, cpA_dpki_rsa.priv_exponent, cpA_dpki_rsa.modulus);
+		Rsa2048Key_Set(&keys->rsa.xs, xs9_dpki_rsa.priv_exponent, xs9_dpki_rsa.modulus);
+		Rsa2048Key_Set(&keys->rsa.cp, cpA_dpki_rsa.priv_exponent, cpA_dpki_rsa.modulus);
 		// CCI/CFA
-		Set_CCI_CFA_RsaKey(keys, dev_ncsd_cfa_rsa.priv_exponent, dev_ncsd_cfa_rsa.modulus);
+		Rsa2048Key_Set(&keys->rsa.cciCfa, dev_ncsd_cfa_rsa.priv_exponent, dev_ncsd_cfa_rsa.modulus);
 		// CXI
-		SetAccessDesc_RsaKey(keys, dev_accessdesc_rsa.priv_exponent, dev_accessdesc_rsa.modulus);
+		Rsa2048Key_Set(&keys->rsa.acex, dev_accessdesc_rsa.priv_exponent, dev_accessdesc_rsa.modulus);
 	
 		/* Certs */
 		SetCaCert(keys, ca4_dpki_cert);
@@ -140,12 +137,12 @@ int LoadKeysFromResources(keys_struct *keys)
 
 		/* RSA Keys */
 		// CIA
-		SetTIK_RsaKey(keys, xsC_ppki_rsa.priv_exponent, xsC_ppki_rsa.modulus);
-		SetTMD_RsaKey(keys, cpB_ppki_rsa.priv_exponent, cpB_ppki_rsa.modulus);
+		Rsa2048Key_Set(&keys->rsa.xs, xsC_ppki_rsa.priv_exponent, xsC_ppki_rsa.modulus);
+		Rsa2048Key_Set(&keys->rsa.cp, cpB_ppki_rsa.priv_exponent, cpB_ppki_rsa.modulus);
 		// CCI/CFA
-		Set_CCI_CFA_RsaKey(keys, prod_ncsd_cfa_rsa.priv_exponent, prod_ncsd_cfa_rsa.modulus);
+		Rsa2048Key_Set(&keys->rsa.cciCfa, prod_ncsd_cfa_rsa.priv_exponent, prod_ncsd_cfa_rsa.modulus);
 		// CXI
-		SetAccessDesc_RsaKey(keys, prod_accessdesc_rsa.priv_exponent, prod_accessdesc_rsa.modulus);
+		Rsa2048Key_Set(&keys->rsa.acex, prod_accessdesc_rsa.priv_exponent, prod_accessdesc_rsa.modulus);
 	
 		/* Certs */
 		SetCaCert(keys, ca3_ppki_cert);
@@ -155,20 +152,22 @@ int LoadKeysFromResources(keys_struct *keys)
 	return 0;
 }
 
+/*
 void SetDummyRsaData(keys_struct *keys)
 {
-	if(!keys->rsa.xsPvt || !keys->rsa.xsPub)
-		SetTIK_RsaKey(keys, tpki_rsa.priv_exponent, tpki_rsa.modulus);
-	if(!keys->rsa.cpPvt || !keys->rsa.cpPub)
-		SetTMD_RsaKey(keys, tpki_rsa.priv_exponent, tpki_rsa.modulus);
-		
-	if(!keys->rsa.cciCfaPvt || !keys->rsa.cciCfaPub)
-		Set_CCI_CFA_RsaKey(keys, tpki_rsa.priv_exponent, tpki_rsa.modulus);
-	
-	if(!keys->rsa.acexPvt || !keys->rsa.acexPub)
-		SetAccessDesc_RsaKey(keys, tpki_rsa.priv_exponent, tpki_rsa.modulus);
+	// CIA
+	if (Rsa2048Key_CanSign(&keys->rsa.xs) == false)
+		Rsa2048Key_Set(&keys->rsa.xs, tpki_rsa.priv_exponent, tpki_rsa.modulus);
+	if (Rsa2048Key_CanSign(&keys->rsa.cp) == false)
+		Rsa2048Key_Set(&keys->rsa.cp, tpki_rsa.priv_exponent, tpki_rsa.modulus);
+	// CCI/CFA
+	if (Rsa2048Key_CanSign(&keys->rsa.cciCfa) == false)
+		Rsa2048Key_Set(&keys->rsa.cciCfa, tpki_rsa.priv_exponent, tpki_rsa.modulus);
+	// CXI
+	if (Rsa2048Key_CanSign(&keys->rsa.acex) == false)
+		Rsa2048Key_Set(&keys->rsa.acex, tpki_rsa.priv_exponent, tpki_rsa.modulus);
 
-	/* Certs */
+	// Certs
 	if(!keys->certs.caCert)
 		SetCaCert(keys, ca3_tpki_cert);
 	if(!keys->certs.xsCert)
@@ -176,24 +175,7 @@ void SetDummyRsaData(keys_struct *keys)
 	if(!keys->certs.cpCert)
 		SetTmdCert(keys, cpB_tpki_cert);
 }
-
-int LoadKeysFromKeyfile(keys_struct *keys)
-{
-	printf("[KEYSET ERROR] Custom keys not supported\n");
-	return -1;
-}
-
-void CheckAccessDescKey(keys_struct *keys)
-{
-	// Checking if AccessDesc can be signed
-	u8 *tmp = calloc(1,RSA_2048_KEY_SIZE);
-	if(memcmp(tmp,keys->rsa.acexPvt,RSA_2048_KEY_SIZE) == 0)
-		keys->rsa.requiresPresignedDesc = true;
-	else 
-		keys->rsa.requiresPresignedDesc = false;
-
-	free(tmp);
-}
+*/
 
 void DumpKeyset(keys_struct *keys)
 {
@@ -245,17 +227,17 @@ void DumpKeyset(keys_struct *keys)
 	}
 
 	printf(" > TIK RSA Keys\n");
-	memdump(stdout," [PUB]      ",keys->rsa.xsPub,0x100);
-	memdump(stdout," [PVT]      ",keys->rsa.xsPvt,0x100);
+	memdump(stdout," [PUB]      ",keys->rsa.xs.pub,0x100);
+	memdump(stdout," [PVT]      ",keys->rsa.xs.pvt,0x100);
 	printf(" > TMD RSA Keys\n");
-	memdump(stdout," [PUB]      ",keys->rsa.cpPub,0x100);
-	memdump(stdout," [PVT]      ",keys->rsa.cpPvt,0x100);
+	memdump(stdout," [PUB]      ",keys->rsa.cp.pub,0x100);
+	memdump(stdout," [PVT]      ",keys->rsa.cp.pvt,0x100);
 	printf(" > AcexDesc RSA Keys\n");
-	memdump(stdout," [PUB]      ",keys->rsa.acexPub,0x100);
-	memdump(stdout," [PVT]      ",keys->rsa.acexPvt,0x100);
+	memdump(stdout," [PUB]      ",keys->rsa.acex.pub,0x100);
+	memdump(stdout," [PVT]      ",keys->rsa.acex.pvt,0x100);
 	printf(" > NcsdCfa RSA Keys\n");
-	memdump(stdout," [PUB]      ",keys->rsa.cciCfaPub,0x100);
-	memdump(stdout," [PVT]      ",keys->rsa.cciCfaPvt,0x100);
+	memdump(stdout," [PUB]      ",keys->rsa.cciCfa.pub,0x100);
+	memdump(stdout," [PVT]      ",keys->rsa.cciCfa.pvt,0x100);
 }
 
 void keysetOpenError(char *file)
@@ -301,18 +283,11 @@ void FreeKeys(keys_struct *keys)
 	free(keys->aes.ncchKey1);
 	
 	// RSA
-	free(keys->rsa.xsPvt);
-	free(keys->rsa.xsPub);
-	free(keys->rsa.cpPvt);
-	free(keys->rsa.cpPub);
-
-	free(keys->rsa.cciCfaPvt);
-	free(keys->rsa.cciCfaPub);
-	
-	free(keys->rsa.acexPvt);
-	free(keys->rsa.acexPub);
-	free(keys->rsa.cxiHdrPub);
-	free(keys->rsa.cxiHdrPvt);
+	Rsa2048Key_Free(&keys->rsa.xs);
+	Rsa2048Key_Free(&keys->rsa.cp);
+	Rsa2048Key_Free(&keys->rsa.cciCfa);
+	Rsa2048Key_Free(&keys->rsa.acex);
+	Rsa2048Key_Free(&keys->rsa.cxi);
 	
 	// Certs
 	free(keys->certs.caCert);
@@ -378,30 +353,6 @@ int SetSystemFixedKey(keys_struct *keys, const u8 *key)
 	return CopyData(&keys->aes.systemFixedKey,key,16);
 }
 
-int SetTIK_RsaKey(keys_struct *keys, const u8 *priv_exp, const u8 *modulus)
-{
-	if(!keys) return -1;
-	return SetRsaKeySet(&keys->rsa.xsPvt,priv_exp,&keys->rsa.xsPub,modulus);
-}
-
-int SetTMD_RsaKey(keys_struct *keys, const u8 *priv_exp, const u8 *modulus)
-{
-	if(!keys) return -1;
-	return SetRsaKeySet(&keys->rsa.cpPvt,priv_exp,&keys->rsa.cpPub,modulus);
-}
-
-int Set_CCI_CFA_RsaKey(keys_struct *keys, const u8 *priv_exp, const u8 *modulus)
-{
-	if(!keys) return -1;
-	return SetRsaKeySet(&keys->rsa.cciCfaPvt,priv_exp,&keys->rsa.cciCfaPub,modulus);
-}
-
-int SetAccessDesc_RsaKey(keys_struct *keys, const u8 *priv_exp, const u8 *modulus)
-{
-	if(!keys) return -1;
-	return SetRsaKeySet(&keys->rsa.acexPvt,priv_exp,&keys->rsa.acexPub,modulus);
-}
-
 int SetCaCert(keys_struct *keys, const u8 *cert)
 {
 	if(!keys) return -1;
@@ -417,4 +368,28 @@ int SetTmdCert(keys_struct *keys, const u8 *cert)
 {
 	if(!keys) return -1;
 	return CopyData(&keys->certs.cpCert,cert,0x400);
+}
+
+void Rsa2048Key_Alloc(rsa2048_key* key)
+{
+	key->pub = malloc(RSA_2048_KEY_SIZE);
+	key->pvt = malloc(RSA_2048_KEY_SIZE);
+}
+
+void Rsa2048Key_Free(rsa2048_key* key)
+{
+	free(key->pub);
+	free(key->pvt);
+}
+
+void Rsa2048Key_Set(rsa2048_key* key, const u8* pvt, const u8* pub)
+{
+	memcpy(key->pub, pub, RSA_2048_KEY_SIZE);
+	memcpy(key->pvt, pvt, RSA_2048_KEY_SIZE);
+}
+
+bool Rsa2048Key_CanSign(const rsa2048_key* key)
+{
+	static const u8 rsa2048[RSA_2048_KEY_SIZE] = { 0 };
+	return memcmp(key->pub, rsa2048, RSA_2048_KEY_SIZE) != 0 || memcmp(key->pvt, rsa2048, RSA_2048_KEY_SIZE) != 0;
 }

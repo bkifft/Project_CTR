@@ -81,7 +81,13 @@ int SignTicketHeader(buffer_struct *tik, keys_struct *keys)
 	clrmem(sig,sizeof(tik_signature));
 	u32_to_u8(sig->sigType,RSA_2048_SHA256,BE);
 	
-	return RsaSignVerify(data,len,sig->data,keys->rsa.xsPub,keys->rsa.xsPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
+	if (RsaSignVerify(data, len, sig->data, keys->rsa.xs.pub, keys->rsa.xs.pvt, RSA_2048_SHA256, CTR_RSA_SIGN) != 0)
+	{
+		printf("[TIK WARNING] Failed to sign header\n");
+		memset(sig->data, 0xFF, 0x100);
+	}
+
+	return 0;
 }
 
 int CryptTitleKey(u8 *input, u8 *output, u8 *titleId, keys_struct *keys, u8 mode)

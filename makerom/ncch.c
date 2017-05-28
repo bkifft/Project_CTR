@@ -36,17 +36,27 @@ bool IsValidProductCode(char *ProductCode, bool FreeProductCode);
 // Code
 int SignCFA(ncch_hdr *hdr, keys_struct *keys)
 {
-	return RsaSignVerify(GetNcchHdrData(hdr),GetNcchHdrDataLen(hdr),GetNcchHdrSig(hdr),keys->rsa.cciCfaPub,keys->rsa.cciCfaPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
+	if (RsaSignVerify(GetNcchHdrData(hdr), GetNcchHdrDataLen(hdr), GetNcchHdrSig(hdr), keys->rsa.cciCfa.pub, keys->rsa.cciCfa.pvt, RSA_2048_SHA256, CTR_RSA_SIGN) != 0)
+	{
+		printf("[NCCH WARNING] Failed to sign CFA header\n");
+		memset(GetNcchHdrSig(hdr), 0xFF, 0x100);
+	}
+	return 0;
 }
 
 int CheckCFASignature(ncch_hdr *hdr, keys_struct *keys)
 {
-	return RsaSignVerify(GetNcchHdrData(hdr),GetNcchHdrDataLen(hdr),GetNcchHdrSig(hdr),keys->rsa.cciCfaPub,NULL,RSA_2048_SHA256,CTR_RSA_VERIFY);
+	return RsaSignVerify(GetNcchHdrData(hdr),GetNcchHdrDataLen(hdr),GetNcchHdrSig(hdr),keys->rsa.cciCfa.pub,NULL,RSA_2048_SHA256,CTR_RSA_VERIFY);
 }
 
 int SignCXI(ncch_hdr *hdr, keys_struct *keys)
 {
-	return RsaSignVerify(GetNcchHdrData(hdr),GetNcchHdrDataLen(hdr),GetNcchHdrSig(hdr),keys->rsa.cxiHdrPub,keys->rsa.cxiHdrPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
+	if (RsaSignVerify(GetNcchHdrData(hdr), GetNcchHdrDataLen(hdr), GetNcchHdrSig(hdr), keys->rsa.cxi.pub, keys->rsa.cxi.pvt, RSA_2048_SHA256, CTR_RSA_SIGN) != 0)
+	{
+		printf("[NCCH WARNING] Failed to sign CXI header\n");
+		memset(GetNcchHdrSig(hdr), 0xFF, 0x100);
+	}
+	return 0;
 }
 
 int CheckCXISignature(ncch_hdr *hdr, u8 *pubk)
@@ -748,11 +758,14 @@ int VerifyNcch(u8 *ncch, keys_struct *keys, bool CheckHash, bool SuppressOutput)
 	}
 
 	if(IsCfa(hdr)){
-		if(CheckCFASignature(hdr,keys) != Good && !keys->rsa.isFalseSign){
+		if(CheckCFASignature(hdr,keys) != Good){
 			if(!SuppressOutput) 
-				fprintf(stderr,"[NCCH ERROR] CFA Sigcheck Failed\n");
-			free(ncchInfo);
-			return NCCH_HDR_SIG_BAD;
+				fprintf(keys->ignore_sign ? stdout :stderr,"[NCCH %s] CFA Sigcheck Failed\n", keys->ignore_sign ? "WARNING" : "ERROR");
+			if (!keys->ignore_sign)
+			{
+				free(ncchInfo);
+				return NCCH_HDR_SIG_BAD;
+			}
 		}
 		if(!ncchInfo->romfsSize){
 			if(!SuppressOutput) 
@@ -813,19 +826,29 @@ int VerifyNcch(u8 *ncch, keys_struct *keys, bool CheckHash, bool SuppressOutput)
 		if(IsNcchEncrypted(hdr))
 			CryptNcchRegion((u8*)acexDesc,ncchInfo->acexSize,ncchInfo->exhdrSize,ncchInfo->titleId,keys->aes.ncchKey0,ncch_exhdr);
 
-		if(CheckAccessDescSignature(acexDesc,keys) != 0 && !keys->rsa.isFalseSign){
-			if(!SuppressOutput) fprintf(stderr,"[NCCH ERROR] AccessDesc Sigcheck Failed\n");
-			free(ncchInfo);
-			free(acexDesc);
-			return ACCESSDESC_SIG_BAD;
+
+		if(CheckAccessDescSignature(acexDesc,keys) != Good){
+			if (!SuppressOutput) 
+				fprintf(keys->false_sign? stdout : stderr, "[NCCH %s] AccessDesc Sigcheck Failed\n", keys->ignore_sign ? "WARNING" : "ERROR");
+			if (!keys->ignore_sign)
+			{
+				free(ncchInfo);
+				free(acexDesc);
+				return ACCESSDESC_SIG_BAD;
+			}
 		}
 				
-		if(CheckCXISignature(hdr,GetAcexNcchPubKey(acexDesc)) != 0 && !keys->rsa.isFalseSign){
-			if(!SuppressOutput) fprintf(stderr,"[NCCH ERROR] CXI Header Sigcheck Failed\n");
-			free(ncchInfo);			
-			free(acexDesc);
-			return NCCH_HDR_SIG_BAD;
+		if(CheckCXISignature(hdr,GetAcexNcchPubKey(acexDesc)) != Good){
+			if (!SuppressOutput) 
+				fprintf(keys->ignore_sign ? stdout : stderr,"[NCCH %s] CXI Header Sigcheck Failed\n", keys->ignore_sign ? "WARNING" : "ERROR");
+			if (!keys->ignore_sign)
+			{
+				free(ncchInfo);
+				free(acexDesc);
+				return NCCH_HDR_SIG_BAD;
+			}	
 		}
+		
 	}
 
 	if(!CheckHash)

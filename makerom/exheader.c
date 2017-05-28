@@ -58,14 +58,14 @@ int SignAccessDesc(access_descriptor *acexDesc, keys_struct *keys)
 {
 	u8 *data = (u8*) &acexDesc->ncchRsaPubKey;
 	u8 *sign = (u8*) &acexDesc->signature;
-	return RsaSignVerify(data,0x300,sign,keys->rsa.acexPub,keys->rsa.acexPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
+	return RsaSignVerify(data, 0x300, sign, keys->rsa.acex.pub, keys->rsa.acex.pvt, RSA_2048_SHA256, CTR_RSA_SIGN);
 }
 
 int CheckAccessDescSignature(access_descriptor *acexDesc, keys_struct *keys)
 {
 	u8 *data = (u8*) &acexDesc->ncchRsaPubKey;
 	u8 *sign = (u8*) &acexDesc->signature;
-	return RsaSignVerify(data,0x300,sign,keys->rsa.acexPub,NULL,RSA_2048_SHA256,CTR_RSA_VERIFY);
+	return RsaSignVerify(data,0x300,sign,keys->rsa.acex.pub,NULL,RSA_2048_SHA256,CTR_RSA_VERIFY);
 }
 
 /* ExHeader Build Functions */

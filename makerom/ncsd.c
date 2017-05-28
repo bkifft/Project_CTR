@@ -579,7 +579,12 @@ int GenCciHdr(cci_settings *set)
 	
 	
 	// Sign Header
-	RsaSignVerify(&hdr->magic,sizeof(cci_hdr)-RSA_2048_KEY_SIZE,hdr->signature,set->keys->rsa.cciCfaPub,set->keys->rsa.cciCfaPvt,RSA_2048_SHA256,CTR_RSA_SIGN);
+	if (RsaSignVerify(&hdr->magic, sizeof(cci_hdr) - RSA_2048_KEY_SIZE, hdr->signature, set->keys->rsa.cciCfa.pub, set->keys->rsa.cciCfa.pvt, RSA_2048_SHA256, CTR_RSA_SIGN) != 0)
+	{
+		printf("[NCSD WARNING] Failed to sign header\n");
+		memset(hdr->signature, 0xFF, 0x100);
+	}
+	
 	
 	return 0;
 }

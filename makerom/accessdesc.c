@@ -19,30 +19,28 @@ const CtrSdkDepList* accessdesc_GetPresetDependencyList(keys_struct *keys);
 
 int set_AccessDesc(exheader_settings *exhdrset)
 {
-	if(exhdrset->useAccessDescPreset) // Use AccessDesc Template
+	if(exhdrset->useAccessDescPreset == true) // Use AccessDesc Template
 		return accessdesc_GetSignFromPreset(exhdrset);
-	else if(exhdrset->rsf->CommonHeaderKey.Found) // Keydata exists in RSF
+	else if(exhdrset->rsf->CommonHeaderKey.Found == true) // Keydata exists in RSF
 		return accessdesc_GetSignFromRsf(exhdrset);
-	else if(!exhdrset->keys->rsa.requiresPresignedDesc) // Else if The AccessDesc can be signed with key
+	else if (Rsa2048Key_CanSign(&exhdrset->keys->rsa.acex) == false) // sign using rsa key
 		return accessdesc_SignWithKey(exhdrset);
-	else{ // No way the access desc signature can be 'obtained'
-		fprintf(stderr,"[ACEXDESC ERROR] Current keyset cannot sign AccessDesc, please appropriately set-up RSF, or specify a preset with \"-desc\"\n");
-		return CANNOT_SIGN_ACCESSDESC;
-	}
+	
+	return 1;
 }
 
 int accessdesc_SignWithKey(exheader_settings *exhdrset)
 {
 	/* Set RSA Keys */
-	memcpy(exhdrset->keys->rsa.cxiHdrPvt,exhdrset->keys->rsa.cciCfaPvt,0x100);
-	memcpy(exhdrset->keys->rsa.cxiHdrPub,exhdrset->keys->rsa.cciCfaPub,0x100);
-	memcpy(&exhdrset->acexDesc->ncchRsaPubKey,exhdrset->keys->rsa.cxiHdrPub,0x100);
+	memcpy(exhdrset->keys->rsa.cxi.pvt, exhdrset->keys->rsa.cciCfa.pvt, 0x100);
+	memcpy(exhdrset->keys->rsa.cxi.pub, exhdrset->keys->rsa.cciCfa.pub, 0x100);
+	memcpy(&exhdrset->acexDesc->ncchRsaPubKey, exhdrset->keys->rsa.cxi.pub, 0x100);
 
 	/* Copy Data From ExHeader */
-	memcpy(&exhdrset->acexDesc->arm11SystemLocalCapabilities,&exhdrset->exHdr->arm11SystemLocalCapabilities,sizeof(exhdr_ARM11SystemLocalCapabilities));
-	memcpy(&exhdrset->acexDesc->arm11KernelCapabilities,&exhdrset->exHdr->arm11KernelCapabilities,sizeof(exhdr_ARM11KernelCapabilities));
-	memcpy(&exhdrset->acexDesc->arm9AccessControlInfo,&exhdrset->exHdr->arm9AccessControlInfo,sizeof(exhdr_ARM9AccessControlInfo));
-	
+	memcpy(&exhdrset->acexDesc->arm11SystemLocalCapabilities, &exhdrset->exHdr->arm11SystemLocalCapabilities, sizeof(exhdr_ARM11SystemLocalCapabilities));
+	memcpy(&exhdrset->acexDesc->arm11KernelCapabilities, &exhdrset->exHdr->arm11KernelCapabilities, sizeof(exhdr_ARM11KernelCapabilities));
+	memcpy(&exhdrset->acexDesc->arm9AccessControlInfo, &exhdrset->exHdr->arm9AccessControlInfo, sizeof(exhdr_ARM9AccessControlInfo));
+
 	/* Adjust Data */
 	exhdr_ARM11SystemLocalCapabilities *arm11 = &exhdrset->acexDesc->arm11SystemLocalCapabilities;
 
@@ -50,7 +48,13 @@ int accessdesc_SignWithKey(exheader_settings *exhdrset)
 	arm11->threadPriority /= 2;
 
 	/* Sign AccessDesc */
-	return SignAccessDesc(exhdrset->acexDesc,exhdrset->keys);
+	if (SignAccessDesc(exhdrset->acexDesc, exhdrset->keys) != 0)
+	{
+		printf("[ACEXDESC WARNING] Failed to sign access descriptor\n");
+		memset(exhdrset->acexDesc->signature, 0xFF, 0x100);
+	}
+
+	return 0;
 }
 
 int accessdesc_GetSignFromRsf(exheader_settings *exhdrset)
@@ -100,10 +104,10 @@ int accessdesc_GetSignFromRsf(exheader_settings *exhdrset)
 	/* Set RSA Keys */
 	int result = 0;
 	// NCCH Header pubk
-	result = b64_decode(exhdrset->keys->rsa.cxiHdrPub,exhdrset->rsf->CommonHeaderKey.Modulus,0x100);
+	result = b64_decode(exhdrset->keys->rsa.cxi.pub,exhdrset->rsf->CommonHeaderKey.Modulus,0x100);
 	if(result) return result;
 	// NCCH Header privk
-	result = b64_decode(exhdrset->keys->rsa.cxiHdrPvt,exhdrset->rsf->CommonHeaderKey.D,0x100);
+	result = b64_decode(exhdrset->keys->rsa.cxi.pvt,exhdrset->rsf->CommonHeaderKey.D,0x100);
 	if(result) return result;
 
 	/* Set AccessDesc */
@@ -111,7 +115,7 @@ int accessdesc_GetSignFromRsf(exheader_settings *exhdrset)
 	result = b64_decode(exhdrset->acexDesc->signature,exhdrset->rsf->CommonHeaderKey.AccCtlDescSign,0x100);
 	if(result) return result;
 	// NCCH Header pubk
-	memcpy(exhdrset->acexDesc->ncchRsaPubKey,exhdrset->keys->rsa.cxiHdrPub,0x100);
+	memcpy(exhdrset->acexDesc->ncchRsaPubKey,exhdrset->keys->rsa.cxi.pub,0x100);
 	// Access Control
 	result = b64_decode((u8*)&exhdrset->acexDesc->arm11SystemLocalCapabilities,exhdrset->rsf->CommonHeaderKey.AccCtlDescBin,0x200);
 	if(result) return result;
@@ -127,16 +131,11 @@ int accessdesc_GetSignFromPreset(exheader_settings *exhdrset)
 
 
 	// Error Checking
-	if(!desc || !dependency_list){
-		fprintf(stderr,"[ACEXDESC ERROR] AccessDesc template is unavailable, please configure RSF file\n");
+	if (!desc || !dependency_list) {
+		fprintf(stderr, "[ACEXDESC ERROR] AccessDesc template is unavailable, please configure RSF file\n");
 		return CANNOT_SIGN_ACCESSDESC;
 	}
 
-	if(!pre_sign && exhdrset->keys->rsa.requiresPresignedDesc){
-		fprintf(stderr,"[ACEXDESC ERROR] This AccessDesc template needs to be signed, the current keyset is incapable of doing so. Please configure RSF file with the appropriate signature data.\n");
-		return CANNOT_SIGN_ACCESSDESC;
-	}
-	
 	// Setting data in Exheader
 	// Dependency List
 	memcpy(exhdrset->exHdr->dependencyList, dependency_list->dependency, 0x180);
@@ -148,7 +147,7 @@ int accessdesc_GetSignFromPreset(exheader_settings *exhdrset)
 	memcpy(ProgramID, exhdrset->exHdr->arm11SystemLocalCapabilities.programId, 8);
 	memcpy(&StorageInfoBackup, &exhdrset->exHdr->arm11SystemLocalCapabilities.storageInfo, sizeof(exhdr_StorageInfo));
 	memcpy(&Arm9Desc, &exhdrset->exHdr->arm9AccessControlInfo, sizeof(exhdr_ARM9AccessControlInfo));
-	
+
 	// Setting Preset Data
 	memcpy(&exhdrset->exHdr->arm11SystemLocalCapabilities, desc->exheader_desc, 0x200);
 
@@ -158,17 +157,22 @@ int accessdesc_GetSignFromPreset(exheader_settings *exhdrset)
 	memcpy(&exhdrset->exHdr->arm9AccessControlInfo, &Arm9Desc, sizeof(exhdr_ARM9AccessControlInfo));
 
 
-	// Setting AccessDesc Area
-	// Signing normally if possible
-	if(!exhdrset->keys->rsa.requiresPresignedDesc) 
+	// Setting AccessDesc Area		
+	// If presign available set static data & ncch hdr sig info
+	if (pre_sign)
+	{
+		memcpy(exhdrset->keys->rsa.cxi.pub, pre_sign->modulus, 0x100);
+		memcpy(exhdrset->keys->rsa.cxi.pvt, pre_sign->priv_exponent, 0x100);
+		memcpy(&exhdrset->acexDesc->signature, pre_sign->access_desc_signature, 0x100);
+		memcpy(&exhdrset->acexDesc->ncchRsaPubKey, pre_sign->modulus, 0x100);
+		memcpy(&exhdrset->acexDesc->arm11SystemLocalCapabilities, desc->signed_desc, 0x200);
+	}
+	// otherwise sign properly
+	else
+	{
 		return accessdesc_SignWithKey(exhdrset);
-
-	// Otherwise set static data & ncch hdr sig info
-	memcpy(exhdrset->keys->rsa.cxiHdrPub, pre_sign->modulus, 0x100);
-	memcpy(exhdrset->keys->rsa.cxiHdrPvt, pre_sign->priv_exponent, 0x100);
-	memcpy(&exhdrset->acexDesc->signature, pre_sign->access_desc_signature, 0x100);
-	memcpy(&exhdrset->acexDesc->ncchRsaPubKey, pre_sign->modulus, 0x100);
-	memcpy(&exhdrset->acexDesc->arm11SystemLocalCapabilities, desc->signed_desc, 0x200);
+	}
+	
 
 	return 0;
 }
