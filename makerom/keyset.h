@@ -30,7 +30,6 @@ typedef enum
 } pki_keyset;
 
 // Structs
-
 typedef struct
 {
 	u8 *pub;

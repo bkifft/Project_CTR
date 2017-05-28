@@ -23,10 +23,7 @@ int set_AccessDesc(exheader_settings *exhdrset)
 		return accessdesc_GetSignFromPreset(exhdrset);
 	else if(exhdrset->rsf->CommonHeaderKey.Found == true) // Keydata exists in RSF
 		return accessdesc_GetSignFromRsf(exhdrset);
-	else if (Rsa2048Key_CanSign(&exhdrset->keys->rsa.acex) == false) // sign using rsa key
-		return accessdesc_SignWithKey(exhdrset);
-	
-	return 1;
+	return accessdesc_SignWithKey(exhdrset);	
 }
 
 int accessdesc_SignWithKey(exheader_settings *exhdrset)
@@ -48,13 +45,14 @@ int accessdesc_SignWithKey(exheader_settings *exhdrset)
 	arm11->threadPriority /= 2;
 
 	/* Sign AccessDesc */
-	if (SignAccessDesc(exhdrset->acexDesc, exhdrset->keys) != 0)
+	if (Rsa2048Key_CanSign(&exhdrset->keys->rsa.acex) == false)
 	{
 		printf("[ACEXDESC WARNING] Failed to sign access descriptor\n");
 		memset(exhdrset->acexDesc->signature, 0xFF, 0x100);
+		return 0;
 	}
 
-	return 0;
+	return SignAccessDesc(exhdrset->acexDesc, exhdrset->keys);
 }
 
 int accessdesc_GetSignFromRsf(exheader_settings *exhdrset)

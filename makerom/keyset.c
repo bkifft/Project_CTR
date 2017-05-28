@@ -391,5 +391,5 @@ void Rsa2048Key_Set(rsa2048_key* key, const u8* pvt, const u8* pub)
 bool Rsa2048Key_CanSign(const rsa2048_key* key)
 {
 	static const u8 rsa2048[RSA_2048_KEY_SIZE] = { 0 };
-	return memcmp(key->pub, rsa2048, RSA_2048_KEY_SIZE) != 0 || memcmp(key->pvt, rsa2048, RSA_2048_KEY_SIZE) != 0;
+	return memcmp(key->pub, rsa2048, RSA_2048_KEY_SIZE) != 0 && memcmp(key->pvt, rsa2048, RSA_2048_KEY_SIZE) != 0;
 }

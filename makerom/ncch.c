@@ -36,27 +36,31 @@ bool IsValidProductCode(char *ProductCode, bool FreeProductCode);
 // Code
 int SignCFA(ncch_hdr *hdr, keys_struct *keys)
 {
-	if (RsaSignVerify(GetNcchHdrData(hdr), GetNcchHdrDataLen(hdr), GetNcchHdrSig(hdr), keys->rsa.cciCfa.pub, keys->rsa.cciCfa.pvt, RSA_2048_SHA256, CTR_RSA_SIGN) != 0)
+	if (Rsa2048Key_CanSign(&keys->rsa.cciCfa) == false)
 	{
 		printf("[NCCH WARNING] Failed to sign CFA header\n");
 		memset(GetNcchHdrSig(hdr), 0xFF, 0x100);
+		return 0;
 	}
-	return 0;
+
+	return RsaSignVerify(GetNcchHdrData(hdr), GetNcchHdrDataLen(hdr), GetNcchHdrSig(hdr), keys->rsa.cciCfa.pub, keys->rsa.cciCfa.pvt, RSA_2048_SHA256, CTR_RSA_SIGN);
 }
 
 int CheckCFASignature(ncch_hdr *hdr, keys_struct *keys)
 {
-	return RsaSignVerify(GetNcchHdrData(hdr),GetNcchHdrDataLen(hdr),GetNcchHdrSig(hdr),keys->rsa.cciCfa.pub,NULL,RSA_2048_SHA256,CTR_RSA_VERIFY);
+	return RsaSignVerify(GetNcchHdrData(hdr),GetNcchHdrDataLen(hdr),GetNcchHdrSig(hdr), keys->rsa.cciCfa.pub, keys->rsa.cciCfa.pvt, RSA_2048_SHA256,CTR_RSA_VERIFY);
 }
 
 int SignCXI(ncch_hdr *hdr, keys_struct *keys)
 {
-	if (RsaSignVerify(GetNcchHdrData(hdr), GetNcchHdrDataLen(hdr), GetNcchHdrSig(hdr), keys->rsa.cxi.pub, keys->rsa.cxi.pvt, RSA_2048_SHA256, CTR_RSA_SIGN) != 0)
+	if (Rsa2048Key_CanSign(&keys->rsa.cxi) == false)
 	{
 		printf("[NCCH WARNING] Failed to sign CXI header\n");
 		memset(GetNcchHdrSig(hdr), 0xFF, 0x100);
+		return 0;
 	}
-	return 0;
+
+	return RsaSignVerify(GetNcchHdrData(hdr), GetNcchHdrDataLen(hdr), GetNcchHdrSig(hdr), keys->rsa.cxi.pub, keys->rsa.cxi.pvt, RSA_2048_SHA256, CTR_RSA_SIGN);
 }
 
 int CheckCXISignature(ncch_hdr *hdr, u8 *pubk)
@@ -1089,7 +1093,7 @@ bool SetNcchKeys(keys_struct *keys, ncch_hdr *hdr)
 		return false;
 
 	if(keys->aes.ncchKeyX[ncch_keyx_index])
-		ctr_aes_keygen(keys->aes.ncchKeyX[ncch_keyx_index], hdr->signature, keys->aes.ncchKey0);
+		ctr_aes_keygen(keys->aes.ncchKeyX[ncch_keyx_index], hdr->signature, keys->aes.ncchKey1);
 	else
 		return false;
 		

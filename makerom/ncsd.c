@@ -579,14 +579,14 @@ int GenCciHdr(cci_settings *set)
 	
 	
 	// Sign Header
-	if (RsaSignVerify(&hdr->magic, sizeof(cci_hdr) - RSA_2048_KEY_SIZE, hdr->signature, set->keys->rsa.cciCfa.pub, set->keys->rsa.cciCfa.pvt, RSA_2048_SHA256, CTR_RSA_SIGN) != 0)
+	if (Rsa2048Key_CanSign(&set->keys->rsa.cciCfa) == false)
 	{
 		printf("[NCSD WARNING] Failed to sign header\n");
 		memset(hdr->signature, 0xFF, 0x100);
+		return 0;
 	}
-	
-	
-	return 0;
+
+	return RsaSignVerify(&hdr->magic, sizeof(cci_hdr) - RSA_2048_KEY_SIZE, hdr->signature, set->keys->rsa.cciCfa.pub, set->keys->rsa.cciCfa.pvt, RSA_2048_SHA256, CTR_RSA_SIGN);
 }
 
 char* GetMediaSizeStr(u64 mediaSize)

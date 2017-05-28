@@ -71,13 +71,14 @@ int SignTMDHeader(tmd_hdr *hdr, tmd_signature *sig, keys_struct *keys)
 	clrmem(sig,sizeof(tmd_signature));
 	u32_to_u8(sig->sigType,RSA_2048_SHA256,BE);
 	
-	if (RsaSignVerify((u8*)hdr, sizeof(tmd_hdr), sig->data, keys->rsa.cp.pub, keys->rsa.cp.pvt, RSA_2048_SHA256, CTR_RSA_SIGN) != 0)
+	if (Rsa2048Key_CanSign(&keys->rsa.cp) == false)
 	{
 		printf("[TMD WARNING] Failed to sign header\n");
 		memset(sig->data, 0xFF, 0x100);
+		return 0;
 	}
 
-	return 0;
+	return RsaSignVerify((u8*)hdr, sizeof(tmd_hdr), sig->data, keys->rsa.cp.pub, keys->rsa.cp.pvt, RSA_2048_SHA256, CTR_RSA_SIGN);
 }
 
 int SetupTMDInfoRecord(tmd_content_info_record *info_record, u8 *content_record, u16 ContentCount)
