@@ -23,6 +23,20 @@ typedef enum
 
 typedef struct
 {
+	u8 title_id[8];
+	u8 seed[0x10];
+	u8 padding[0x8];
+} seeddb_entry;
+
+typedef struct
+{
+	u8 n_entries[4];
+	u8 padding[0xC];
+} seeddb_header;
+
+
+typedef struct
+{
 	unsigned char n[256];
 	unsigned char e[3];
 	unsigned char d[256];
@@ -42,8 +56,10 @@ typedef struct
 
 typedef struct
 {
+	u32 seed_num;
+	seeddb_entry* seed_db;
+
 	key128 titlekey;
-	key128 seed;
 	key128 commonkeyX;
 	key128 ncchfixedsystemkey;
 	key128 ncchkeyX_old;
@@ -66,7 +82,7 @@ void keyset_parse_ncchfixedsystemkey(keyset* keys, char* keytext, int keylen);
 void keyset_parse_ncchkeyX_seven(keyset* keys, char* keytext, int keylen);
 void keyset_parse_ncchkeyX_ninethree(keyset* keys, char* keytext, int keylen);
 void keyset_parse_ncchkeyX_ninesix(keyset* keys, char* keytext, int keylen);
-void keyset_parse_seed(keyset* keys, char* keytext, int keylen);
+void keyset_parse_seeddb(keyset* keys, char* path);
 void keyset_dump(keyset* keys);
 
 #ifdef __cplusplus

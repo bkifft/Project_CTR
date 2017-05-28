@@ -58,7 +58,7 @@ static void usage(const char *argv0)
 		   "  --titlekey=key     Set tik title key.\n"
 		   "  --ncchkey=key      Set ncch key.\n"
 		   "  --ncchsyskey=key   Set ncch fixed system key.\n"
-		   "  --seed=key         Set seed for ncch seed crypto.\n"
+		   "  --seeddb=file      Set seeddb for ncch seed crypto.\n"
 		   "  --showkeys         Show the keys being used.\n"
 		   "  --showsyscalls     Show system call names instead of numbers.\n"
 		   "  -t, --intype=type	 Specify input file type [ncsd, ncch, exheader, cia, tmd, lzss,\n"
@@ -156,7 +156,7 @@ int main(int argc, char* argv[])
 			{"ncchkeyxseven", 1, NULL, 25},
 			{"ncchkeyxninethree", 1, NULL, 26},
 			{"ncchkeyxninesix", 1, NULL, 27},
-			{"seed", 1, NULL, 28},
+			{"seeddb", 1, NULL, 28},
 			{NULL},
 		};
 
@@ -254,7 +254,7 @@ int main(int argc, char* argv[])
 			case 25: keyset_parse_ncchkeyX_seven(&tmpkeys, optarg, strlen(optarg)); break;
 			case 26: keyset_parse_ncchkeyX_ninethree(&tmpkeys, optarg, strlen(optarg)); break;
 			case 27: keyset_parse_ncchkeyX_ninesix(&tmpkeys, optarg, strlen(optarg)); break;
-			case 28: keyset_parse_seed(&tmpkeys, optarg, strlen(optarg)); break;
+			case 28: keyset_parse_seeddb(&tmpkeys, optarg); break;
 
 			default:
 				usage(argv[0]);

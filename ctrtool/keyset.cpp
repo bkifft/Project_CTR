@@ -232,7 +232,12 @@ void keyset_merge(keyset* keys, keyset* src)
 	COPY_IF_VALID(ncchkeyX_seven);
 	COPY_IF_VALID(ncchkeyX_ninethree);
 	COPY_IF_VALID(ncchkeyX_ninesix);
-	COPY_IF_VALID(seed);
+	if (src->seed_num > 0)
+	{
+		keys->seed_num = src->seed_num;
+		keys->seed_db = (seeddb_entry*)calloc(src->seed_num, sizeof(seeddb_entry));
+		memcpy(keys->seed_db, src->seed_db, src->seed_num * sizeof(seeddb_entry));
+	}
 
 #undef COPY_IF_VALID
 }
@@ -283,9 +288,31 @@ void keyset_parse_ncchkeyX_ninesix(keyset* keys, char* keytext, int keylen)
 	keyset_parse_key128(&keys->ncchkeyX_ninesix, keytext, keylen);
 }
 
-void keyset_parse_seed(keyset* keys, char* keytext, int keylen)
+void keyset_parse_seeddb(keyset* keys, char* path)
 {
-	keyset_parse_key128(&keys->seed, keytext, keylen);
+	//keyset_parse_key128(&keys->seed, keytext, keylen);
+	FILE* fp = fopen(path, "rb");
+	if (fp == NULL)
+	{
+		printf("[ERROR] Failed to load SeedDB (failed to open file)\n");
+		return;
+	}
+
+	seeddb_header hdr;
+	fread(&hdr, sizeof(seeddb_header), 1, fp);
+
+	u32 n_entries = getle32(hdr.n_entries);
+	for (u32 i = 0; i < 0xC; i++)
+	{
+		if (hdr.padding[i] != 0x00)
+		{
+			printf("[ERROR] SeedDB is corrupt. (padding malformed)\n");
+			return;
+		}
+	}
+	
+	keys->seed_db = (seeddb_entry*)calloc(n_entries, sizeof(seeddb_entry));
+	fread(keys->seed_db, n_entries * sizeof(seeddb_entry), 1, fp);
 }
 
 void keyset_dump_rsakey(rsakey2048* key, const char* keytitle)

@@ -173,9 +173,16 @@ unsigned char* settings_get_common_keyX(settings* usersettings)
 	GETKEY(usersettings, commonkeyX);
 }
 
-unsigned char* settings_get_seed(settings* usersettings)
+unsigned char* settings_get_seed(settings* usersettings, u64 title_id)
 {
-	GETKEY(usersettings, seed);
+	for (u32 i = 0; i < usersettings->keys.seed_num; i++)
+	{
+		if (title_id == getle64(usersettings->keys.seed_db[i].title_id))
+		{
+			return usersettings->keys.seed_db[i].seed;
+		}
+	}
+	return NULL;
 }
 
 unsigned char* settings_get_title_key(settings* usersettings)

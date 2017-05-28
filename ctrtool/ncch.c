@@ -549,11 +549,11 @@ void ncch_determine_key(ncch_context* ctx, u32 actions)
 		if (header->flags[7] & 0x20)
 		{
 			ctx->encrypted = NCCHCRYPTO_SEED;
-			seed = settings_get_seed(ctx->usersettings);
+			seed = settings_get_seed(ctx->usersettings, getle64(header->partitionid));
 			if (!seed)
 			{
-				fprintf(stderr, "This title uses seed crypto, but no seed is set, unable to decrypt.\n"
-						"Use -p to avoid decryption or use --seed=SEEDHERE to provide the seed.\n");
+				fprintf(stderr, "This title uses seed crypto, but no seed is set in seedDB, unable to decrypt.\n"
+						"Use -p to avoid decryption or use --seeddb=dbfile to specify the seedDB.\n");
 				ctx->encrypted = NCCHCRYPTO_BROKEN;
 				return;
 			}
