@@ -829,7 +829,7 @@ int VerifyNcch(u8 *ncch, keys_struct *keys, bool CheckHash, bool SuppressOutput)
 
 		if(CheckAccessDescSignature(acexDesc,keys) != Good){
 			if (!SuppressOutput) 
-				fprintf(keys->false_sign? stdout : stderr, "[NCCH %s] AccessDesc Sigcheck Failed\n", keys->ignore_sign ? "WARNING" : "ERROR");
+				fprintf(keys->ignore_sign ? stdout : stderr, "[NCCH %s] AccessDesc Sigcheck Failed\n", keys->ignore_sign ? "WARNING" : "ERROR");
 			if (!keys->ignore_sign)
 			{
 				free(ncchInfo);
