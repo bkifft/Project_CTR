@@ -301,7 +301,7 @@ void keyset_parse_seeddb(keyset* keys, char* path)
 	seeddb_header hdr;
 	fread(&hdr, sizeof(seeddb_header), 1, fp);
 
-	u32 n_entries = getle32(hdr.n_entries);
+	keys->seed_num = getle32(hdr.n_entries);
 	for (u32 i = 0; i < 0xC; i++)
 	{
 		if (hdr.padding[i] != 0x00)
@@ -311,8 +311,8 @@ void keyset_parse_seeddb(keyset* keys, char* path)
 		}
 	}
 	
-	keys->seed_db = (seeddb_entry*)calloc(n_entries, sizeof(seeddb_entry));
-	fread(keys->seed_db, n_entries * sizeof(seeddb_entry), 1, fp);
+	keys->seed_db = (seeddb_entry*)calloc(keys->seed_num, sizeof(seeddb_entry));
+	fread(keys->seed_db, keys->seed_num * sizeof(seeddb_entry), 1, fp);
 }
 
 void keyset_dump_rsakey(rsakey2048* key, const char* keytitle)
