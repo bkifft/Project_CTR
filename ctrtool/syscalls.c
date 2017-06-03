@@ -95,8 +95,8 @@ static const char *const syscall_list[NUM_SYSCALLS] =
 	"StopDma",                           // 56
 	"GetDmaState",                       // 57
 	"RestartDma",                        // 58
-	NULL,                                // 59
-	NULL,                                // 5A
+	"SetGpuProt",                        // 59
+	"SetWifiEnabled",                    // 5A
 	NULL,                                // 5B
 	NULL,                                // 5C
 	NULL,                                // 5D
@@ -139,7 +139,8 @@ static const char *const syscall_list[NUM_SYSCALLS] =
 
 void syscall_get_name(char *output, size_t size, unsigned int call_num)
 {
-	typedef char StaticAssert[sizeof(syscall_list) / sizeof(syscall_list[0]) == NUM_SYSCALLS ? 1 : -1];
+	_Static_assert(sizeof(syscall_list) / sizeof(syscall_list[0]) == NUM_SYSCALLS,
+		"syscall table length mismatch");
 
 	if (size == 0)
 	{
