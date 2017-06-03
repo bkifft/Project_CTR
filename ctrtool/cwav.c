@@ -814,6 +814,8 @@ int cwav_pcm_setup(cwav_pcmstate* state, cwav_context* ctx, int isloop)
 			startoffset = getle32(ctx->infoheader.loopstart);
 		else if (ctx->infoheader.encoding == CWAV_ENCODING_PCM16)
 			startoffset = getle32(ctx->infoheader.loopstart) * 2;
+		else
+			startoffset = 0;
 	}
 	else
 	{
