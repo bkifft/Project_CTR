@@ -168,9 +168,10 @@ unsigned char* settings_get_ncchkeyX_ninesix(settings* usersettings)
 	GETKEY(usersettings, ncchkeyX_ninesix);
 }
 
-unsigned char* settings_get_common_keyX(settings* usersettings)
+unsigned char* settings_get_common_key(settings* usersettings, u8 index)
 {
-	GETKEY(usersettings, commonkeyX);
+	if (index > (COMMONKEY_NUM - 1)) return NULL;
+	GETKEY(usersettings, commonkey[index]);
 }
 
 unsigned char* settings_get_seed(settings* usersettings, u64 title_id)
@@ -182,7 +183,7 @@ unsigned char* settings_get_seed(settings* usersettings, u64 title_id)
 			return usersettings->keys.seed_db[i].seed;
 		}
 	}
-	return NULL;
+	GETKEY(usersettings, seed_fallback);
 }
 
 unsigned char* settings_get_title_key(settings* usersettings)

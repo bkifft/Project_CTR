@@ -54,11 +54,12 @@ static void usage(const char *argv0)
 		   "  -y, --verify       Verify hashes and signatures.\n"
 		   "  -d, --dev          Decrypt with development keys instead of retail.\n"
 		   "  --unitsize=size    Set media unit size (default 0x200).\n"
-		   "  --commonkey=key    Set common key.\n"
+//		   "  --commonkey=key    Set common key.\n"
 		   "  --titlekey=key     Set tik title key.\n"
-		   "  --ncchkey=key      Set ncch key.\n"
-		   "  --ncchsyskey=key   Set ncch fixed system key.\n"
+//		   "  --ncchkey=key      Set ncch key.\n"
+//		   "  --ncchsyskey=key   Set ncch fixed system key.\n"
 		   "  --seeddb=file      Set seeddb for ncch seed crypto.\n"
+		   "  --seed=key         Set specific seed for ncch seed crypto.\n"
 		   "  --showkeys         Show the keys being used.\n"
 		   "  --showsyscalls     Show system call names instead of numbers.\n"
 		   "  -t, --intype=type	 Specify input file type [ncsd, ncch, exheader, cia, tmd, lzss,\n"
@@ -138,8 +139,8 @@ int main(int argc, char* argv[])
 			{"raw", 0, NULL, 'r'},
 			{"unitsize", 1, NULL, 9},
 			{"showkeys", 0, NULL, 10},
-			{"commonkeyx", 1, NULL, 11},
-			{"ncchkeyxold", 1, NULL, 12},
+			//{"commonkeyx", 1, NULL, 11},
+			//{"ncchkeyxold", 1, NULL, 12},
 			{"intype", 1, NULL, 't'},
 			{"lzssout", 1, NULL, 13},
 			{"firmdir", 1, NULL, 14},
@@ -153,10 +154,11 @@ int main(int argc, char* argv[])
 			{"titlekey", 1, NULL, 22},
 			{"plainrgn", 1, NULL, 23},
 			{"showsyscalls", 0, NULL, 24},
-			{"ncchkeyxseven", 1, NULL, 25},
-			{"ncchkeyxninethree", 1, NULL, 26},
-			{"ncchkeyxninesix", 1, NULL, 27},
+			//{"ncchkeyxseven", 1, NULL, 25},
+			//{"ncchkeyxninethree", 1, NULL, 26},
+			//{"ncchkeyxninesix", 1, NULL, 27},
 			{"seeddb", 1, NULL, 28},
+			{"seed", 1, NULL, 29 },
 			{NULL},
 		};
 
@@ -237,11 +239,11 @@ int main(int argc, char* argv[])
 			case 8: settings_set_exefs_dir_path(&ctx.usersettings, optarg); break;
 			case 9: settings_set_mediaunit_size(&ctx.usersettings, strtoul(optarg, 0, 0)); break;
 			case 10: ctx.actions |= ShowKeysFlag; break;
-			case 11: keyset_parse_commonkeyX(&tmpkeys, optarg, strlen(optarg)); break;
-			case 12: keyset_parse_ncchkeyX_old(&tmpkeys, optarg, strlen(optarg)); break;
+			//case 11: keyset_parse_commonkeyX(&tmpkeys, optarg, strlen(optarg)); break;
+			//case 12: keyset_parse_ncchkeyX_old(&tmpkeys, optarg, strlen(optarg)); break;
 			case 13: settings_set_lzss_path(&ctx.usersettings, optarg); break;
 			case 14: settings_set_firm_dir_path(&ctx.usersettings, optarg); break;
-			case 15: keyset_parse_ncchfixedsystemkey(&tmpkeys, optarg, strlen(optarg)); break;
+			//case 15: keyset_parse_ncchfixedsystemkey(&tmpkeys, optarg, strlen(optarg)); break;
 			case 16: settings_set_wav_path(&ctx.usersettings, optarg); break;
 			case 17: settings_set_romfs_dir_path(&ctx.usersettings, optarg); break;
 			case 18: settings_set_list_romfs_files(&ctx.usersettings, 1); break;
@@ -251,10 +253,11 @@ int main(int argc, char* argv[])
 			case 22: keyset_parse_titlekey(&tmpkeys, optarg, strlen(optarg)); break;
 			case 23: settings_set_plainrgn_path(&ctx.usersettings, optarg); break;
 			case 24: ctx.actions |= ShowSyscallsFlag; break;
-			case 25: keyset_parse_ncchkeyX_seven(&tmpkeys, optarg, strlen(optarg)); break;
-			case 26: keyset_parse_ncchkeyX_ninethree(&tmpkeys, optarg, strlen(optarg)); break;
-			case 27: keyset_parse_ncchkeyX_ninesix(&tmpkeys, optarg, strlen(optarg)); break;
+			//case 25: keyset_parse_ncchkeyX_seven(&tmpkeys, optarg, strlen(optarg)); break;
+			//case 26: keyset_parse_ncchkeyX_ninethree(&tmpkeys, optarg, strlen(optarg)); break;
+			//case 27: keyset_parse_ncchkeyX_ninesix(&tmpkeys, optarg, strlen(optarg)); break;
 			case 28: keyset_parse_seeddb(&tmpkeys, optarg); break;
+			case 29: keyset_parse_seed_fallback(&tmpkeys, optarg, strlen(optarg)); break;
 
 			default:
 				usage(argv[0]);

@@ -211,14 +211,12 @@ void cia_process(cia_context* ctx, u32 actions)
 
 	tik_process(&ctx->tik, actions);
 	memset(ctx->iv, 0, 16);
-
-	
-
-	if (settings_get_common_keyX(ctx->usersettings))
-		tik_get_titlekey(&ctx->tik, ctx->titlekey);
-	else if(settings_get_title_key(ctx->usersettings))
-		memcpy(ctx->titlekey, settings_get_title_key(ctx->usersettings), 16);
 		
+	if (tik_get_titlekey(&ctx->tik))
+		memcpy(ctx->titlekey, tik_get_titlekey(&ctx->tik), 16);
+	else if (settings_get_title_key(ctx->usersettings))
+		memcpy(ctx->titlekey, settings_get_title_key(ctx->usersettings), 16);
+
 	tmd_set_file(&ctx->tmd, ctx->file);
 	tmd_set_offset(&ctx->tmd, ctx->offsettmd);
 	tmd_set_size(&ctx->tmd, ctx->sizetmd);

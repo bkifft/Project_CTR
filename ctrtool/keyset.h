@@ -7,6 +7,8 @@
 extern "C" {
 #endif
 
+#define COMMONKEY_NUM 6
+
 typedef enum
 {
 	KEY_ERR_LEN_MISMATCH,
@@ -59,8 +61,9 @@ typedef struct
 	u32 seed_num;
 	seeddb_entry* seed_db;
 
+	key128 commonkey[COMMONKEY_NUM];
 	key128 titlekey;
-	key128 commonkeyX;
+	key128 seed_fallback;
 	key128 ncchfixedsystemkey;
 	key128 ncchkeyX_old;
 	key128 ncchkeyX_seven;
@@ -75,7 +78,6 @@ typedef struct
 void keyset_init(keyset* keys, u32 actions);
 int keyset_load(keyset* keys, const char* fname, int verbose);
 void keyset_merge(keyset* keys, keyset* src);
-void keyset_parse_commonkeyX(keyset* keys, char* keytext, int keylen);
 void keyset_parse_titlekey(keyset* keys, char* keytext, int keylen);
 void keyset_parse_ncchkeyX_old(keyset* keys, char* keytext, int keylen);
 void keyset_parse_ncchfixedsystemkey(keyset* keys, char* keytext, int keylen);
@@ -83,6 +85,7 @@ void keyset_parse_ncchkeyX_seven(keyset* keys, char* keytext, int keylen);
 void keyset_parse_ncchkeyX_ninethree(keyset* keys, char* keytext, int keylen);
 void keyset_parse_ncchkeyX_ninesix(keyset* keys, char* keytext, int keylen);
 void keyset_parse_seeddb(keyset* keys, char* path);
+void keyset_parse_seed_fallback(keyset* keys, char* keytext, int keylen);
 void keyset_dump(keyset* keys);
 
 #ifdef __cplusplus
