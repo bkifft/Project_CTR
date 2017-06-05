@@ -792,7 +792,7 @@ int cwav_pcm_setup(cwav_pcmstate* state, cwav_context* ctx, int isloop)
 {
 	u32 channelcount = ctx->channelcount;
 	u32 i;
-	u32 startoffset;
+	u32 startoffset = 0;
 
 
 	if (ctx->channel == 0)
