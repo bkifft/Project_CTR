@@ -48,10 +48,10 @@ void exefs_set_encrypted(exefs_context* ctx, u32 encrypted)
 	ctx->encrypted = encrypted;
 }
 
-void exefs_set_keys(exefs_context* ctx, u8 key[16], u8 special_key[16])
+void exefs_set_keys(exefs_context* ctx, u8 key0[16], u8 key1[16])
 {
-	memcpy(ctx->key, key, 16);
-	memcpy(ctx->special_key, special_key, 16);
+	memcpy(ctx->key[0], key0, 16);
+	memcpy(ctx->key[1], key1, 16);
 }
 
 void exefs_set_counter(exefs_context* ctx, u8 counter[16])
@@ -109,7 +109,7 @@ void exefs_save(exefs_context* ctx, u32 index, u32 flags)
 	}
 
 	fseeko64(ctx->file, ctx->offset + offset, SEEK_SET);
-	ctr_init_key(&ctx->aes, ctx->key);
+	ctr_init_key(&ctx->aes, ctx->key[0]);
 	ctr_init_counter(&ctx->aes, ctx->counter);
 	ctr_add_counter(&ctx->aes, offset / 0x10);
 
@@ -132,12 +132,10 @@ void exefs_save(exefs_context* ctx, u32 index, u32 flags)
 		}
 
 		if (ctx->encrypted) {
-			// .code and .firm use a special key on 7.0+
-			if (ctx->encrypted & NCCHCRYPTO_SPECIAL_FSES)
-				ctr_init_key(&ctx->aes, ctx->special_key);
-			ctr_crypt_counter(&ctx->aes, compressedbuffer, compressedbuffer, compressedsize);
-			if (ctx->encrypted & NCCHCRYPTO_SPECIAL_FSES)
-				ctr_init_key(&ctx->aes, ctx->key);
+			if (strncmp((const char*)section->name, "icon", 8) == 0 || strncmp((const char*)section->name, "banner", 8) == 0)
+				ctr_init_key(&ctx->aes, ctx->key[0]);
+			else
+				ctr_init_key(&ctx->aes, ctx->key[1]);
 		}
 
 
@@ -203,7 +201,7 @@ void exefs_read_header(exefs_context* ctx, u32 flags)
 	fread(&ctx->header, 1, sizeof(exefs_header), ctx->file);
 
 	if (ctx->encrypted) {
-		ctr_init_key(&ctx->aes, ctx->key);
+		ctr_init_key(&ctx->aes, ctx->key[0]);
 		ctr_init_counter(&ctx->aes, ctx->counter);
 		ctr_crypt_counter(&ctx->aes, (u8*)&ctx->header, (u8*)&ctx->header, sizeof(exefs_header));
 	}
@@ -261,10 +259,10 @@ int exefs_verify(exefs_context* ctx, u32 index, u32 flags)
 		return 0;
 
 	fseeko64(ctx->file, ctx->offset + offset, SEEK_SET);
-	if (index == 0 && (ctx->encrypted & NCCHCRYPTO_SPECIAL_FSES))
-		ctr_init_key(&ctx->aes, ctx->special_key);
+	if (strncmp((const char*)section->name, "icon", 8) == 0 || strncmp((const char*)section->name, "banner", 8) == 0)
+		ctr_init_key(&ctx->aes, ctx->key[0]);
 	else
-		ctr_init_key(&ctx->aes, ctx->key);
+		ctr_init_key(&ctx->aes, ctx->key[1]);
 	ctr_init_counter(&ctx->aes, ctx->counter);
 	ctr_add_counter(&ctx->aes, offset / 0x10);
 

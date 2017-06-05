@@ -29,8 +29,7 @@ typedef struct
 	settings* usersettings;
 	u8 partitionid[8];
 	u8 counter[16];
-	u8 key[16];
-	u8 special_key[16];
+	u8 key[2][16];
 	u64 offset;
 	u64 size;
 	exefs_header header;

@@ -24,13 +24,8 @@ typedef enum
 {
 	NCCHCRYPTO_NONE		= 0,		//< already decrypted
 	NCCHCRYPTO_FIXED	= 1,		//< fixed key crypto, used for SDK-made application titles and very very old system titles
-	NCCHCRYPTO_OLD 		= (1<<1),	//< crypto used before 7.0
-	NCCHCRYPTO_SEVEN	= (1<<2),	//< crypto used starting with 7.0
-	NCCHCRYPTO_NINETHREE	= (1<<3),	//< crypto used on N3DS starting with 9.3
-	NCCHCRYPTO_NINESIX	= (1<<4),	//< crypto used on N3DS starting with 9.6
-	NCCHCRYPTO_SEED		= (1<<5),	//< crypto used starting with 9.6 for preloading titles
-	NCCHCRYPTO_SPECIAL_FSES = NCCHCRYPTO_SEVEN | NCCHCRYPTO_NINETHREE | NCCHCRYPTO_NINESIX | NCCHCRYPTO_SEED, //< ExeFS and RomFS need new keys
-	NCCHCRYPTO_BROKEN	= 0xFF		//< Internal: seed crypto required but no seed set
+	NCCHCRYPTO_SECURE	= (1<<1),	//< hardware generated key
+	NCCHCRYPTO_BROKEN	= 0xFF		//< Internal: failed to generate key, but encryption still used
 } ctr_ncchcryptotype;
 
 typedef struct
@@ -70,8 +65,7 @@ typedef struct
 typedef struct
 {
 	FILE* file;
-	u8 key[16];
-	u8 special_key[16]; // used with the 7.x+ crypto methods
+	u8 key[2][16];
 	u8 seed[16];
 	u32 encrypted;
 	u64 offset;
