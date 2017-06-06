@@ -33,9 +33,9 @@ void exefs_set_usersettings(exefs_context* ctx, settings* usersettings)
 	ctx->usersettings = usersettings;
 }
 
-void exefs_set_partitionid(exefs_context* ctx, u8 partitionid[8])
+void exefs_set_titleid(exefs_context* ctx, u8 titleid[8])
 {
-	memcpy(ctx->partitionid, partitionid, 8);
+	memcpy(ctx->titleid, titleid, 8);
 }
 
 void exefs_set_compressedflag(exefs_context* ctx, int compressedflag)

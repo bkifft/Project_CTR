@@ -149,7 +149,7 @@ typedef struct
 	int haveread;
 	FILE* file;
 	settings* usersettings;
-	u8 partitionid[8];
+	u8 titleid[8];
 	u8 programid[8];
 	u8 hash[32];
 	u8 counter[16];
@@ -183,7 +183,7 @@ void exheader_init(exheader_context* ctx);
 void exheader_set_file(exheader_context* ctx, FILE* file);
 void exheader_set_offset(exheader_context* ctx, u64 offset);
 void exheader_set_size(exheader_context* ctx, u64 size);
-void exheader_set_partitionid(exheader_context* ctx, u8 partitionid[8]);
+void exheader_set_titleid(exheader_context* ctx, u8 titleid[8]);
 void exheader_set_counter(exheader_context* ctx, u8 counter[16]);
 void exheader_set_programid(exheader_context* ctx, u8 programid[8]);
 void exheader_set_hash(exheader_context* ctx, u8 hash[32]);

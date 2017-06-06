@@ -50,7 +50,7 @@ void ncch_get_counter(ncch_context* ctx, u8 counter[16], u8 type)
 {
 	u32 version = getle16(ctx->header.version);
 	u32 mediaunitsize = (u32) ncch_get_mediaunit_size(ctx);
-	u8* partitionid = ctx->header.partitionid;
+	u8* titleid = ctx->header.titleid;
 	u32 i;
 	u64 x = 0;
 
@@ -59,7 +59,7 @@ void ncch_get_counter(ncch_context* ctx, u8 counter[16], u8 type)
 	if (version == 2 || version == 0)
 	{
 		for(i=0; i<8; i++)
-			counter[i] = partitionid[7-i];
+			counter[i] = titleid[7-i];
 		counter[8] = type;
 	}
 	else if (version == 1)
@@ -72,7 +72,7 @@ void ncch_get_counter(ncch_context* ctx, u8 counter[16], u8 type)
 			x = getle32(ctx->header.romfsoffset) * mediaunitsize;
 
 		for(i=0; i<8; i++)
-			counter[i] = partitionid[i];
+			counter[i] = titleid[i];
 		for(i=0; i<4; i++)
 			counter[12+i] = (u8) (x>>((3-i)*8));
 	}
@@ -350,7 +350,7 @@ void ncch_process(ncch_context* ctx, u32 actions)
 	exheader_set_offset(&ctx->exheader, ncch_get_exheader_offset(ctx) );
 	exheader_set_size(&ctx->exheader, ncch_get_exheader_size(ctx) );
 	exheader_set_usersettings(&ctx->exheader, ctx->usersettings);
-	exheader_set_partitionid(&ctx->exheader, ctx->header.partitionid);
+	exheader_set_titleid(&ctx->exheader, ctx->header.titleid);
 	exheader_set_programid(&ctx->exheader, ctx->header.programid);
 	exheader_set_hash(&ctx->exheader, ctx->header.extendedheaderhash);
 	exheader_set_counter(&ctx->exheader, exheadercounter);
@@ -360,7 +360,7 @@ void ncch_process(ncch_context* ctx, u32 actions)
 	exefs_set_file(&ctx->exefs, ctx->file);
 	exefs_set_offset(&ctx->exefs, ncch_get_exefs_offset(ctx) );
 	exefs_set_size(&ctx->exefs, ncch_get_exefs_size(ctx) );
-	exefs_set_partitionid(&ctx->exefs, ctx->header.partitionid);
+	exefs_set_titleid(&ctx->exefs, ctx->header.titleid);
 	exefs_set_usersettings(&ctx->exefs, ctx->usersettings);
 	exefs_set_counter(&ctx->exefs, exefscounter);
 	exefs_set_keys(&ctx->exefs, ctx->key[0], ctx->key[1]);
@@ -630,7 +630,7 @@ void ncch_determine_key(ncch_context* ctx, u32 actions)
 			// - get keyY
 			if (header->flags[7] & 0x20)
 			{
-				seed = settings_get_seed(ctx->usersettings, getle64(header->partitionid));
+				seed = settings_get_seed(ctx->usersettings, getle64(header->programid));
 				if (!seed)
 				{
 					fprintf(stderr, "This title uses seed crypto, but no seed is set, unable to decrypt.\n"
@@ -735,7 +735,7 @@ void ncch_print(ncch_context* ctx)
 	else
 		memdump(stdout, "Signature (FAIL):       ", header->signature, 0x100);
 	fprintf(stdout, "Content size:           0x%08"PRIx64"\n", getle32(header->contentsize)*mediaunitsize);
-	fprintf(stdout, "Partition id:           %016"PRIx64"\n", getle64(header->partitionid));
+	fprintf(stdout, "Title id:           %016"PRIx64"\n", getle64(header->titleid));
 	fprintf(stdout, "Maker code:             %.2s\n", header->makercode);
 	fprintf(stdout, "Version:                %d\n", getle16(header->version));
 	fprintf(stdout, "Title seed check:       %08x\n", getle32(header->seedcheck));

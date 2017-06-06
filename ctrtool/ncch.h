@@ -33,7 +33,7 @@ typedef struct
 	u8 signature[0x100];
 	u8 magic[4];
 	u8 contentsize[4];
-	u8 partitionid[8];
+	u8 titleid[8];
 	u8 makercode[2];
 	u8 version[2];
 	u8 seedcheck[4];

@@ -25,7 +25,7 @@ typedef struct
 	u8 additionalheadersize[4];
 	u8 sectorzerooffset[4];
 	u8 flags[8];
-	u8 partitionid[0x40];
+	u8 titleid[0x40];
 	u8 reserved[0x30];
 } ctr_ncsdheader;
 

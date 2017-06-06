@@ -34,9 +34,9 @@ void exheader_set_usersettings(exheader_context* ctx, settings* usersettings)
 	ctx->usersettings = usersettings;
 }
 
-void exheader_set_partitionid(exheader_context* ctx, u8 partitionid[8])
+void exheader_set_titleid(exheader_context* ctx, u8 titleid[8])
 {
-	memcpy(ctx->partitionid, partitionid, 8);
+	memcpy(ctx->titleid, titleid, 8);
 }
 
 void exheader_set_programid(exheader_context* ctx, u8 programid[8])

@@ -147,7 +147,7 @@ void ncsd_print(ncsd_context* ctx)
 		if (partitionsize != 0)
 		{
 			fprintf(stdout, "Partition %d            \n", i);
-			memdump(stdout, " Id:                    ", header->partitionid+i*8, 8);
+			memdump(stdout, " Id:                    ", header->titleid+i*8, 8);
 			fprintf(stdout, " Area:                  0x%08X-0x%08X\n", partitionoffset, partitionoffset+partitionsize);
 			fprintf(stdout, " Filesystem:            %02X\n", header->partitionfstype[i]);
 			fprintf(stdout, " Encryption:            %02X\n", header->partitioncrypttype[i]);

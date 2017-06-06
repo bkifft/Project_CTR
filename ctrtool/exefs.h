@@ -27,7 +27,7 @@ typedef struct
 {
 	FILE* file;
 	settings* usersettings;
-	u8 partitionid[8];
+	u8 titleid[8];
 	u8 counter[16];
 	u8 key[2][16];
 	u64 offset;
@@ -45,7 +45,7 @@ void exefs_set_file(exefs_context* ctx, FILE* file);
 void exefs_set_offset(exefs_context* ctx, u64 offset);
 void exefs_set_size(exefs_context* ctx, u64 size);
 void exefs_set_usersettings(exefs_context* ctx, settings* usersettings);
-void exefs_set_partitionid(exefs_context* ctx, u8 partitionid[8]);
+void exefs_set_titleid(exefs_context* ctx, u8 titleid[8]);
 void exefs_set_counter(exefs_context* ctx, u8 counter[16]);
 void exefs_set_compressedflag(exefs_context* ctx, int compressedflag);
 void exefs_set_keys(exefs_context* ctx, u8 key[16], u8 special_key[16]);
