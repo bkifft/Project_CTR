@@ -520,6 +520,7 @@ void ncch_determine_key(ncch_context* ctx, u32 actions)
 	u8 exheader_buffer[0x400];
 	u8 seedbuf[0x20];
 	u8* seed;
+	u8* keyX = NULL;
 	u8 hash[0x20];
 	ctr_ncchheader* header = &ctx->header;	
 	struct sNcchKeyslot
@@ -589,43 +590,35 @@ void ncch_determine_key(ncch_context* ctx, u32 actions)
 
 			// setup second keyslot seed (romfs, exefs:!(icon|banner))
 			// - get keyX
-			if (header->flags[3] == 0)
+
+			switch (header->flags[3])
 			{
-				memcpy(key[1].x, key[0].x, 0x10);
-			}
-			else if (header->flags[3] == 1)
-			{
-				if (settings_get_ncchkeyX_seven(ctx->usersettings) == NULL)
-				{
-					fprintf(stderr, "Error, could not read NCCH 7.0 keyX.\n");
-					return;
-				}
-				memcpy(key[1].x, settings_get_ncchkeyX_seven(ctx->usersettings), 0x10);
-			}
-			else if (header->flags[3] == 10)
-			{
-				if (settings_get_ncchkeyX_ninethree(ctx->usersettings) == NULL)
-				{
-					fprintf(stderr, "Error, could not read NCCH 9.3 keyX.\n");
-					return;
-				}
-				memcpy(key[1].x, settings_get_ncchkeyX_ninethree(ctx->usersettings), 0x10);
-			}
-			else if (header->flags[3] == 11)
-			{
-				if (settings_get_ncchkeyX_ninesix(ctx->usersettings) == NULL)
-				{
-					fprintf(stderr, "Error, could not read NCCH 9.6 keyX.\n");
-					return;
-				}
-				memcpy(key[1].x, settings_get_ncchkeyX_ninesix(ctx->usersettings), 0x10);
-			}
-			else
-			{
+			case(0):
+				keyX = settings_get_ncchkeyX_old(ctx->usersettings);
+				break;
+			case(1):
+				keyX = settings_get_ncchkeyX_seven(ctx->usersettings);
+				break;
+			case(10):
+				keyX = settings_get_ncchkeyX_ninethree(ctx->usersettings);
+				break;
+			case(11):
+				keyX = settings_get_ncchkeyX_ninesix(ctx->usersettings);
+				break;
+			default:
 				fprintf(stderr, "Warning, unknown NCCH crypto method.\n");
 				ctx->encrypted = NCCHCRYPTO_BROKEN;
 				return;
 			}
+
+			if (keyX == NULL)
+			{
+				fprintf(stderr, "Error, could not read NCCH keyX.\n");
+				ctx->encrypted = NCCHCRYPTO_BROKEN;
+				return;
+			}
+
+			memcpy(key[1].x, keyX, 0x10);
 
 			// - get keyY
 			if (header->flags[7] & 0x20)
