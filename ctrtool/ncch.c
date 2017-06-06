@@ -735,7 +735,7 @@ void ncch_print(ncch_context* ctx)
 	else
 		memdump(stdout, "Signature (FAIL):       ", header->signature, 0x100);
 	fprintf(stdout, "Content size:           0x%08"PRIx64"\n", getle32(header->contentsize)*mediaunitsize);
-	fprintf(stdout, "Title id:           %016"PRIx64"\n", getle64(header->titleid));
+	fprintf(stdout, "Title id:               %016"PRIx64"\n", getle64(header->titleid));
 	fprintf(stdout, "Maker code:             %.2s\n", header->makercode);
 	fprintf(stdout, "Version:                %d\n", getle16(header->version));
 	fprintf(stdout, "Title seed check:       %08x\n", getle32(header->seedcheck));
