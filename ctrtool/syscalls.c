@@ -139,8 +139,13 @@ static const char *const syscall_list[NUM_SYSCALLS] =
 
 void syscall_get_name(char *output, size_t size, unsigned int call_num)
 {
+#ifdef _MSC_VER
+	typedef char StaticAssert[sizeof(syscall_list) / sizeof(syscall_list[0]) == NUM_SYSCALLS ? 1 : -1];
+#else
 	_Static_assert(sizeof(syscall_list) / sizeof(syscall_list[0]) == NUM_SYSCALLS,
 		"syscall table length mismatch");
+#endif
+	
 
 	if (size == 0)
 	{
