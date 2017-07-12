@@ -73,7 +73,7 @@ void exefs_save(exefs_context* ctx, u32 index, u32 flags)
 	u8* decompressedbuffer = 0;
 	filepath* dirpath = 0;
 	
-	
+	// determine offset/size of target
 	offset = getle32(section->offset) + sizeof(exefs_header);
 	size = getle32(section->size);
 	dirpath = settings_get_exefs_dir_path(ctx->usersettings);
@@ -87,6 +87,7 @@ void exefs_save(exefs_context* ctx, u32 index, u32 flags)
 		return;
 	}
 
+	// create new file
 	memset(name, 0, sizeof(name));
 	memcpy(name, section->name, 8);
 
@@ -108,11 +109,24 @@ void exefs_save(exefs_context* ctx, u32 index, u32 flags)
 		goto clean;
 	}
 
+	// seek in source file to location of target data
 	fseeko64(ctx->file, ctx->offset + offset, SEEK_SET);
-	ctr_init_key(&ctx->aes, ctx->key[0]);
-	ctr_init_counter(&ctx->aes, ctx->counter);
-	ctr_add_counter(&ctx->aes, offset / 0x10);
 
+	// do decryption prep
+	if (ctx->encrypted)
+	{
+		// setup aes counter
+		ctr_init_counter(&ctx->aes, ctx->counter);
+		ctr_add_counter(&ctx->aes, offset / 0x10);
+
+		// setup key
+		if (strncmp((const char*)section->name, "icon", 8) == 0 || strncmp((const char*)section->name, "banner", 8) == 0)
+			ctr_init_key(&ctx->aes, ctx->key[0]);
+		else
+			ctr_init_key(&ctx->aes, ctx->key[1]);
+	}
+
+	// if this is file0, and compression is set or forced: decompress section
 	if (index == 0 && (ctx->compressedflag || (flags & DecompressCodeFlag)) && ((flags & RawFlag) == 0))
 	{
 		fprintf(stdout, "Decompressing section %s to %s...\n", name, outfname);
@@ -131,12 +145,9 @@ void exefs_save(exefs_context* ctx, u32 index, u32 flags)
 			goto clean;
 		}
 
-		if (ctx->encrypted) {
-			if (strncmp((const char*)section->name, "icon", 8) == 0 || strncmp((const char*)section->name, "banner", 8) == 0)
-				ctr_init_key(&ctx->aes, ctx->key[0]);
-			else
-				ctr_init_key(&ctx->aes, ctx->key[1]);
-		}
+		// decrypt if required
+		if (ctx->encrypted)
+			ctr_crypt_counter(&ctx->aes, compressedbuffer, compressedbuffer, compressedsize);
 
 
 		decompressedsize = lzss_get_decompressed_size(compressedbuffer, compressedsize);
