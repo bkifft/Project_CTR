@@ -15,14 +15,14 @@ ifneq (, $(findstring linux, $(SYS)))
 else ifneq(, $(findstring cygwin, $(SYS)))
     # Cygwin
     CFLAGS += -Wno-unused-but-set-variable -DUSE_FILE32API
-    LIBS += -liconv
+    LIBS += -liconv -static-libgcc -static-libstdc++
 else ifneq(, $(findstring darwin, $(SYS)))
     # OS X
     LIBS += -liconv
 else
     #Windows Build CFG
     CFLAGS += -Wno-unused-but-set-variable
-    LIBS += -static-libgcc
+    LIBS += -static-libgcc -static-libstdc++
 endif
 
 main: $(OBJS)
