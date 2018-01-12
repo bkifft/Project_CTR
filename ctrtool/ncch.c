@@ -182,6 +182,7 @@ void ncch_save(ncch_context* ctx, u32 type, u32 flags)
 	FILE* fout = 0;
 	filepath* path = 0;
 	u8 buffer[16*1024];
+	exefs_header exefs_hdr;
 
 
 	if (0 == ncch_extract_prepare(ctx, type, flags))
@@ -215,22 +216,106 @@ void ncch_save(ncch_context* ctx, u32 type, u32 flags)
 		case NCCHTYPE_PLAINRGN: fprintf(stdout, "Saving Plain Region...\n"); break;
 	}
 
-	while(1)
+	// special crypto considerations for exefs when two keys are used
+	if (type == NCCHTYPE_EXEFS && ctx->header.flags[3] > 0 && ctx->encrypted)
 	{
 		u32 read_len;
 
-		if (0 == ncch_extract_buffer(ctx, buffer, sizeof(buffer), &read_len, type == NCCHTYPE_LOGO || type == NCCHTYPE_PLAINRGN))
+		// read header
+		if (0 == ncch_extract_buffer(ctx, (u8*)&exefs_hdr, sizeof(exefs_hdr), &read_len, 0))
 			goto clean;
 
-		if (read_len == 0)
-			break;
-
-		if (read_len != fwrite(buffer, 1, read_len, fout))
+		if (read_len != fwrite(&exefs_hdr, 1, read_len, fout))
 		{
 			fprintf(stdout, "Error writing output file\n");
 			goto clean;
 		}
+
+		for (int i = 0; i < 8; i++)
+		{
+			
+			// get section size
+			u32 section_size = getle32(exefs_hdr.section[i].size);
+			u32 section_padding = align(section_size, 0x200)-section_size;
+
+			// skip empty sections
+			if (section_size == 0)
+				continue;
+
+			// select correct key
+			if (strncmp((char*)exefs_hdr.section[i].name, "icon", 8) == 0 || strncmp((char*)exefs_hdr.section[i].name, "banner", 8) == 0)
+				ctr_init_key(&ctx->aes, ctx->key[0]);
+			else
+				ctr_init_key(&ctx->aes, ctx->key[1]);
+
+			// set counter
+			u8 ctr[16];
+			ncch_get_counter(ctx, ctr, NCCHTYPE_EXEFS);
+			ctr_init_counter(&ctx->aes, ctr);
+			ctr_add_counter(&ctx->aes, (getle32(exefs_hdr.section[i].offset) + sizeof(exefs_header)) / 0x10);
+
+			// extract data
+			while (section_size > 0)
+			{
+				read_len = sizeof(buffer);
+				if (read_len > section_size)
+					read_len = section_size;
+
+
+				if (read_len != fread(buffer, 1, read_len, ctx->file))
+				{
+					fprintf(stdout, "Error reading input file\n");
+					goto clean;
+				}
+
+				ctr_crypt_counter(&ctx->aes, buffer, buffer, read_len);
+
+				if (read_len != fwrite(buffer, 1, read_len, fout))
+				{
+					fprintf(stdout, "Error writing output file\n");
+					goto clean;
+				}
+
+
+				section_size -= read_len;
+			}
+
+			// skip the padding
+			if (section_padding)
+			{
+				fseeko64(ctx->file, section_padding, SEEK_CUR);
+				memset(buffer, 0, section_padding);
+				if (section_padding != fwrite(buffer, 1, section_padding, fout))
+				{
+					fprintf(stdout, "Error writing output file\n");
+					goto clean;
+				}
+
+			}
+
+			ctx->extractsize -= section_size + section_padding;
+		}
 	}
+	else
+	{
+		while (1)
+		{
+			u32 read_len;
+
+			if (0 == ncch_extract_buffer(ctx, buffer, sizeof(buffer), &read_len, (type == NCCHTYPE_LOGO || type == NCCHTYPE_PLAINRGN)))
+				goto clean;
+
+			if (read_len == 0)
+				break;
+
+			if (read_len != fwrite(buffer, 1, read_len, fout))
+			{
+				fprintf(stdout, "Error writing output file\n");
+				goto clean;
+			}
+		}
+	}
+	
 clean:
 	if (fout)
 		fclose(fout);

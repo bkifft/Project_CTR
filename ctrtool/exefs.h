@@ -7,6 +7,7 @@
 #include "filepath.h"
 #include "settings.h"
 
+#define EXEFS_SECTION_NUM 8
 
 typedef struct
 {
@@ -18,9 +19,9 @@ typedef struct
 
 typedef struct
 {
-	exefs_sectionheader section[8];
+	exefs_sectionheader section[EXEFS_SECTION_NUM];
 	u8 reserved[0x80];
-	u8 hashes[8][0x20];
+	u8 hashes[EXEFS_SECTION_NUM][0x20];
 } exefs_header;
 
 typedef struct
@@ -35,7 +36,7 @@ typedef struct
 	exefs_header header;
 	ctr_aes_context aes;
 	ctr_sha256_context sha;
-	int hashcheck[8];
+	int hashcheck[EXEFS_SECTION_NUM];
 	int compressedflag;
 	int encrypted;
 } exefs_context;

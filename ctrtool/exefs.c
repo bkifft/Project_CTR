@@ -315,7 +315,7 @@ void exefs_print(exefs_context* ctx)
 	u32 sectsize;
 
 	fprintf(stdout, "\nExeFS:\n");
-	for(i=0; i<8; i++)
+	for(i=0; i<EXEFS_SECTION_NUM; i++)
 	{
 		exefs_sectionheader* section = (exefs_sectionheader*)(ctx->header.section + i);
 
