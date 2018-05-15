@@ -12,11 +12,11 @@ SYS := $(shell gcc -dumpmachine)
 ifneq (, $(findstring linux, $(SYS)))
     # Linux
     CFLAGS += -Wno-unused-but-set-variable
-else ifneq(, $(findstring cygwin, $(SYS)))
+else ifneq (, $(findstring cygwin, $(SYS)))
     # Cygwin
     CFLAGS += -Wno-unused-but-set-variable -DUSE_FILE32API
     LIBS += -liconv -static-libgcc -static-libstdc++
-else ifneq(, $(findstring darwin, $(SYS)))
+else ifneq (, $(findstring darwin, $(SYS)))
     # OS X
     LIBS += -liconv
 else
