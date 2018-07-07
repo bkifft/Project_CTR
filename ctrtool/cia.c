@@ -102,23 +102,25 @@ void cia_save(cia_context* ctx, u32 type, u32 flags)
 			chunk = (ctr_tmd_contentchunk*)(body->contentinfo + (sizeof(ctr_tmd_contentinfo) * TMD_MAX_CONTENTS));
 
 			for(i = 0; i < getbe16(body->contentcount); i++) {
-				sprintf(tmpname, "%s.%04x.%08x", path->pathname, getbe16(chunk->index), getbe32(chunk->id));
-				fprintf(stdout, "Saving content #%04x to %s\n", getbe16(chunk->index), tmpname);
-				
-				contentflags = getbe16(chunk->type);
-				docrypto = contentflags & 1 && !(flags & PlainFlag);
+				if(ctx->header.contentindex[i >> 3] & (0x80 >> (i & 7))) {
+					sprintf(tmpname, "%s.%04x.%08x", path->pathname, getbe16(chunk->index), getbe32(chunk->id));
+					fprintf(stdout, "Saving content #%04x to %s\n", getbe16(chunk->index), tmpname);
 
-				if(docrypto) // Decrypt if needed
-				{
-					ctx->iv[0] = (getbe16(chunk->index) >> 8) & 0xff;
-					ctx->iv[1] = getbe16(chunk->index) & 0xff;
+					contentflags = getbe16(chunk->type);
+					docrypto = contentflags & 1 && !(flags & PlainFlag);
 
-					ctr_init_cbc_decrypt(&ctx->aes, ctx->titlekey, ctx->iv);
+					if(docrypto) // Decrypt if needed
+					{
+						ctx->iv[0] = (getbe16(chunk->index) >> 8) & 0xff;
+						ctx->iv[1] = getbe16(chunk->index) & 0xff;
+
+						ctr_init_cbc_decrypt(&ctx->aes, ctx->titlekey, ctx->iv);
+					}
+
+					cia_save_blob(ctx, tmpname, offset, getbe64(chunk->size) & 0xffffffff, docrypto);
+
+					offset += getbe64(chunk->size) & 0xffffffff;
 				}
-
-				cia_save_blob(ctx, tmpname, offset, getbe64(chunk->size) & 0xffffffff, docrypto);
-
-				offset += getbe64(chunk->size) & 0xffffffff;
 				chunk++;
 			}
 
