@@ -416,9 +416,10 @@ void ncch_process(ncch_context* ctx, u32 actions)
 		return;
 	}
 
-	if (getle32(ctx->header.extendedheadersize) != 0x400)
+	const u32 exheaderSize = getle32(ctx->header.extendedheadersize);
+	if (exheaderSize != 0x400 && exheaderSize != 0)
 	{
-		fprintf(stdout, "Error, exheader is 0x%02x bytes long, expected 0x0400\n", getle32(ctx->header.extendedheadersize));
+		fprintf(stdout, "Error, exheader is 0x%02x bytes long, expected 0x400 or 0\n", getle32(ctx->header.extendedheadersize));
 		return;
 	}
 
@@ -612,8 +613,9 @@ void ncch_determine_key(ncch_context* ctx, u32 actions)
 	u8 seedbuf[0x20];
 	u8* seed;
 	u8* keyX = NULL;
-	u8 hash[0x20];
-	ctr_ncchheader* header = &ctx->header;	
+	u8 hash[0x20] = {0};
+	ctr_ncchheader* header = &ctx->header;
+	const u32 exheaderSize = getle32(header->extendedheadersize);
 	struct sNcchKeyslot
 	{
 		u8 x[0x10];
@@ -625,9 +627,9 @@ void ncch_determine_key(ncch_context* ctx, u32 actions)
 	// Check if the NCCH is already decrypted, by checking if the exheader hash matches
 	// Otherwise, use determination rules
 	fseeko64(ctx->file, ncch_get_exheader_offset(ctx), SEEK_SET);
-	memset(exheader_buffer, 0, 0x400);
-	fread(exheader_buffer, 1, 0x400, ctx->file);
-	ctr_sha_256(exheader_buffer, 0x400, hash);
+	memset(exheader_buffer, 0, exheaderSize);
+	fread(exheader_buffer, 1, exheaderSize, ctx->file);
+	ctr_sha_256(exheader_buffer, exheaderSize, hash);
 	if (!memcmp(hash, header->extendedheaderhash, 32))
 	{
 		// exheader hash matches, so probably decrypted
@@ -831,7 +833,7 @@ void ncch_print(ncch_context* ctx)
 	else
 		memdump(stdout, "Logo hash (FAIL):       ", header->logohash, 0x20);
 	fprintf(stdout, "Product code:           %.16s\n", header->productcode);
-	fprintf(stdout, "Exheader size:          00000400\n"); //this is always the same
+	fprintf(stdout, "Exheader size:          0x%x\n", getle32(header->extendedheadersize));
 	if (ctx->exheaderhashcheck == Unchecked)
 		memdump(stdout, "Exheader hash:          ", header->extendedheaderhash, 0x20);
 	else if (ctx->exheaderhashcheck == Good)
