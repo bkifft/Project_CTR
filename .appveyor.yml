@@ -1,0 +1,29 @@
+version: '{build}'
+
+os:
+- Visual Studio 2017
+- Ubuntu1804
+
+install:
+- cmd: set PATH=%PATH%;C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin
+
+build_script:
+  - cmd: |
+      mingw32-make -j 6 -C ctrtool
+      mingw32-make -j 6 -C makerom
+  - sh: |
+      make -j 2 -C ctrtool
+      make -j 2 -C makerom
+
+after_build:
+  - cmd: |
+      move ctrtool\ctrtool.exe && move makerom\makerom.exe
+      7z a Project_CTR.zip ctrtool.exe makerom.exe
+  - sh: |
+      cd ctrtool && 7z u ../Project_CTR.zip ctrtool
+      cd ../makerom && 7z u ../Project_CTR.zip makerom
+
+test: off
+
+artifacts:
+  - path: Project_CTR.zip
