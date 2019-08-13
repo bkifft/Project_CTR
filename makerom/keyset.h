@@ -4,7 +4,7 @@
 typedef enum
 {
 	AES_128_KEY_SIZE = 16,
-	MAX_CMN_KEY = MAX_U8,
+	MAX_CMN_KEY = 0x05,
 	MAX_NCCH_KEYX = MAX_U8
 } keydata_limits;
 
