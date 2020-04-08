@@ -73,7 +73,7 @@ int LoadKeysFromResources(keys_struct *keys)
 		/* AES Keys */
 		// CIA
 		//SetCommonKey(keys, zeros_aesKey,1);
-		if(keys->aes.currentCommonKey > 0xff)
+		if(keys->aes.currentCommonKey > MAX_CMN_KEY)
 			SetCurrentCommonKey(keys,0);
 	
 		// NCCH
@@ -101,7 +101,7 @@ int LoadKeysFromResources(keys_struct *keys)
 		for(int i = 0; i < 6; i++)
 			SetCommonKey(keys, ctr_common_etd_key_dpki[i],i);
 
-		if(keys->aes.currentCommonKey > 0xff)
+		if(keys->aes.currentCommonKey > MAX_CMN_KEY)
 			SetCurrentCommonKey(keys,0);
 	
 		// NCCH
@@ -133,7 +133,7 @@ int LoadKeysFromResources(keys_struct *keys)
 		for (int i = 0; i < 6; i++)
 			SetCommonKey(keys, ctr_common_etd_key_ppki[i], i);
 
-		if(keys->aes.currentCommonKey > 0xff)
+		if(keys->aes.currentCommonKey > MAX_CMN_KEY)
 			SetCurrentCommonKey(keys,0);
 	
 		// NCCH

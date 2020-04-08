@@ -89,6 +89,7 @@ void SetDefaults(user_settings *set)
 
 	// Build NCCH Info
 	set->ncch.useSecCrypto = true;
+	set->ncch.keyXID = 0;
 	set->ncch.buildNcch0 = true;
 	set->ncch.includeExefsLogo = false;
 	set->common.outFormat = NCCH;
@@ -115,7 +116,7 @@ void SetDefaults(user_settings *set)
 	set->cia.useDataTitleVer = false;
 	set->cia.useFullTitleVer = false;
 	set->cia.randomTitleKey = false;
-	set->common.keys.aes.currentCommonKey = MAX_U8 + 1; // invalid so changes can be detected
+	set->common.keys.aes.currentCommonKey = 0;
 	for (int i = 0; i < CIA_MAX_CONTENT; i++)
 		set->cia.contentId[i] = MAX_U32 + 1; // invalid so changes can be detected
 }
@@ -196,7 +197,6 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 		}
 		return 2;
 	}
-	/*
 	else if (strcmp(argv[i], "-ckeyid") == 0) {
 		if (ParamNum != 1) {
 			PrintArgReqParam(argv[i], 1);
@@ -224,7 +224,6 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 		}
 		return 2;
 	}
-	*/
 	else if (strcmp(argv[i], "-showkeys") == 0) {
 		if (ParamNum) {
 			PrintNoNeedParam(argv[i]);
@@ -903,7 +902,7 @@ void PrintNoNeedParam(char *arg)
 
 void DisplayBanner(void)
 {
-	printf("CTR MAKEROM v0.16 (C) 3DSGuy 2017\n");
+	printf("CTR MAKEROM v0.16.1 (C) 3DSGuy 2017\n");
 	printf("Built: %s %s\n\n", __TIME__, __DATE__);
 }
 
@@ -952,10 +951,16 @@ void DisplayExtendedHelp(char *app_name)
 	printf("                                    't' Test(false) Keys & prod Certs\n");
 	printf("                                    'd' Development Keys & Certs\n");
 	printf("                                    'p' Production Keys & Certs\n");
-	//printf(" -ckeyid        <index>             Override the automatic common key selection\n");
-	//printf(" -ncchseckey    <index>             Ncch keyX index ('0'=1.0+, '1'=7.0+)\n");
+	printf(" -ckeyid        <index>             Ticket Common Key Index, defaults to 0x00\n");
+	printf("                                    0x00 : Applications / eShop\n");
+	printf("                                    0x01 : System Titles\n");
+	printf("                                    0x02-0x05 : Unused\n");
+	printf(" -ncchseckey    <index>             NCCH KeyX index, defaults to 0x00\n");
+	printf("                                    0x00 : FW 1.0.0+\n");
+	printf("                                    0x01 : FW 7.0.0+\n");
+	printf("                                    0x0a : FW 9.3.0+ (New3DS only)\n");
+	printf("                                    0x0b : FW 9.6.0+ (New3DS only)\n");
 	printf(" -showkeys                          Display the loaded key chain\n");
-	//printf(" -fsign                             False sign digital signatures\n");
 	printf(" -ignoresign                        Ignore invalid signatures\n");
 	printf("NCCH OPTIONS:\n");
 	printf(" -elf           <file>              ELF file\n");
