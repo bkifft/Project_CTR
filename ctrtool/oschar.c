@@ -152,10 +152,11 @@ char* strcopy_UTF16toUTF8(const utf16char_t *src)
 		return NULL;
 
 	src_len = utf16_strlen(src);
-	dst_len = src_len * 2;
+	// UTF-8 can use up to 3 bytes per UTF-16 code unit, or four for a surrogate pair
+	dst_len = src_len * 3;
 
 	// Allocate memory for string
-	dst = calloc(dst_len, sizeof(char)); // twice the size, as UTF-8 will use up to two bytes for converted UTF16 chars afaik
+	dst = calloc(dst_len, sizeof(char));
 	if (!dst)
 		return NULL;
 
