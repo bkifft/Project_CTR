@@ -902,7 +902,7 @@ void PrintNoNeedParam(char *arg)
 
 void DisplayBanner(void)
 {
-	printf("CTR MAKEROM v0.16.1 (C) 3DSGuy 2017\n");
+	printf("CTR MAKEROM v0.16.2 (C) 3DSGuy 2020\n");
 	printf("Built: %s %s\n\n", __TIME__, __DATE__);
 }
 
