@@ -38,7 +38,7 @@ typedef struct
 static void usage(const char *argv0)
 {
 	fprintf(stderr,
-		   "CTRTOOL (c) neimod, 3DSGuy.\n"
+		   "CTRTOOL v0.7 (c) neimod, 3DSGuy.\n"
 		   "Built: %s %s\n"
            "\n"
 		   "Usage: %s [options...] <file>\n"
