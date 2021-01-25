@@ -284,6 +284,7 @@ typedef struct
 	
 	struct{
 		bool randomTitleKey;
+		char *titleKey;
 		bool encryptCia;
 		bool DlcContent;
 		bool includeUpdateNcch;

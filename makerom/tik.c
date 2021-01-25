@@ -65,7 +65,7 @@ void SetupTicketHeader(tik_hdr *hdr, cia_settings *ciaset)
 	SetLimits(hdr,ciaset);
 	
 	// Crypt TitleKey
-	if(ciaset->content.encryptCia)
+	if(ciaset->content.encryptCia || ciaset->common.titleKey)
 		CryptTitleKey(ciaset->common.titleKey, hdr->encryptedTitleKey, hdr->titleId, ciaset->keys, ENC);
 	else
 		rndset(hdr->encryptedTitleKey,AES_128_KEY_SIZE);

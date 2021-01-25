@@ -184,6 +184,12 @@ int GetSettingsFromUsrset(cia_settings *ciaset, user_settings *usrset)
 	
 	if(usrset->cia.randomTitleKey)
 		rndset(ciaset->common.titleKey,AES_128_KEY_SIZE);
+	else if(usrset->cia.titleKey){
+    for (size_t count = 0; count < sizeof(ciaset->common.titleKey)/sizeof(ciaset->common.titleKey[0]); count++) {
+      sscanf(usrset->cia.titleKey, "%2hhx", &ciaset->common.titleKey[count]);
+      usrset->cia.titleKey += 2;
+    }
+	}
 	else
 		clrmem(ciaset->common.titleKey,AES_128_KEY_SIZE);
 
