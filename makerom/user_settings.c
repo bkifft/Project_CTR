@@ -564,7 +564,7 @@ int SetArgument(int argc, int i, char *argv[], user_settings *set)
 			PrintArgReqParam(argv[i], 1);
 			return USR_ARG_REQ_PARAM;
 		}
-    set->cia.titleKey = argv[i + 1];
+		set->cia.titleKey = argv[i + 1];
 		return 2;
 	}
 	else if (strcmp(argv[i], "-dlc") == 0) {
@@ -998,7 +998,7 @@ void DisplayExtendedHelp(char *app_name)
 	printf(" -dver          <version>           Data-title version\n");
 	printf(" -deviceid      <hex id>            3DS unique device ID\n");
 	printf(" -esaccid       <hex id>            e-Shop account ID\n");
-	printf(" -titlekey      <titlekey>          Specify decrypted title key\n");
+	printf(" -titlekey      <titlekey>          Specify decrypted title key (Overrides \"EnableCrypt\" in RSF to true)\n");
 	printf(" -rand                              Use a random title key\n");
 	printf(" -dlc                               Create DLC CIA\n");
 	printf(" -srl           <srl file>          Package a TWL SRL in a CIA\n");
