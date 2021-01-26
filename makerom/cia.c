@@ -160,7 +160,7 @@ int GetSettingsFromUsrset(cia_settings *ciaset, user_settings *usrset)
 	ciaset->verbose = usrset->common.verbose;
 	
 	ciaset->tmd.titleType = TYPE_CTR;
-	ciaset->content.encryptCia = usrset->common.rsfSet.Option.EnableCrypt;
+	ciaset->content.encryptCia = usrset->common.rsfSet.Option.EnableCrypt || usrset->cia.titleKey != NULL;
 	ciaset->content.IsDlc = usrset->cia.DlcContent;
 	if(ciaset->keys->aes.commonKey[ciaset->keys->aes.currentCommonKey] == NULL && ciaset->content.encryptCia){
 		fprintf(stderr,"[CIA WARNING] Common Key could not be loaded, CIA will not be encrypted\n");
@@ -185,10 +185,10 @@ int GetSettingsFromUsrset(cia_settings *ciaset, user_settings *usrset)
 	if(usrset->cia.randomTitleKey)
 		rndset(ciaset->common.titleKey,AES_128_KEY_SIZE);
 	else if(usrset->cia.titleKey){
-    for (size_t count = 0; count < sizeof(ciaset->common.titleKey)/sizeof(ciaset->common.titleKey[0]); count++) {
-      sscanf(usrset->cia.titleKey, "%2hhx", &ciaset->common.titleKey[count]);
-      usrset->cia.titleKey += 2;
-    }
+		for (size_t count = 0; count < sizeof(ciaset->common.titleKey)/sizeof(ciaset->common.titleKey[0]); count++) {
+			sscanf(usrset->cia.titleKey, "%2hhx", &ciaset->common.titleKey[count]);
+			usrset->cia.titleKey += 2;
+		}
 	}
 	else
 		clrmem(ciaset->common.titleKey,AES_128_KEY_SIZE);
