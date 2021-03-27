@@ -64,7 +64,9 @@ typedef struct
 	u8 padding2[8];
 	u8 licenceType;
 	u8 keyId;
-	u8 padding3[0x2A];
+	u8 propertyMask[2];
+	u8 customData[0x14];
+	u8 padding3[0x14];
 	u8 eshopAccId[4];
 	u8 padding4;
 	u8 audit;
