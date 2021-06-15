@@ -7,6 +7,7 @@ on:
     branches: [ master ]
   release:
     types: [ created ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -17,18 +18,25 @@ jobs:
         dist: [ubuntu_x86_64, macos_x86_64, win_x86_64]
         prog: [ctrtool, makerom]
         include:
-         - dist: win_x86_64
-           os: windows-2016
-           binExt: .exe
-         - dist: ubuntu_x86_64
-           os: ubuntu-latest
-         - dist: macos_x86_64
-           os: macos-latest
+          - dist: win_x86_64
+            os: windows-latest
+            makeArgs: -j $env:NUMBER_OF_PROCESSORS
+            binExt: .exe
+          - dist: ubuntu_x86_64
+            os: ubuntu-latest
+            makeArgs: -j$(nproc)
+          - dist: macos_x86_64
+            os: macos-latest
+            makeArgs: -j$(sysctl -n hw.activecpu)
     steps:
-    - uses: actions/checkout@v1
-    - name: Compile ${{ matrix.prog }}
-      run: cd ${{ matrix.prog }}; make ${{ matrix.makeArgs }};
-    - uses: actions/upload-artifact@v2
-      with:
-        name: ${{ matrix.prog }}-${{ matrix.dist }}
-        path: ${{ matrix.prog }}/${{ matrix.prog }}${{ matrix.binExt }}
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Compile ${{ matrix.prog }}
+        working-directory: ${{ matrix.prog }}
+        run: make ${{ matrix.makeArgs }}
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.prog }}-${{ matrix.dist }}
+          path: ${{ matrix.prog }}/${{ matrix.prog }}${{ matrix.binExt }}
+          if-no-files-found: error
