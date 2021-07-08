@@ -27,12 +27,16 @@ typedef struct
 	unsigned char titleid[8];
 	unsigned char titletype[4];
 	unsigned char groupid[2];
-	unsigned char padding3[62];
+	unsigned char savedatasize[4];
+	unsigned char privsavedatasize[4];
+	unsigned char padding3[4];
+	unsigned char twlflag;
+	unsigned char padding4[0x31];
 	unsigned char accessrights[4];
 	unsigned char titleversion[2];
 	unsigned char contentcount[2];
 	unsigned char bootcontent[2];
-	unsigned char padding4[2];
+	unsigned char padding5[2];
 	unsigned char hash[32];
 	unsigned char contentinfo[36*64];
 } ctr_tmd_body;
@@ -70,7 +74,7 @@ typedef struct
 typedef struct
 {
 	FILE* file;
-	u32 offset;
+	u64 offset;
 	u32 size;
 	u8* buffer;
 	u8 content_hash_stat[64];
@@ -85,7 +89,7 @@ extern "C" {
 
 void tmd_init(tmd_context* ctx);
 void tmd_set_file(tmd_context* ctx, FILE* file);
-void tmd_set_offset(tmd_context* ctx, u32 offset);
+void tmd_set_offset(tmd_context* ctx, u64 offset);
 void tmd_set_size(tmd_context* ctx, u32 size);
 void tmd_set_usersettings(tmd_context* ctx, settings* usersettings);
 void tmd_print(tmd_context* ctx);

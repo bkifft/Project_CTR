@@ -40,7 +40,6 @@ typedef UINT32 uint32_t;
 
 #define POLARSSL_ERR_SHA2_FILE_IO_ERROR                -0x0078  /**< Read/write error in file. */
 
-#if !defined(POLARSSL_SHA2_ALT)
 // Regular implementation
 //
 
@@ -94,10 +93,6 @@ void sha2_process( sha2_context *ctx, const unsigned char data[64] );
 #ifdef __cplusplus
 }
 #endif
-
-#else  /* POLARSSL_SHA2_ALT */
-#include "polarssl/sha2_alt.h"
-#endif /* POLARSSL_SHA2_ALT */
 
 #ifdef __cplusplus
 extern "C" {

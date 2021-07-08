@@ -7,6 +7,8 @@
 extern "C" {
 #endif
 
+#define COMMONKEY_NUM 6
+
 typedef enum
 {
 	KEY_ERR_LEN_MISMATCH,
@@ -20,6 +22,20 @@ typedef enum
 	RSAKEY_PRIV,
 	RSAKEY_PUB
 } rsakeytype;
+
+typedef struct
+{
+	u8 title_id[8];
+	u8 seed[0x10];
+	u8 padding[0x8];
+} seeddb_entry;
+
+typedef struct
+{
+	u8 n_entries[4];
+	u8 padding[0xC];
+} seeddb_header;
+
 
 typedef struct
 {
@@ -42,24 +58,34 @@ typedef struct
 
 typedef struct
 {
-	key128 commonkey;
-	key128 ncchkey;
+	u32 seed_num;
+	seeddb_entry* seed_db;
+
+	key128 commonkey[COMMONKEY_NUM];
+	key128 titlekey;
+	key128 seed_fallback;
 	key128 ncchfixedsystemkey;
+	key128 ncchkeyX_old;
+	key128 ncchkeyX_seven;
+	key128 ncchkeyX_ninethree;
+	key128 ncchkeyX_ninesix;
 	rsakey2048 ncsdrsakey;
 	rsakey2048 ncchrsakey;
 	rsakey2048 ncchdescrsakey;
 	rsakey2048 firmrsakey;
 } keyset;
 
-void keyset_init(keyset* keys);
+void keyset_init(keyset* keys, u32 actions);
 int keyset_load(keyset* keys, const char* fname, int verbose);
 void keyset_merge(keyset* keys, keyset* src);
-void keyset_set_commonkey(keyset* keys, unsigned char* keydata);
-void keyset_parse_commonkey(keyset* keys, char* keytext, int keylen);
-void keyset_set_ncchkey(keyset* keys, unsigned char* keydata);
-void keyset_parse_ncchkey(keyset* keys, char* keytext, int keylen);
-void keyset_set_ncchfixedsystemkey(keyset* keys, unsigned char* keydata);
+void keyset_parse_titlekey(keyset* keys, char* keytext, int keylen);
+void keyset_parse_ncchkeyX_old(keyset* keys, char* keytext, int keylen);
 void keyset_parse_ncchfixedsystemkey(keyset* keys, char* keytext, int keylen);
+void keyset_parse_ncchkeyX_seven(keyset* keys, char* keytext, int keylen);
+void keyset_parse_ncchkeyX_ninethree(keyset* keys, char* keytext, int keylen);
+void keyset_parse_ncchkeyX_ninesix(keyset* keys, char* keytext, int keylen);
+void keyset_parse_seeddb(keyset* keys, char* path);
+void keyset_parse_seed_fallback(keyset* keys, char* keytext, int keylen);
 void keyset_dump(keyset* keys);
 
 #ifdef __cplusplus

@@ -4,6 +4,7 @@
 #include "types.h"
 #include "utils.h"
 #include "cia.h"
+#include <inttypes.h>
 
 
 void cia_init(cia_context* ctx)
@@ -19,12 +20,12 @@ void cia_set_file(cia_context* ctx, FILE* file)
 	ctx->file = file;
 }
 
-void cia_set_offset(cia_context* ctx, u32 offset)
+void cia_set_offset(cia_context* ctx, u64 offset)
 {
 	ctx->offset = offset;
 }
 
-void cia_set_size(cia_context* ctx, u32 size)
+void cia_set_size(cia_context* ctx, u64 size)
 {
 	ctx->size = size;
 }
@@ -38,14 +39,15 @@ void cia_set_usersettings(cia_context* ctx, settings* usersettings)
 
 void cia_save(cia_context* ctx, u32 type, u32 flags)
 {
-	u32 offset;
-	u32 size;
+	u64 offset;
+	u64 size;
 	u16 contentflags;
+	u16 contentindex;
 	u8 docrypto;
 	filepath* path = 0;
 	ctr_tmd_body *body;
 	ctr_tmd_contentchunk *chunk;
-	int i;
+	unsigned int i;
 	char tmpname[255];
 
 	switch(type)
@@ -101,23 +103,26 @@ void cia_save(cia_context* ctx, u32 type, u32 flags)
 			chunk = (ctr_tmd_contentchunk*)(body->contentinfo + (sizeof(ctr_tmd_contentinfo) * TMD_MAX_CONTENTS));
 
 			for(i = 0; i < getbe16(body->contentcount); i++) {
-				sprintf(tmpname, "%s.%04x.%08x", path->pathname, getbe16(chunk->index), getbe32(chunk->id));
-				fprintf(stdout, "Saving content #%04x to %s\n", getbe16(chunk->index), tmpname);
-				
 				contentflags = getbe16(chunk->type);
-				docrypto = contentflags & 1 && !(flags & PlainFlag);
+				contentindex = getbe16(chunk->index);
+				docrypto = (contentflags & 1) && !(flags & PlainFlag);
 
-				if(docrypto) // Decrypt if needed
-				{
-					ctx->iv[0] = (getbe16(chunk->index) >> 8) & 0xff;
-					ctx->iv[1] = getbe16(chunk->index) & 0xff;
+				if(ctx->header.contentindex[contentindex >> 3] & (0x80 >> (contentindex & 7))) {
+					sprintf(tmpname, "%s.%04x.%08x", path->pathname, contentindex, getbe32(chunk->id));
+					fprintf(stdout, "Saving content #%04x to %s\n", contentindex, tmpname);
+					
+					if(docrypto) // Decrypt if needed
+					{
+						ctx->iv[0] = (contentindex >> 8) & 0xff;
+						ctx->iv[1] = contentindex & 0xff;
 
-					ctr_init_cbc_decrypt(&ctx->aes, ctx->titlekey, ctx->iv);
+						ctr_init_cbc_decrypt(&ctx->aes, ctx->titlekey, ctx->iv);
+					}
+
+					cia_save_blob(ctx, tmpname, offset, getbe64(chunk->size) & 0xffffffff, docrypto);
+
+					offset += getbe64(chunk->size) & 0xffffffff;
 				}
-
-				cia_save_blob(ctx, tmpname, offset, getbe64(chunk->size) & 0xffffffff, docrypto);
-
-				offset += getbe64(chunk->size) & 0xffffffff;
 				chunk++;
 			}
 
@@ -132,14 +137,13 @@ void cia_save(cia_context* ctx, u32 type, u32 flags)
 	cia_save_blob(ctx, path->pathname, offset, size, 0);
 }
 
-void cia_save_blob(cia_context *ctx, char *out_path, u32 offset, u32 size, int do_cbc) 
+void cia_save_blob(cia_context *ctx, char *out_path, u64 offset, u64 size, int do_cbc) 
 {
 	FILE *fout = 0;
 	u8 buffer[16*1024];
 
-	fseek(ctx->file, ctx->offset + offset, SEEK_SET);
+	fseeko64(ctx->file, ctx->offset + offset, SEEK_SET);
 
-	
 	fout = fopen(out_path, "wb");
 	if (fout == NULL)
 	{
@@ -151,7 +155,7 @@ void cia_save_blob(cia_context *ctx, char *out_path, u32 offset, u32 size, int d
 	{
 		u32 max = sizeof(buffer);
 		if (max > size)
-			max = size;
+			max = (u32) size;
 
 		if (max != fread(buffer, 1, max, ctx->file))
 		{
@@ -179,7 +183,7 @@ clean:
 
 void cia_process(cia_context* ctx, u32 actions)
 {	
-	fseek(ctx->file, 0, SEEK_SET);
+	fseeko64(ctx->file, 0, SEEK_SET);
 
 	if (fread(&ctx->header, 1, sizeof(ctr_ciaheader), ctx->file) != sizeof(ctr_ciaheader))
 	{
@@ -191,14 +195,14 @@ void cia_process(cia_context* ctx, u32 actions)
 	ctx->sizecert = getle32(ctx->header.certsize);
 	ctx->sizetik = getle32(ctx->header.ticketsize);
 	ctx->sizetmd = getle32(ctx->header.tmdsize);
-	ctx->sizecontent = (u32)getle64(ctx->header.contentsize);
+	ctx->sizecontent = getle64(ctx->header.contentsize);
 	ctx->sizemeta = getle32(ctx->header.metasize);
 	
 	ctx->offsetcerts = align(ctx->sizeheader, 64);
-	ctx->offsettik = align(ctx->offsetcerts + ctx->sizecert, 64);
-	ctx->offsettmd = align(ctx->offsettik + ctx->sizetik, 64);
-	ctx->offsetcontent = align(ctx->offsettmd + ctx->sizetmd, 64);
-	ctx->offsetmeta = align(ctx->offsetcontent + ctx->sizecontent, 64);
+	ctx->offsettik = align((u32) (ctx->offsetcerts + ctx->sizecert), 64);
+	ctx->offsettmd = align((u32) (ctx->offsettik + ctx->sizetik), 64);
+	ctx->offsetcontent = align((u32) (ctx->offsettmd + ctx->sizetmd), 64);
+	ctx->offsetmeta = align64(ctx->offsetcontent + ctx->sizecontent, 64);
 
 	if (actions & InfoFlag)
 		cia_print(ctx);
@@ -211,17 +215,17 @@ void cia_process(cia_context* ctx, u32 actions)
 
 	tik_process(&ctx->tik, actions);
 	memset(ctx->iv, 0, 16);
-
-	
-
-	if (settings_get_common_key(ctx->usersettings))
-		tik_get_decrypted_titlekey(&ctx->tik, ctx->titlekey);
+		
+	if (tik_get_titlekey(&ctx->tik))
+		memcpy(ctx->titlekey, tik_get_titlekey(&ctx->tik), 16);
+	else if (settings_get_title_key(ctx->usersettings))
+		memcpy(ctx->titlekey, settings_get_title_key(ctx->usersettings), 16);
 
 	tmd_set_file(&ctx->tmd, ctx->file);
 	tmd_set_offset(&ctx->tmd, ctx->offsettmd);
 	tmd_set_size(&ctx->tmd, ctx->sizetmd);
 	tmd_set_usersettings(&ctx->tmd, ctx->usersettings);
-	tmd_process(&ctx->tmd, actions);
+	tmd_process(&ctx->tmd, (actions & ~InfoFlag));
 
 	if (actions & VerifyFlag)
 	{
@@ -247,43 +251,48 @@ clean:
 void cia_verify_contents(cia_context *ctx, u32 actions)
 {
 	u16 contentflags;
+	u16 contentindex;
 	ctr_tmd_body *body;
 	ctr_tmd_contentchunk *chunk;
 	u8 *verify_buf;
 	u32 content_size=0;
-	int i;
+	unsigned i;
 
 	// verify TMD content hashes, requires decryption ..
 	body  = tmd_get_body(&ctx->tmd);
 	chunk = (ctr_tmd_contentchunk*)(body->contentinfo + (sizeof(ctr_tmd_contentinfo) * TMD_MAX_CONTENTS));
 
-	fseek(ctx->file, ctx->offset + ctx->offsetcontent, SEEK_SET);
+	fseeko64(ctx->file, ctx->offset + ctx->offsetcontent, SEEK_SET);
 	for(i = 0; i < getbe16(body->contentcount); i++) 
 	{
-		content_size = getbe64(chunk->size) & 0xffffffff;
+		contentindex = getbe16(chunk->index);
 
-		contentflags = getbe16(chunk->type);
-
-		verify_buf = malloc(content_size);
-		fread(verify_buf, content_size, 1, ctx->file);
-
-		if(contentflags & 1 && !(actions & PlainFlag)) // Decrypt if needed
+		if(ctx->header.contentindex[contentindex >> 3] & (0x80 >> (contentindex & 7)))
 		{
-			ctx->iv[0] = (getbe16(chunk->index) >> 8) & 0xff;
-			ctx->iv[1] = getbe16(chunk->index) & 0xff;
+			content_size = getbe64(chunk->size) & 0xffffffff;
 
-			ctr_init_cbc_decrypt(&ctx->aes, ctx->titlekey, ctx->iv);
-		
-			ctr_decrypt_cbc(&ctx->aes, verify_buf, verify_buf, content_size);
+			contentflags = getbe16(chunk->type);
+
+			verify_buf = malloc(content_size);
+			fread(verify_buf, content_size, 1, ctx->file);
+
+			if(contentflags & 1 && !(actions & PlainFlag)) // Decrypt if needed
+			{
+				ctx->iv[0] = (contentindex >> 8) & 0xff;
+				ctx->iv[1] = contentindex & 0xff;
+
+				ctr_init_cbc_decrypt(&ctx->aes, ctx->titlekey, ctx->iv);
+			
+				ctr_decrypt_cbc(&ctx->aes, verify_buf, verify_buf, content_size);
+			}
+
+			if (ctr_sha_256_verify(verify_buf, content_size, chunk->hash) == Good)
+				ctx->tmd.content_hash_stat[i] = 1;
+			else
+				ctx->tmd.content_hash_stat[i] = 2;
+
+			free(verify_buf);
 		}
-
-		if (ctr_sha_256_verify(verify_buf, content_size, chunk->hash) == Good)
-			ctx->tmd.content_hash_stat[i] = 1;
-		else
-			ctx->tmd.content_hash_stat[i] = 2;
-
-		free(verify_buf);
-
 		chunk++;
 	}
 }
@@ -295,14 +304,14 @@ void cia_print(cia_context* ctx)
 	fprintf(stdout, "Header size             0x%08x\n", getle32(header->headersize));
 	fprintf(stdout, "Type                    %04x\n", getle16(header->type));
 	fprintf(stdout, "Version                 %04x\n", getle16(header->version));
-	fprintf(stdout, "Certificates offset:    0x%08x\n", ctx->offsetcerts);
-	fprintf(stdout, "Certificates size:      0x%04x\n", ctx->sizecert);
-	fprintf(stdout, "Ticket offset:          0x%08x\n", ctx->offsettik);
-	fprintf(stdout, "Ticket size             0x%04x\n", ctx->sizetik);
-	fprintf(stdout, "TMD offset:             0x%08x\n", ctx->offsettmd);
-	fprintf(stdout, "TMD size:               0x%04x\n", ctx->sizetmd);
-	fprintf(stdout, "Meta offset:            0x%04x\n", ctx->offsetmeta);
-	fprintf(stdout, "Meta size:              0x%04x\n", ctx->sizemeta);
-	fprintf(stdout, "Content offset:         0x%08x\n", ctx->offsetcontent);
-	fprintf(stdout, "Content size:           0x%016llx\n", getle64(header->contentsize));
+	fprintf(stdout, "Certificates offset:    0x%"PRIx64"\n", ctx->offsetcerts);
+	fprintf(stdout, "Certificates size:      0x%x\n", ctx->sizecert);
+	fprintf(stdout, "Ticket offset:          0x%"PRIx64"\n", ctx->offsettik);
+	fprintf(stdout, "Ticket size             0x%x\n", ctx->sizetik);
+	fprintf(stdout, "TMD offset:             0x%"PRIx64"\n", ctx->offsettmd);
+	fprintf(stdout, "TMD size:               0x%x\n", ctx->sizetmd);
+	fprintf(stdout, "Meta offset:            0x%"PRIx64"\n", ctx->offsetmeta);
+	fprintf(stdout, "Meta size:              0x%x\n", ctx->sizemeta);
+	fprintf(stdout, "Content offset:         0x%"PRIx64"\n", ctx->offsetcontent);
+	fprintf(stdout, "Content size:           0x%"PRIx64"\n", ctx->sizecontent);
 }

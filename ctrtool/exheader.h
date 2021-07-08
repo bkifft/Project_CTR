@@ -6,6 +6,23 @@
 #include "ctr.h"
 #include "settings.h"
 
+typedef enum
+{
+	sysmode_64MB,
+	sysmode_UNK,
+	sysmode_96MB,
+	sysmode_80MB,
+	sysmode_72MB,
+	sysmode_32MB,
+} exheader_systemmode;
+
+typedef enum
+{
+	sysmode_ext_LEGACY,
+	sysmode_ext_124MB,
+	sysmode_ext_178MB,
+} exheader_systemmodeext;
+
 typedef struct
 {
 	u8 reserved[5];
@@ -57,15 +74,40 @@ typedef struct
 {
 	u8 programid[8];
 	u8 coreversion[4];
-	u8 reserved0[2];
-	u8 flag;
-	u8 priority;
+	u8 flag[4];
 	u8 resourcelimitdescriptor[0x10][2];
 	exheader_storageinfo storageinfo;
-	u8 serviceaccesscontrol[0x20][8];
-	u8 reserved[0x1f];
+	u8 serviceaccesscontrol[34][8];
+	u8 reserved[0xf];
 	u8 resourcelimitcategory;
 } exheader_arm11systemlocalcaps;
+
+typedef struct 
+{
+	u8 program_id[8];
+	u32 core_version;
+
+	// flag
+	u8 enable_l2_cache;
+	u8 new3ds_cpu_speed;
+	u8 new3ds_systemmode;
+	u8 ideal_processor;
+	u8 affinity_mask;
+	u8 old3ds_systemmode;
+	s8 priority;
+
+	// storageinfo
+	u64 extdata_id;
+	u32 other_user_saveid[3];
+	u8 use_other_variation_savedata;
+	u32 accessible_saveid[6];
+	u32 system_saveid[2];
+	u64 accessinfo;
+
+
+	char service_access_control[34][10];
+	u8 resource_limit_category;
+} exheader_arm11systemlocalcaps_deserialised;
 
 typedef struct
 {
@@ -107,13 +149,17 @@ typedef struct
 	int haveread;
 	FILE* file;
 	settings* usersettings;
-	u8 partitionid[8];
+	u8 titleid[8];
 	u8 programid[8];
+	u8 hash[32];
 	u8 counter[16];
 	u8 key[16];
-	u32 offset;
-	u32 size;
+	u64 offset;
+	u64 size;
 	exheader_header header;
+
+	exheader_arm11systemlocalcaps_deserialised system_local_caps;
+
 	ctr_aes_context aes;
 	ctr_rsa_context rsa;
 	int compressedflag;
@@ -122,18 +168,25 @@ typedef struct
 	int validpriority;
 	int validaffinitymask;
 	int valididealprocessor;
+	int validold3dssystemmode;
+	int validnew3dssystemmode;
+	int validenablel2cache;
+	int validnew3dscpuspeed;
+	int validcoreversion;
 	int validsystemsaveID[2];
 	int validaccessinfo;
+	int validservicecontrol;
 	int validsignature;
 } exheader_context;
 
 void exheader_init(exheader_context* ctx);
 void exheader_set_file(exheader_context* ctx, FILE* file);
-void exheader_set_offset(exheader_context* ctx, u32 offset);
-void exheader_set_size(exheader_context* ctx, u32 size);
-void exheader_set_partitionid(exheader_context* ctx, u8 partitionid[8]);
+void exheader_set_offset(exheader_context* ctx, u64 offset);
+void exheader_set_size(exheader_context* ctx, u64 size);
+void exheader_set_titleid(exheader_context* ctx, u8 titleid[8]);
 void exheader_set_counter(exheader_context* ctx, u8 counter[16]);
 void exheader_set_programid(exheader_context* ctx, u8 programid[8]);
+void exheader_set_hash(exheader_context* ctx, u8 hash[32]);
 void exheader_set_encrypted(exheader_context* ctx, u32 encrypted);
 void exheader_set_key(exheader_context* ctx, u8 key[16]);
 void exheader_set_usersettings(exheader_context* ctx, settings* usersettings);
@@ -141,9 +194,9 @@ int exheader_get_compressedflag(exheader_context* ctx);
 void exheader_read(exheader_context* ctx, u32 actions);
 int exheader_process(exheader_context* ctx, u32 actions);
 const char* exheader_getvalidstring(int valid);
-void exheader_print(exheader_context* ctx);
+void exheader_print(exheader_context* ctx, u32 actions);
 void exheader_verify(exheader_context* ctx);
+int exheader_hash_valid(exheader_context* ctx);
 int exheader_programid_valid(exheader_context* ctx);
-void exheader_determine_key(exheader_context* ctx, u32 actions);
 
 #endif // _EXHEADER_H_

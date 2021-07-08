@@ -1,6 +1,6 @@
 #include "lib.h"
-#include "ncch.h"
-#include "exefs.h"
+#include "ncch_build.h"
+#include "exefs_build.h"
 
 // Private Prototypes
 u32 PredictExeFS_Size(exefs_buildctx *ctx);
@@ -18,7 +18,7 @@ int BuildExeFs(ncch_settings *ncchset)
 		fprintf(stderr,"[EXEFS ERROR] Not enough memory\n"); 
 		return MEM_ERROR;
 	}
-	ctx->mediaUnit = ncchset->options.mediaSize;
+	ctx->blockSize = ncchset->options.blockSize;
 
 	/* Importing ExeFs */
 	if(ncchset->exefsSections.code.size) 
@@ -56,29 +56,27 @@ int BuildExeFs(ncch_settings *ncchset)
 
 u32 PredictExeFS_Size(exefs_buildctx *ctx)
 {
-	u32 exefs_size = 0x200; // Size of header
-	for(int i = 0; i < ctx->fileCount; i++){
-		exefs_size += align(ctx->fileSize[i],ctx->mediaUnit);
-	}
+	u32 exefs_size = sizeof(exefs_hdr); // Size of header
+	for(int i = 0; i < ctx->fileCount; i++)
+		exefs_size += align(ctx->fileSize[i],ctx->blockSize);
 	//exefs_size = align(ctx->exefs_size,ctx->mediaUnit);
 	return exefs_size;
 }
 
 int GenerateExeFS_Header(exefs_buildctx *ctx, u8 *outbuff)
 {
+	exefs_hdr *exefs = (exefs_hdr*)outbuff;
 	for(int i = 0; i < ctx->fileCount; i++){
 		if(i == 0)
 			ctx->fileOffset[i] = 0;
 		else
-			ctx->fileOffset[i] = align((ctx->fileOffset[i-1]+ctx->fileSize[i-1]),ctx->mediaUnit);
+			ctx->fileOffset[i] = align((ctx->fileOffset[i-1]+ctx->fileSize[i-1]),ctx->blockSize);
 		
-		memcpy(ctx->fileHdr[i].name,ctx->fileName[i],8);
-		u32_to_u8(ctx->fileHdr[i].offset,ctx->fileOffset[i],LE);
-		u32_to_u8(ctx->fileHdr[i].size,ctx->fileSize[i],LE);
-		ctr_sha(ctx->file[i],ctx->fileSize[i],ctx->fileHashes[9-i],CTR_SHA_256);
+		memcpy(exefs->fileHdr[i].name,ctx->fileName[i],8);
+		u32_to_u8(exefs->fileHdr[i].offset,ctx->fileOffset[i],LE);
+		u32_to_u8(exefs->fileHdr[i].size,ctx->fileSize[i],LE);
+		ShaCalc(ctx->file[i],ctx->fileSize[i],exefs->fileHashes[MAX_EXEFS_SECTIONS-1-i],CTR_SHA_256);
 	}
-	memcpy(outbuff,ctx->fileHdr,sizeof(exefs_filehdr)*10);
-	memcpy(outbuff+0xc0,ctx->fileHashes,0x20*10);
 	return 0;
 }
 

@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "aes_keygen.h"
 #include "tik.h"
 #include "ctr.h"
 #include "utils.h"
@@ -16,7 +17,7 @@ void tik_set_file(tik_context* ctx, FILE* file)
 	ctx->file = file;
 }
 
-void tik_set_offset(tik_context* ctx, u32 offset)
+void tik_set_offset(tik_context* ctx, u64 offset)
 {
 	ctx->offset = offset;
 }
@@ -31,9 +32,9 @@ void tik_set_usersettings(tik_context* ctx, settings* usersettings)
 	ctx->usersettings = usersettings;
 }
 
-void tik_get_decrypted_titlekey(tik_context* ctx, u8 decryptedkey[0x10])
+const unsigned char* tik_get_titlekey(tik_context* ctx)
 {
-	memcpy(decryptedkey, ctx->titlekey, 16);
+	return ctx->titlekey.valid ? ctx->titlekey.data : NULL;
 }
 
 void tik_get_titleid(tik_context* ctx, u8 titleid[8])
@@ -47,25 +48,24 @@ void tik_get_iv(tik_context* ctx, u8 iv[16])
 	memcpy(iv, ctx->tik.title_id, 8);
 }
 
-void tik_decrypt_titlekey(tik_context* ctx, u8 decryptedkey[0x10]) 
+int tik_decrypt_titlekey(tik_context* ctx, u8 decryptedkey[0x10]) 
 {
 	u8 iv[16];
-	u8* key = settings_get_common_key(ctx->usersettings);
+	u8* commonkey = settings_get_common_key(ctx->usersettings, ctx->tik.commonkey_idx);
 
 	memset(decryptedkey, 0, 0x10);
-
-	if (!key)
+	if (!commonkey)
 	{
-		fprintf(stdout, "Warning, could not read common key.\n");
+		fprintf(stdout, "Error, could not read common key.\n");
+		return 1;
 	}
-	else
-	{
-		memset(iv, 0, 0x10);
-		memcpy(iv, ctx->tik.title_id, 8);
+	
+	memset(iv, 0, 0x10);
+	memcpy(iv, ctx->tik.title_id, 8);
 
-		ctr_init_cbc_decrypt(&ctx->aes, key, iv);
-		ctr_decrypt_cbc(&ctx->aes, ctx->tik.encrypted_title_key, decryptedkey, 0x10);
-	}
+	ctr_init_cbc_decrypt(&ctx->aes, commonkey, iv);
+	ctr_decrypt_cbc(&ctx->aes, ctx->tik.encrypted_title_key, decryptedkey, 0x10);
+	return 0;
 }
 
 void tik_process(tik_context* ctx, u32 actions)
@@ -76,10 +76,10 @@ void tik_process(tik_context* ctx, u32 actions)
 		goto clean;
 	}
 
-	fseek(ctx->file, ctx->offset, SEEK_SET);
+	fseeko64(ctx->file, ctx->offset, SEEK_SET);
 	fread((u8*)&ctx->tik, 1, sizeof(eticket), ctx->file);
 
-	tik_decrypt_titlekey(ctx, ctx->titlekey);
+	ctx->titlekey.valid = tik_decrypt_titlekey(ctx, ctx->titlekey.data) == 0 ? 1 : 0;
 
 	if (actions & InfoFlag)
 	{
@@ -108,8 +108,8 @@ void tik_print(tik_context* ctx)
 
 	memdump(stdout, "Encrypted Titlekey:     ", tik->encrypted_title_key, 0x10);
 	
-	if (settings_get_common_key(ctx->usersettings))
-		memdump(stdout, "Decrypted Titlekey:     ", ctx->titlekey, 0x10);
+	if (ctx->titlekey.valid)
+		memdump(stdout, "Decrypted Titlekey:     ", ctx->titlekey.data, 0x10);
 
 	memdump(stdout,	"Ticket ID:              ", tik->ticket_id, 0x08);
 	fprintf(stdout, "Ticket Version:         %d\n", getle16(tik->ticket_version));

@@ -119,7 +119,7 @@ int stream_out_flush(stream_out_context* ctx)
 	if (ctx->outbufferpos > 0)
 	{
 		size_t writtenbytes = fwrite(ctx->outbuffer, 1, ctx->outbufferpos, ctx->outfile);
-		if (writtenbytes < 0)
+		if (writtenbytes == 0) // will be zero if nothing is written
 			return 0;
 
 

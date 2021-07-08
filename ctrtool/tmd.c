@@ -4,6 +4,7 @@
 #include <time.h>
 #include "tmd.h"
 #include "utils.h"
+#include <inttypes.h>
 
 
 void tmd_init(tmd_context* ctx)
@@ -16,7 +17,7 @@ void tmd_set_file(tmd_context* ctx, FILE* file)
 	ctx->file = file;
 }
 
-void tmd_set_offset(tmd_context* ctx, u32 offset)
+void tmd_set_offset(tmd_context* ctx, u64 offset)
 {
 	ctx->offset = offset;
 }
@@ -38,15 +39,13 @@ void tmd_process(tmd_context* ctx, u32 actions)
 
 	if (ctx->buffer)
 	{
-		fseek(ctx->file, ctx->offset, SEEK_SET);
+		fseeko64(ctx->file, ctx->offset, SEEK_SET);
 		fread(ctx->buffer, 1, ctx->size, ctx->file);
 
-		/*
 		if (actions & InfoFlag)
 		{
 			tmd_print(ctx);
 		}
-		*/
 	}
 }
 
@@ -87,6 +86,8 @@ void tmd_print(tmd_context* ctx)
 	ctr_tmd_header_2048* header2048 = 0;
 	ctr_tmd_body* body = 0;
 	unsigned int contentcount = 0;
+	unsigned int savesize = 0;
+	unsigned int titlever = 0;
 	unsigned int i;
 
 	if (type == TMD_RSA_2048_SHA256 || type == TMD_RSA_2048_SHA1)
@@ -105,7 +106,9 @@ void tmd_print(tmd_context* ctx)
 	body = tmd_get_body(ctx);
 
 	contentcount = getbe16(body->contentcount);
-
+	savesize = getle32(body->savedatasize);
+	titlever = getbe16(body->titleversion);
+	
 	fprintf(stdout, "\nTMD header:\n");
 	fprintf(stdout, "Signature type:         %s\n", tmd_get_type_string(type));
 	fprintf(stdout, "Issuer:                 %s\n", body->issuer);
@@ -116,8 +119,14 @@ void tmd_print(tmd_context* ctx)
 	memdump(stdout, "Title id:               ", body->titleid, 8);
 	fprintf(stdout, "Title type:             %08x\n", getbe32(body->titletype));
 	fprintf(stdout, "Group id:               %04x\n", getbe16(body->groupid));
+	if(savesize < sizeKB)
+		fprintf(stdout, "Save Size:              %08x\n", savesize);
+	else if(savesize < sizeMB)
+		fprintf(stdout, "Save Size:              %dKB (%08x)\n", savesize/sizeKB, savesize);
+	else
+		fprintf(stdout, "Save Size:              %dMB (%08x)\n", savesize/sizeMB, savesize);
 	fprintf(stdout, "Access rights:          %08x\n", getbe32(body->accessrights));
-	fprintf(stdout, "Title version:          %04x\n", getbe16(body->titleversion));
+	fprintf(stdout, "Title version:          %d.%d.%d (v%d)\n", (titlever >> 10) & 0x3F, (titlever >> 4) & 0x3F, titlever & 0xF, titlever);
 	fprintf(stdout, "Content count:          %04x\n", getbe16(body->contentcount));
 	fprintf(stdout, "Boot content:           %04x\n", getbe16(body->bootcontent));
 	memdump(stdout, "Hash:                   ", body->hash, 32);
@@ -158,9 +167,9 @@ void tmd_print(tmd_context* ctx)
 				fprintf(stdout, "[shared]");
 		}
 		fprintf(stdout, "\n");
-		fprintf(stdout, "Content size:           %016llx\n", getbe64(chunk->size));
+		fprintf(stdout, "Content size:           %016"PRIx64"\n", getbe64(chunk->size));
 
-		switch(ctx->content_hash_stat[getbe16(chunk->index)]) {
+		switch(ctx->content_hash_stat[i]) {
 			case 1:  memdump(stdout, "Content hash [OK]:      ", chunk->hash, 32); break;
 			case 2:  memdump(stdout, "Content hash [FAIL]:    ", chunk->hash, 32); break;
 			default: memdump(stdout, "Content hash:           ", chunk->hash, 32); break; 

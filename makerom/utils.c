@@ -1,40 +1,10 @@
 #include "lib.h"
-#include "utf.h"
+#include "polarssl/base64.h"
+
+#define IO_BLOCKSIZE 5*MB
 
 // Memory
-void char_to_u8_array(unsigned char destination[], char source[], int size, int endianness, int base)
-{	
-	char tmp[size][2];
-    unsigned char *byte_array = malloc(size*sizeof(unsigned char));
-	memset(byte_array, 0, size);
-	memset(destination, 0, size);
-	memset(tmp, 0, size*2);
-    
-    for (int i = 0; i < size; i ++){
-		tmp[i][0] = source[(i*2)];
-        tmp[i][1] = source[((i*2)+1)];
-		tmp[i][2] = '\0';
-        byte_array[i] = (unsigned char)strtol(tmp[i], NULL, base);
-    }
-	endian_memcpy(destination,byte_array,size,endianness);
-	free(byte_array);
-}
-
-void endian_memcpy(u8 *destination, u8 *source, u32 size, int endianness)
-{ 
-    for (u32 i = 0; i < size; i++){
-        switch (endianness){
-            case(BE):
-                destination[i] = source[i];
-                break;
-            case(LE):
-                destination[i] = source[((size-1)-i)];
-                break;
-        }
-    }
-}
-
-int CopyData(u8 **dest, u8 *source, u64 size)
+int CopyData(u8 **dest, const u8 *source, u64 size)
 {
 	if(!*dest){
 		*dest = malloc(size);
@@ -44,49 +14,66 @@ int CopyData(u8 **dest, u8 *source, u64 size)
 	return 0;
 }
 
+void rndset(void *ptr, u64 num)
+{
+	u8 *tmp = (u8*)ptr;
+	for(u64 i = 0; i < num ; i++)
+		tmp[i] = u8GetRand();
+}
+
+void clrmem(void *ptr, u64 num)
+{
+	memset(ptr,0,num);
+}
+
 // Misc
+u64 roundup(u64 value, u64 alignment)
+{
+	return value + alignment - value % alignment;
+}
+
 u64 align(u64 value, u64 alignment)
 {
 	if(value % alignment != 0)
-		return value + alignment - value % alignment;
+		return roundup(value,alignment);
 	else
 		return value;
 }
 
-u64 min_u64(u64 a, u64 b)
+u64 min64(u64 a, u64 b)
 {
 	if(a < b) return a;
 	return b;
 }
 
-u64 max_u64(u64 a, u64 b)
+u64 max64(u64 a, u64 b)
 {
 	if(a > b) return a;
 	return b;
 }
 
 // Strings
-int append_filextention(char *output, u16 max_outlen, char *input, char extention[])
+char* replace_filextention(const char *input, const char *new_ext)
 {
-	if(output == NULL || input == NULL){
-		printf("[!] Memory Error\n");
-		return Fail;
+	if(input == NULL || new_ext == NULL)
+		return NULL;
+
+	char *new_name;
+	char *ext = strrchr(input, '.');
+
+	// If there is no existing extention, just append new_ext
+	if (!ext) {
+		new_name = calloc(strlen(input) + strlen(new_ext), 1);
+		sprintf(new_name, "%s%s", input, new_ext);
 	}
-	memset(output,0,max_outlen);
-	u16 extention_point = strlen(input)+1;
-	for(int i = strlen(input)-1; i > 0; i--){
-		if(input[i] == '.'){
-			extention_point = i;
-			break;
-		}
+	else {
+		u32 size = ext - input;
+		new_name = calloc(size + strlen(new_ext) + 1, 1);
+		strncpy(new_name, input, size);
+		sprintf(new_name, "%s%s", new_name, new_ext);
 	}
-	if(extention_point+strlen(extention) >= max_outlen){
-		printf("[!] Input File Name Too Large for Output buffer\n");
-		return Fail;
-	}
-	memcpy(output,input,extention_point);
-	sprintf(output,"%s%s",output,extention);
-	return 0;
+	
+	return new_name;
 }
 
 void memdump(FILE* fout, const char* prefix, const u8* data, u32 size)
@@ -117,63 +104,55 @@ void memdump(FILE* fout, const char* prefix, const u8* data, u32 size)
 	}
 }
 
-int str_u8_to_u16(u16 **dst, u32 *dst_len, u8 *src, u32 src_len)
+// Base64
+bool IsValidB64Char(char chr)
 {
-	*dst_len = src_len*sizeof(u16);
-	*dst = malloc((*dst_len)+sizeof(u16));
-	if(*dst == NULL)
-		return -1;
-	memset(*dst,0,(*dst_len)+sizeof(u16));
-	u16 *tmp = *dst;
-	for(int i=0; i<src_len; i++)
-		tmp[i] = (u16)src[i];
-	return 0;
+	return (isalnum(chr) || chr == '+' || chr == '/' || chr == '=');
 }
 
-int str_u16_to_u16(u16 **dst, u32 *dst_len, u16 *src, u32 src_len)
+u32 b64_strlen(char *str)
 {
-	*dst_len = src_len*sizeof(u16);
-	*dst = malloc((*dst_len)+sizeof(u16));
-	if(*dst == NULL)
-		return -1;
-	memset(*dst,0,(*dst_len)+sizeof(u16));
-	u16 *tmp = *dst;
-	for(int i=0; i<src_len; i++)
-		tmp[i] = src[i];
-	return 0;
+	u32 count = 0;
+	u32 i = 0;
+	while(str[i] != 0x0){
+		if(IsValidB64Char(str[i])) {
+			//printf("Is Valid: %c\n",str[i]);
+			count++;
+		}
+		i++;
+	}
+
+	return count;
 }
 
-int str_u32_to_u16(u16 **dst, u32 *dst_len, u32 *src, u32 src_len)
+void b64_strcpy(char *dst, char *src)
 {
-	*dst_len = src_len*sizeof(u16);
-	*dst = malloc((*dst_len)+sizeof(u16));
-	if(*dst == NULL)
-		return -1;
-	memset(*dst,0,(*dst_len)+sizeof(u16));
-	u16 *tmp = *dst;
-	for(int i=0; i<src_len; i++)
-		tmp[i] = (u16)src[i];
-	return 0;
+	u32 src_len = strlen(src);
+	u32 j = 0;
+	for(u32 i = 0; i < src_len; i++){
+		if(IsValidB64Char(src[i])){
+			dst[j] = src[i];
+			j++;
+		}
+	}
+	dst[j] = 0;
+
+	//memdump(stdout,"src: ",(u8*)src,src_len+1);
+	//memdump(stdout,"dst: ",(u8*)dst,j+1);
 }
 
-#ifndef _WIN32
-int str_utf8_to_u16(u16 **dst, u32 *dst_len, u8 *src, u32 src_len)
+int b64_decode(u8 *dst, char *src, u32 dst_size)
 {
-	*dst_len = src_len*sizeof(u16);
-	*dst = malloc((*dst_len)+sizeof(u16));
-	if(*dst == NULL)
-		return -1;
-	memset(*dst,0,(*dst_len)+sizeof(u16));
+	int ret;
+	u32 size = dst_size;
 	
-	UTF16 *target_start = *dst;
-	UTF16 *target_end = (target_start + *dst_len);
+	ret = base64_decode(dst,(size_t*)&size,(const u8*)src,strlen(src));
 	
-	UTF8 *src_start = (UTF8*)src;
-	UTF8 *src_end = (UTF8*)(src+src_len*sizeof(u8));
+	if(size != dst_size)
+		ret = POLARSSL_ERR_BASE64_BUFFER_TOO_SMALL;
 	
-	return ConvertUTF8toUTF16 (&src_start, src_end, &target_start, target_end, strictConversion);
+	return ret;
 }
-#endif
 
 // Pseudo-Random Number Generator
 void initRand(void)
@@ -215,7 +194,7 @@ bool AssertFile(char *filename)
 #endif
 }
 
-u64 GetFileSize_u64(char *filename)
+u64 GetFileSize64(char *filename)
 {
 #ifdef _WIN32
 	struct _stat64 st;
@@ -250,7 +229,7 @@ char *getcwdir(char *buffer,int maxlen)
 #endif
 }
 
-int TruncateFile_u64(char *filename, u64 filelen)
+int TruncateFile64(char *filename, u64 filelen)
 {
 #ifdef _WIN32
 	HANDLE fh;
@@ -277,25 +256,14 @@ int TruncateFile_u64(char *filename, u64 filelen)
 #endif	
 }
 
-// Wide Char IO
-#ifdef _WIN32
-u64 wGetFileSize_u64(u16 *filename)
-{
-	struct _stat64 st;
-	_wstat64((wchar_t*)filename, &st);
-	return st.st_size;
-}
-#endif
 
 //IO Misc
 u8* ImportFile(char *file, u64 size)
 {
-	u64 fsize = GetFileSize_u64(file);
-	if(size > 0){
-		if(size != fsize){
-			fprintf(stderr,"[!] %s has an invalid size (0x%llx)\n",fsize);
-			return NULL;
-		}
+	u64 fsize = GetFileSize64(file);
+	if(size > 0 && size != fsize){
+		fprintf(stderr,"[!] %s has an invalid size (0x%"PRIx64")\n",file, fsize);
+		return NULL;
 	}
 
 	u8 *data = (u8*)calloc(1,fsize);
@@ -304,22 +272,28 @@ u8* ImportFile(char *file, u64 size)
 			return NULL;
 	}
 	FILE *fp = fopen(file,"rb");
-	fread(data,fsize,1,fp);
+	ReadFile64(data, fsize, 0, fp);
 	fclose(fp);
 
 	return data;
 }
 
-void WriteBuffer(void *buffer, u64 size, u64 offset, FILE *output)
+void WriteBuffer(const void *buffer, u64 size, u64 offset, FILE *fp)
 {
-	fseek_64(output,offset);
-	fwrite(buffer,size,1,output);
+	const u8* _buffer = (const u8*)buffer;
+	fseek_64(fp,offset);
+	for (; size > IO_BLOCKSIZE; size -= IO_BLOCKSIZE, _buffer += IO_BLOCKSIZE)
+		fwrite(_buffer, IO_BLOCKSIZE, 1, fp);
+	fwrite(_buffer,size,1,fp);
 } 
 
-void ReadFile_64(void *outbuff, u64 size, u64 offset, FILE *file)
+void ReadFile64(void *outbuff, u64 size, u64 offset, FILE *fp)
 {
-	fseek_64(file,offset);
-	fread(outbuff,size,1,file);
+	u8* _buffer = (u8*)outbuff;
+	fseek_64(fp, offset);
+	for (; size > IO_BLOCKSIZE; size -= IO_BLOCKSIZE, _buffer += IO_BLOCKSIZE)
+		fread(_buffer, IO_BLOCKSIZE, 1, fp);
+	fread(_buffer, size, 1, fp);
 }
 
 int fseek_64(FILE *fp, u64 file_pos)
@@ -333,9 +307,9 @@ int fseek_64(FILE *fp, u64 file_pos)
 }
 
 //Data Size conversion
-u16 u8_to_u16(u8 *value, u8 endianness)
+u16 u8_to_u16(const u8 *value, u8 endianness)
 {
-	u16 new_value;
+	u16 new_value = 0;
 	switch(endianness){
 		case(BE): new_value =  (value[1]<<0) | (value[0]<<8); break;
 		case(LE): new_value = (value[0]<<0) | (value[1]<<8); break;
@@ -343,9 +317,9 @@ u16 u8_to_u16(u8 *value, u8 endianness)
 	return new_value;
 }
 
-u32 u8_to_u32(u8 *value, u8 endianness)
+u32 u8_to_u32(const u8 *value, u8 endianness)
 {
-	u32 new_value;
+	u32 new_value = 0;
 	switch(endianness){
 		case(BE): new_value = (value[3]<<0) | (value[2]<<8) | (value[1]<<16) | (value[0]<<24); break;
 		case(LE): new_value = (value[0]<<0) | (value[1]<<8) | (value[2]<<16) | (value[3]<<24); break;
@@ -354,34 +328,34 @@ u32 u8_to_u32(u8 *value, u8 endianness)
 }
 
 
-u64 u8_to_u64(u8 *value, u8 endianness)
+u64 u8_to_u64(const u8 *value, u8 endianness)
 {
-	u64 u64_return = 0;
+	u64 ret = 0;
 	switch(endianness){
 		case(BE): 
-			u64_return |= (u64)value[7]<<0;
-			u64_return |= (u64)value[6]<<8;
-			u64_return |= (u64)value[5]<<16;
-			u64_return |= (u64)value[4]<<24;
-			u64_return |= (u64)value[3]<<32;
-			u64_return |= (u64)value[2]<<40;
-			u64_return |= (u64)value[1]<<48;
-			u64_return |= (u64)value[0]<<56;
+			ret |= (u64)value[7]<<0;
+			ret |= (u64)value[6]<<8;
+			ret |= (u64)value[5]<<16;
+			ret |= (u64)value[4]<<24;
+			ret |= (u64)value[3]<<32;
+			ret |= (u64)value[2]<<40;
+			ret |= (u64)value[1]<<48;
+			ret |= (u64)value[0]<<56;
 			break;
 			//return (value[7]<<0) | (value[6]<<8) | (value[5]<<16) | (value[4]<<24) | (value[3]<<32) | (value[2]<<40) | (value[1]<<48) | (value[0]<<56);
 		case(LE): 
-			u64_return |= (u64)value[0]<<0;
-			u64_return |= (u64)value[1]<<8;
-			u64_return |= (u64)value[2]<<16;
-			u64_return |= (u64)value[3]<<24;
-			u64_return |= (u64)value[4]<<32;
-			u64_return |= (u64)value[5]<<40;
-			u64_return |= (u64)value[6]<<48;
-			u64_return |= (u64)value[7]<<56;
+			ret |= (u64)value[0]<<0;
+			ret |= (u64)value[1]<<8;
+			ret |= (u64)value[2]<<16;
+			ret |= (u64)value[3]<<24;
+			ret |= (u64)value[4]<<32;
+			ret |= (u64)value[5]<<40;
+			ret |= (u64)value[6]<<48;
+			ret |= (u64)value[7]<<56;
 			break;
 			//return (value[0]<<0) | (value[1]<<8) | (value[2]<<16) | (value[3]<<24) | (value[4]<<32) | (value[5]<<40) | (value[6]<<48) | (value[7]<<56);
 	}
-	return u64_return;
+	return ret;
 }
 
 int u16_to_u8(u8 *out_value, u16 in_value, u8 endianness)

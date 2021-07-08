@@ -165,8 +165,8 @@ typedef struct
 {
 	FILE* file;
 	settings* usersettings;
-	u32 offset;
-	u32 size;
+	u64 offset;
+	u64 size;
 	u32 channelcount;
 	cwav_header header;
 	cwav_infoheader infoheader;
@@ -175,8 +175,8 @@ typedef struct
 
 void cwav_init(cwav_context* ctx);
 void cwav_set_file(cwav_context* ctx, FILE* file);
-void cwav_set_offset(cwav_context* ctx, u32 offset);
-void cwav_set_size(cwav_context* ctx, u32 size);
+void cwav_set_offset(cwav_context* ctx, u64 offset);
+void cwav_set_size(cwav_context* ctx, u64 size);
 void cwav_set_usersettings(cwav_context* ctx, settings* usersettings);
 void cwav_process(cwav_context* ctx, u32 actions);
 void cwav_dspadpcm_init(cwav_dspadpcmstate* state);

@@ -83,7 +83,7 @@
  *      include/polarssl/bn_mul.h
  *
  */
-#define POLARSSL_HAVE_ASM
+//#define POLARSSL_HAVE_ASM
 
 /**
  * \def POLARSSL_HAVE_SSE2
@@ -148,7 +148,7 @@
  *
  * Enable Cipher Feedback mode (CFB) for symmetric ciphers.
  */
-#define POLARSSL_CIPHER_MODE_CFB
+//#define POLARSSL_CIPHER_MODE_CFB
 
 /**
  * \def POLARSSL_CIPHER_MODE_CTR
@@ -198,7 +198,7 @@
  * Disable if you run into name conflicts and want to really remove the
  * error_strerror()
  */
-#define POLARSSL_ERROR_STRERROR_DUMMY
+//#define POLARSSL_ERROR_STRERROR_DUMMY
 
 /**
  * \def POLARSSL_GENPRIME
@@ -207,14 +207,14 @@
  *
  * Enable the RSA prime-number generation code.
  */
-#define POLARSSL_GENPRIME
+//#define POLARSSL_GENPRIME
 
 /**
  * \def POLARSSL_FS_IO
  *
  * Enable functions that use the filesystem.
  */
-#define POLARSSL_FS_IO
+//#define POLARSSL_FS_IO
 
 /**
  * \def POLARSSL_NO_DEFAULT_ENTROPY_SOURCES
@@ -248,7 +248,7 @@
  * Enable support for PKCS#1 v2.1 encoding.
  * This enables support for RSAES-OAEP and RSASSA-PSS operations.
  */
-#define POLARSSL_PKCS1_V21
+//#define POLARSSL_PKCS1_V21
 
 /**
  * \def POLARSSL_RSA_NO_CRT
@@ -257,15 +257,16 @@
  *
  * Uncomment this macro to disable the use of CRT in RSA.
  *
-#define POLARSSL_RSA_NO_CRT
  */
+#define POLARSSL_RSA_NO_CRT
+
 
 /**
  * \def POLARSSL_SELF_TEST
  *
  * Enable the checkup functions (*_self_test).
  */
-#define POLARSSL_SELF_TEST
+//#define POLARSSL_SELF_TEST
 
 /**
  * \def POLARSSL_SSL_ALL_ALERT_MESSAGES
@@ -279,7 +280,7 @@
  *
  * Enable sending of all alert messages
  */
-#define POLARSSL_SSL_ALERT_MESSAGES
+//#define POLARSSL_SSL_ALERT_MESSAGES
 
 /**
  * \def POLARSSL_SSL_DEBUG_ALL
@@ -315,7 +316,7 @@
  *
  * Comment this macro to disable support for SSLv2 Client Hello messages.
  */
-#define POLARSSL_SSL_SRV_SUPPORT_SSLV2_CLIENT_HELLO
+//#define POLARSSL_SSL_SRV_SUPPORT_SSLV2_CLIENT_HELLO
 
 /**
  * \def POLARSSL_X509_ALLOW_UNSUPPORTED_CRITICAL_EXTENSION
@@ -391,7 +392,7 @@
  *      TLS_RSA_WITH_RC4_128_MD5
  *      TLS_RSA_WITH_RC4_128_SHA
  */
-#define POLARSSL_ARC4_C
+//#define POLARSSL_ARC4_C
 
 /**
  * \def POLARSSL_ASN1_PARSE_C
@@ -401,7 +402,7 @@
  * Module:  library/asn1.c
  * Caller:  library/x509parse.c
  */
-#define POLARSSL_ASN1_PARSE_C
+//#define POLARSSL_ASN1_PARSE_C
 
 /**
  * \def POLARSSL_ASN1_WRITE_C
@@ -410,7 +411,7 @@
  *
  * Module:  library/asn1write.c
  */
-#define POLARSSL_ASN1_WRITE_C
+//#define POLARSSL_ASN1_WRITE_C
 
 /**
  * \def POLARSSL_BASE64_C
@@ -446,7 +447,7 @@
  *
  * Module:  library/blowfish.c
  */
-#define POLARSSL_BLOWFISH_C
+//#define POLARSSL_BLOWFISH_C
 
 /**
  * \def POLARSSL_CAMELLIA_C
@@ -467,7 +468,7 @@
  *      TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256
  *      TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256
  */
-#define POLARSSL_CAMELLIA_C
+//#define POLARSSL_CAMELLIA_C
 
 /**
  * \def POLARSSL_CERTS_C
@@ -479,7 +480,7 @@
  *
  * This module is used for testing (ssl_client/server).
  */
-#define POLARSSL_CERTS_C
+//#define POLARSSL_CERTS_C
 
 /**
  * \def POLARSSL_CIPHER_C
@@ -491,7 +492,7 @@
  *
  * Uncomment to enable generic cipher wrappers.
  */
-#define POLARSSL_CIPHER_C
+//#define POLARSSL_CIPHER_C
 
 /**
  * \def POLARSSL_CTR_DRBG_C
@@ -505,7 +506,7 @@
  *
  * This module provides the CTR_DRBG AES-256 random number generator.
  */
-#define POLARSSL_CTR_DRBG_C
+//#define POLARSSL_CTR_DRBG_C
 
 /**
  * \def POLARSSL_DEBUG_C
@@ -519,7 +520,7 @@
  *
  * This module provides debugging functions.
  */
-#define POLARSSL_DEBUG_C
+//#define POLARSSL_DEBUG_C
 
 /**
  * \def POLARSSL_DES_C
@@ -537,7 +538,7 @@
  *
  * PEM uses DES/3DES for decrypting encrypted keys.
  */
-#define POLARSSL_DES_C
+//#define POLARSSL_DES_C
 
 /**
  * \def POLARSSL_DHM_C
@@ -563,7 +564,7 @@
  *      TLS_DHE_RSA_WITH_AES_128_GCM_SHA256
  *      TLS_DHE_RSA_WITH_AES_256_GCM_SHA384
  */
-#define POLARSSL_DHM_C
+//#define POLARSSL_DHM_C
 
 /**
  * \def POLARSSL_ENTROPY_C
@@ -577,7 +578,7 @@
  *
  * This module provides a generic entropy pool
  */
-#define POLARSSL_ENTROPY_C
+//#define POLARSSL_ENTROPY_C
 
 /**
  * \def POLARSSL_ERROR_C
@@ -589,7 +590,7 @@
  *
  * This module enables err_strerror().
  */
-#define POLARSSL_ERROR_C
+//#define POLARSSL_ERROR_C
 
 /**
  * \def POLARSSL_GCM_C
@@ -605,7 +606,7 @@
  *      TLS_RSA_WITH_AES_128_GCM_SHA256
  *      TLS_RSA_WITH_AES_256_GCM_SHA384
  */
-#define POLARSSL_GCM_C
+//#define POLARSSL_GCM_C
 
 /**
  * \def POLARSSL_HAVEGE_C
@@ -640,7 +641,7 @@
  *
  * Uncomment to enable generic message digest wrappers.
  */
-#define POLARSSL_MD_C
+//#define POLARSSL_MD_C
 
 /**
  * \def POLARSSL_MD2_C
@@ -681,7 +682,7 @@
  * This module is required for SSL/TLS and X.509.
  * PEM uses MD5 for decrypting encrypted keys.
  */
-#define POLARSSL_MD5_C
+//#define POLARSSL_MD5_C
 
 /**
  * \def POLARSSL_NET_C
@@ -693,7 +694,7 @@
  *
  * This module provides TCP/IP networking routines.
  */
-#define POLARSSL_NET_C
+//#define POLARSSL_NET_C
 
 /**
  * \def POLARSSL_PADLOCK_C
@@ -705,7 +706,7 @@
  *
  * This modules adds support for the VIA PadLock on x86.
  */
-#define POLARSSL_PADLOCK_C
+//#define POLARSSL_PADLOCK_C
 
 /**
  * \def POLARSSL_PBKDF2_C
@@ -733,7 +734,7 @@
  *
  * This modules adds support for decoding PEM files.
  */
-#define POLARSSL_PEM_C
+//#define POLARSSL_PEM_C
 
 /**
  * \def POLARSSL_PKCS5_C
@@ -746,7 +747,7 @@
  *
  * This module adds support for the PKCS#5 functions.
  */
-#define POLARSSL_PKCS5_C
+//#define POLARSSL_PKCS5_C
 
 /**
  * \def POLARSSL_PKCS11_C
@@ -778,7 +779,7 @@
  *
  * This module enables PKCS#12 functions.
  */
-#define POLARSSL_PKCS12_C
+//#define POLARSSL_PKCS12_C
 
 /**
  * \def POLARSSL_RSA_C
@@ -837,7 +838,7 @@
  *
  * This module adds support for SHA-384 and SHA-512.
  */
-#define POLARSSL_SHA4_C
+//#define POLARSSL_SHA4_C
 
 /**
  * \def POLARSSL_SSL_CACHE_C
@@ -849,7 +850,7 @@
  *
  * Requires: POLARSSL_SSL_CACHE_C
  */
-#define POLARSSL_SSL_CACHE_C
+//#define POLARSSL_SSL_CACHE_C
 
 /**
  * \def POLARSSL_SSL_CLI_C
@@ -863,7 +864,7 @@
  *
  * This module is required for SSL/TLS client support.
  */
-#define POLARSSL_SSL_CLI_C
+//#define POLARSSL_SSL_CLI_C
 
 /**
  * \def POLARSSL_SSL_SRV_C
@@ -877,7 +878,7 @@
  *
  * This module is required for SSL/TLS server support.
  */
-#define POLARSSL_SSL_SRV_C
+//#define POLARSSL_SSL_SRV_C
 
 /**
  * \def POLARSSL_SSL_TLS_C
@@ -892,7 +893,7 @@
  *
  * This module is required for SSL/TLS.
  */
-#define POLARSSL_SSL_TLS_C
+//#define POLARSSL_SSL_TLS_C
 
 /**
  * \def POLARSSL_TIMING_C
@@ -904,7 +905,7 @@
  *
  * This module is used by the HAVEGE random number generator.
  */
-#define POLARSSL_TIMING_C
+//#define POLARSSL_TIMING_C
 
 /**
  * \def POLARSSL_VERSION_C
@@ -915,7 +916,7 @@
  *
  * This module provides run-time version information.
  */
-#define POLARSSL_VERSION_C
+//#define POLARSSL_VERSION_C
 
 /**
  * \def POLARSSL_X509_PARSE_C
@@ -931,7 +932,7 @@
  *
  * This module is required for X.509 certificate parsing.
  */
-#define POLARSSL_X509_PARSE_C
+//#define POLARSSL_X509_PARSE_C
 
 /**
  * \def POLARSSL_X509_WRITE_C
@@ -944,7 +945,7 @@
  *
  * This module is required for X.509 certificate request writing.
  */
-#define POLARSSL_X509_WRITE_C
+//#define POLARSSL_X509_WRITE_C
 
 /**
  * \def POLARSSL_XTEA_C
@@ -954,7 +955,7 @@
  * Module:  library/xtea.c
  * Caller:
  */
-#define POLARSSL_XTEA_C
+//#define POLARSSL_XTEA_C
 /* \} name */
 
 /**

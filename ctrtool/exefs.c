@@ -18,12 +18,12 @@ void exefs_set_file(exefs_context* ctx, FILE* file)
 	ctx->file = file;
 }
 
-void exefs_set_offset(exefs_context* ctx, u32 offset)
+void exefs_set_offset(exefs_context* ctx, u64 offset)
 {
 	ctx->offset = offset;
 }
 
-void exefs_set_size(exefs_context* ctx, u32 size)
+void exefs_set_size(exefs_context* ctx, u64 size)
 {
 	ctx->size = size;
 }
@@ -33,9 +33,9 @@ void exefs_set_usersettings(exefs_context* ctx, settings* usersettings)
 	ctx->usersettings = usersettings;
 }
 
-void exefs_set_partitionid(exefs_context* ctx, u8 partitionid[8])
+void exefs_set_titleid(exefs_context* ctx, u8 titleid[8])
 {
-	memcpy(ctx->partitionid, partitionid, 8);
+	memcpy(ctx->titleid, titleid, 8);
 }
 
 void exefs_set_compressedflag(exefs_context* ctx, int compressedflag)
@@ -48,30 +48,15 @@ void exefs_set_encrypted(exefs_context* ctx, u32 encrypted)
 	ctx->encrypted = encrypted;
 }
 
-void exefs_set_key(exefs_context* ctx, u8 key[16])
+void exefs_set_keys(exefs_context* ctx, u8 key0[16], u8 key1[16])
 {
-	memcpy(ctx->key, key, 16);
+	memcpy(ctx->key[0], key0, 16);
+	memcpy(ctx->key[1], key1, 16);
 }
 
 void exefs_set_counter(exefs_context* ctx, u8 counter[16])
 {
 	memcpy(ctx->counter, counter, 16);
-}
-
-void exefs_determine_key(exefs_context* ctx, u32 actions)
-{
-	u8* key = settings_get_ncch_key(ctx->usersettings);
-
-	if (actions & PlainFlag)
-		ctx->encrypted = 0;
-	else
-	{
-		if (key)
-		{
-			ctx->encrypted = 1;
-			memcpy(ctx->key, key, 0x10);
-		}
-	}
 }
 
 void exefs_save(exefs_context* ctx, u32 index, u32 flags)
@@ -88,7 +73,7 @@ void exefs_save(exefs_context* ctx, u32 index, u32 flags)
 	u8* decompressedbuffer = 0;
 	filepath* dirpath = 0;
 	
-	
+	// determine offset/size of target
 	offset = getle32(section->offset) + sizeof(exefs_header);
 	size = getle32(section->size);
 	dirpath = settings_get_exefs_dir_path(ctx->usersettings);
@@ -102,6 +87,7 @@ void exefs_save(exefs_context* ctx, u32 index, u32 flags)
 		return;
 	}
 
+	// create new file
 	memset(name, 0, sizeof(name));
 	memcpy(name, section->name, 8);
 
@@ -122,14 +108,26 @@ void exefs_save(exefs_context* ctx, u32 index, u32 flags)
 		fprintf(stderr, "Error, failed to create file %s\n", outfname);
 		goto clean;
 	}
-	
-	
 
-	fseek(ctx->file, ctx->offset + offset, SEEK_SET);
-	ctr_init_counter(&ctx->aes, ctx->key, ctx->counter);
-	ctr_add_counter(&ctx->aes, offset / 0x10);
+	// seek in source file to location of target data
+	fseeko64(ctx->file, ctx->offset + offset, SEEK_SET);
 
-	if (index == 0 && ctx->compressedflag && ((flags & RawFlag) == 0))
+	// do decryption prep
+	if (ctx->encrypted)
+	{
+		// setup aes counter
+		ctr_init_counter(&ctx->aes, ctx->counter);
+		ctr_add_counter(&ctx->aes, offset / 0x10);
+
+		// setup key
+		if (strncmp((const char*)section->name, "icon", 8) == 0 || strncmp((const char*)section->name, "banner", 8) == 0)
+			ctr_init_key(&ctx->aes, ctx->key[0]);
+		else
+			ctr_init_key(&ctx->aes, ctx->key[1]);
+	}
+
+	// if this is file0, and compression is set or forced: decompress section
+	if (index == 0 && (ctx->compressedflag || (flags & DecompressCodeFlag)) && ((flags & RawFlag) == 0))
 	{
 		fprintf(stdout, "Decompressing section %s to %s...\n", name, outfname);
 
@@ -147,6 +145,7 @@ void exefs_save(exefs_context* ctx, u32 index, u32 flags)
 			goto clean;
 		}
 
+		// decrypt if required
 		if (ctx->encrypted)
 			ctr_crypt_counter(&ctx->aes, compressedbuffer, compressedbuffer, compressedsize);
 
@@ -200,6 +199,8 @@ void exefs_save(exefs_context* ctx, u32 index, u32 flags)
 	}
 
 clean:
+	if (fout)
+		fclose(fout);
 	free(compressedbuffer);
 	free(decompressedbuffer);
 	return;
@@ -207,13 +208,15 @@ clean:
 
 void exefs_read_header(exefs_context* ctx, u32 flags)
 {
-	fseek(ctx->file, ctx->offset, SEEK_SET);
+	fseeko64(ctx->file, ctx->offset, SEEK_SET);
 	fread(&ctx->header, 1, sizeof(exefs_header), ctx->file);
 
-	ctr_init_counter(&ctx->aes, ctx->key, ctx->counter);
-
-	if (ctx->encrypted)
+	if (ctx->encrypted) {
+		ctr_init_key(&ctx->aes, ctx->key[0]);
+		ctr_init_counter(&ctx->aes, ctx->counter);
 		ctr_crypt_counter(&ctx->aes, (u8*)&ctx->header, (u8*)&ctx->header, sizeof(exefs_header));
+	}
+		
 }
 
 void exefs_calculate_hash(exefs_context* ctx, u8 hash[32])
@@ -224,8 +227,6 @@ void exefs_calculate_hash(exefs_context* ctx, u8 hash[32])
 void exefs_process(exefs_context* ctx, u32 actions)
 {
 	u32 i;
-
-	exefs_determine_key(ctx, actions);
 
 	exefs_read_header(ctx, actions);
 
@@ -268,8 +269,12 @@ int exefs_verify(exefs_context* ctx, u32 index, u32 flags)
 	if (size == 0)
 		return 0;
 
-	fseek(ctx->file, ctx->offset + offset, SEEK_SET);
-	ctr_init_counter(&ctx->aes, ctx->key, ctx->counter);
+	fseeko64(ctx->file, ctx->offset + offset, SEEK_SET);
+	if (strncmp((const char*)section->name, "icon", 8) == 0 || strncmp((const char*)section->name, "banner", 8) == 0)
+		ctr_init_key(&ctx->aes, ctx->key[0]);
+	else
+		ctr_init_key(&ctx->aes, ctx->key[1]);
+	ctr_init_counter(&ctx->aes, ctx->counter);
 	ctr_add_counter(&ctx->aes, offset / 0x10);
 
 	ctr_sha_256_init(&ctx->sha);
@@ -310,7 +315,7 @@ void exefs_print(exefs_context* ctx)
 	u32 sectsize;
 
 	fprintf(stdout, "\nExeFS:\n");
-	for(i=0; i<8; i++)
+	for(i=0; i<EXEFS_SECTION_NUM; i++)
 	{
 		exefs_sectionheader* section = (exefs_sectionheader*)(ctx->header.section + i);
 

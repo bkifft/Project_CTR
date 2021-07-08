@@ -13,6 +13,7 @@
 #include <math.h>
 #include <dirent.h>
 #include <wchar.h>
+#include <inttypes.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -26,11 +27,13 @@
 
 #include "types.h"
 #include "utils.h"
+#include "ctr_utils.h"
 #include "crypto.h"
 
 #include "keyset.h"
-#include "usersettings.h"
-#include "libyaml/yaml.h"
-#include "yaml_ctr.h"
+#include "user_settings.h"
+#include "yaml_parser.h"
+#include "rsf_settings.h"
+
 
 

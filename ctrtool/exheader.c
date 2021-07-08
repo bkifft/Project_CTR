@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -5,6 +6,8 @@
 #include "exheader.h"
 #include "utils.h"
 #include "ncch.h"
+#include "syscalls.h"
+#include <inttypes.h>
 
 void exheader_init(exheader_context* ctx)
 {
@@ -16,12 +19,12 @@ void exheader_set_file(exheader_context* ctx, FILE* file)
 	ctx->file = file;
 }
 
-void exheader_set_offset(exheader_context* ctx, u32 offset)
+void exheader_set_offset(exheader_context* ctx, u64 offset)
 {
 	ctx->offset = offset;
 }
 
-void exheader_set_size(exheader_context* ctx, u32 size)
+void exheader_set_size(exheader_context* ctx, u64 size)
 {
 	ctx->size = size;
 }
@@ -31,14 +34,19 @@ void exheader_set_usersettings(exheader_context* ctx, settings* usersettings)
 	ctx->usersettings = usersettings;
 }
 
-void exheader_set_partitionid(exheader_context* ctx, u8 partitionid[8])
+void exheader_set_titleid(exheader_context* ctx, u8 titleid[8])
 {
-	memcpy(ctx->partitionid, partitionid, 8);
+	memcpy(ctx->titleid, titleid, 8);
 }
 
 void exheader_set_programid(exheader_context* ctx, u8 programid[8])
 {
 	memcpy(ctx->programid, programid, 8);
+}
+
+void exheader_set_hash(exheader_context* ctx, u8 hash[32])
+{
+	memcpy(ctx->hash, hash, 32);
 }
 
 void exheader_set_counter(exheader_context* ctx, u8 counter[16])
@@ -62,35 +70,33 @@ void exheader_set_key(exheader_context* ctx, u8 key[16])
 }
 
 
-void exheader_determine_key(exheader_context* ctx, u32 actions)
-{
-	u8* key = settings_get_ncch_key(ctx->usersettings);
-
-	if (actions & PlainFlag)
-		ctx->encrypted = 0;
-	else
-	{
-		if (key)
-		{
-			ctx->encrypted = 1;
-			memcpy(ctx->key, key, 0x10);
-		}
-	}
-}
-
 void exheader_read(exheader_context* ctx, u32 actions)
 {
 	if (ctx->haveread == 0)
 	{
-		fseek(ctx->file, ctx->offset, SEEK_SET);
+		fseeko64(ctx->file, ctx->offset, SEEK_SET);
 		fread(&ctx->header, 1, sizeof(exheader_header), ctx->file);
 
-		ctr_init_counter(&ctx->aes, ctx->key, ctx->counter);
+		ctr_init_key(&ctx->aes, ctx->key);
+		ctr_init_counter(&ctx->aes, ctx->counter);
 		if (ctx->encrypted)
 			ctr_crypt_counter(&ctx->aes, (u8*)&ctx->header, (u8*)&ctx->header, sizeof(exheader_header));
 
 		ctx->haveread = 1;
 	}
+}
+
+int exheader_hash_valid(exheader_context* ctx)
+{
+	u8 hash[32];
+	ctr_sha_256((u8*)&ctx->header, 0x400, hash);
+
+	if(memcmp(ctx->hash,hash,0x20)){
+		fprintf(stderr, "Error, exheader hash mismatch. Wrong key?\n");
+		return 0;
+	}
+	
+	return 1;
 }
 
 int exheader_programid_valid(exheader_context* ctx)
@@ -107,22 +113,72 @@ int exheader_programid_valid(exheader_context* ctx)
 	return 1;
 }
 
+void exheader_deserialise_arm11localcaps_permissions(exheader_arm11systemlocalcaps_deserialised *caps, const exheader_arm11systemlocalcaps *arm11)
+{
+	int i;
+
+	memset(caps, 0, sizeof(exheader_arm11systemlocalcaps_deserialised));
+
+	memcpy(caps->program_id, arm11->programid, 8);
+	caps->core_version = getle32(arm11->coreversion);
+
+	caps->enable_l2_cache = (arm11->flag[0] >> 0) & 1;
+	caps->new3ds_cpu_speed = (arm11->flag[0] >> 1) & 1;
+	caps->new3ds_systemmode = (arm11->flag[1] >> 0) & 15;
+
+	caps->ideal_processor = (arm11->flag[2] >> 0) & 3;
+	caps->affinity_mask = (arm11->flag[2] >> 2) & 3;
+	caps->old3ds_systemmode = (arm11->flag[2] >> 4) & 15;
+
+	caps->priority = (s8)arm11->flag[3];
+
+	// storage info
+	if (arm11->storageinfo.otherattributes & 2) {
+		caps->extdata_id = 0;
+		for (i = 0; i < 3; i++)
+			caps->other_user_saveid[i] = 0;
+		caps->use_other_variation_savedata = 0;
+
+		for (i = 0; i < 3; i++)
+			caps->accessible_saveid[i] = 0xfffff & (getle64(arm11->storageinfo.accessibleuniqueids) >> 20 * (2 - i));
+		for (i = 0; i < 3; i++)
+			caps->accessible_saveid[i+3] = 0xfffff & (getle64(arm11->storageinfo.extsavedataid) >> 20 * (2 - i));
+	}
+	else {
+		caps->extdata_id = getle64(arm11->storageinfo.extsavedataid);
+		for (i = 0; i < 3; i++)
+			caps->other_user_saveid[i] = 0xfffff & (getle64(arm11->storageinfo.accessibleuniqueids) >> 20 * (2 - i));
+		caps->use_other_variation_savedata = (getle64(arm11->storageinfo.accessibleuniqueids) >> 60) & 1;
+
+		for (i = 0; i < 6; i++)
+			caps->accessible_saveid[i] = 0;
+	}
+
+	caps->system_saveid[0] = getle32(arm11->storageinfo.systemsavedataid);
+	caps->system_saveid[1] = getle32(arm11->storageinfo.systemsavedataid + 4);
+	caps->accessinfo = getle64(arm11->storageinfo.accessinfo) & ~((u64)0xff00000000000000);
+
+	// Service Access Control
+	for (i = 0; i < 34; i++)
+		strncpy(caps->service_access_control[i], (char*)arm11->serviceaccesscontrol[i], 8);
+
+	caps->resource_limit_category = arm11->resourcelimitcategory;
+}
+
 int exheader_process(exheader_context* ctx, u32 actions)
 {
-	exheader_determine_key(ctx, actions);
-
 	exheader_read(ctx, actions);
 
 	if (ctx->header.codesetinfo.flags.flag & 1)
 		ctx->compressedflag = 1;
 
+	exheader_deserialise_arm11localcaps_permissions(&ctx->system_local_caps, &ctx->header.arm11systemlocalcaps);
+
 	if (actions & VerifyFlag)
 		exheader_verify(ctx);
 
 	if (actions & InfoFlag)
-	{
-		exheader_print(ctx);		
-	}
+		exheader_print(ctx, actions);
 
 	return 1;
 }
@@ -160,7 +216,7 @@ void exheader_print_arm9accesscontrol(exheader_context* ctx)
 	}
 }
 
-void exheader_print_arm11kernelcapabilities(exheader_context* ctx)
+void exheader_print_arm11kernelcapabilities(exheader_context* ctx, u32 actions)
 {
 	unsigned int i, j;
 	unsigned int systemcallmask[8];
@@ -207,6 +263,7 @@ void exheader_print_arm11kernelcapabilities(exheader_context* ctx)
 			fprintf(stdout, " > Shared device mem:   %s\n", (descriptor&(1<<6))?"YES":"NO");
 			fprintf(stdout, " > Runnable on sleep:   %s\n", (descriptor&(1<<7))?"YES":"NO");
 			fprintf(stdout, " > Special memory:      %s\n", (descriptor&(1<<12))?"YES":"NO");
+			fprintf(stdout, " > Access Core 2:       %s\n", (descriptor&(1<<13))?"YES":"NO");
 			
 
 			switch(memorytype)
@@ -222,42 +279,66 @@ void exheader_print_arm11kernelcapabilities(exheader_context* ctx)
 	}
 
 	fprintf(stdout, "Allowed systemcalls:    ");
-	for(i=0; i<8; i++)
+	if(!(actions & ShowSyscallsFlag))
 	{
-		for(j=0; j<24; j++)
+		for(i=0; i<8; i++)
 		{
-			svcmask = systemcallmask[i];
-
-			if (svcmask & (1<<j))
+			for(j=0; j<24; j++)
 			{
-				unsigned int svcid = i*24+j;
-				if (svccount == 0)
-				{
-					fprintf(stdout, "0x%02X", svcid);
-				}
-				else if ( (svccount & 7) == 0)
-				{
-					fprintf(stdout, "                        ");
-					fprintf(stdout, "0x%02X", svcid);
-				}
-				else
-				{
-					fprintf(stdout, ", 0x%02X", svcid);
-				}
+				svcmask = systemcallmask[i];
 
-				svccount++;
-				if ( (svccount & 7) == 0)
+				if (svcmask & (1<<j))
 				{
-					fprintf(stdout, "\n");
+					unsigned int svcid = i*24+j;
+					if (svccount == 0)
+					{
+						fprintf(stdout, "0x%02X", svcid);
+					}
+					else if ( (svccount & 7) == 0)
+					{
+						fprintf(stdout, "                        ");
+						fprintf(stdout, "0x%02X", svcid);
+					}
+					else
+					{
+						fprintf(stdout, ", 0x%02X", svcid);
+					}
+
+					svccount++;
+					if ( (svccount & 7) == 0)
+					{
+						fprintf(stdout, "\n");
+					}
+				}
+			}
+		}
+		if (svccount & 7)
+			fprintf(stdout, "\n");
+		if (svccount == 0)
+			fprintf(stdout, "none\n");
+	}
+	else
+	{
+		fprintf(stdout, "\n");
+
+		for(i=0; i<8; i++)
+		{
+			for(j=0; j<24; j++)
+			{
+				svcmask = systemcallmask[i];
+
+				if (svcmask & (1 << j))
+				{
+					unsigned int svcid = i * 24 + j;
+					char svcname[128];
+
+					syscall_get_name(svcname, sizeof(svcname), svcid);
+
+					fprintf(stdout, " > 0x%02X %s\n", svcid, svcname);
 				}
 			}
 		}
 	}
-	if (svccount & 7)
-		fprintf(stdout, "\n");
-	if (svccount == 0)
-		fprintf(stdout, "none\n");
-
 
 	fprintf(stdout, "Allowed interrupts:     ");
 	for(i=0; i<0x7F; i++)
@@ -366,6 +447,9 @@ char* exheader_print_accessinfobit(u32 bit, char *str)
 		case 20 : 
 			sprintf(str,"Category HomeMenu");
 			break;
+		case 21 : 
+			sprintf(str,"Seed DB");
+			break;
 		default : 
 			sprintf(str,"Bit %d (unknown)",bit);
 			break;
@@ -378,11 +462,10 @@ void exheader_print_arm11accessinfo(exheader_context* ctx)
 {
 	char str[100];
 	u64 i, bit;
-	u64 accessinfo = 0xffffffffffffff & getle64(ctx->header.arm11systemlocalcaps.storageinfo.accessinfo);
 	for(i = 0; i < 56; i++)
 	{
 		bit = ((u64)1 << i);
-		if((accessinfo & bit) == bit)
+		if((ctx->system_local_caps.accessinfo & bit) == bit)
 			fprintf(stdout, " > %s\n",exheader_print_accessinfobit((u32)i,str)); 
 	}
 }
@@ -391,72 +474,21 @@ void exheader_print_arm11storageinfo(exheader_context* ctx)
 {
 	u32 i;
 
-	// Storage Info
-	u32 systemsaveID[2];
-	u64 extdataID;
-	u32 otherusersaveID[3];
-	u32 accessiblesaveID[6];
-
-	u8 otherattibutes = ctx->header.arm11systemlocalcaps.storageinfo.otherattributes;
-	u8 accessOtherVariationSavedata = (getle64(ctx->header.arm11systemlocalcaps.storageinfo.accessibleuniqueids) & 0x1000000000000000) == 0x1000000000000000;	
-
-	systemsaveID[0] = getle32(ctx->header.arm11systemlocalcaps.storageinfo.systemsavedataid);
-	systemsaveID[1] = getle32(ctx->header.arm11systemlocalcaps.storageinfo.systemsavedataid+4);
-
-	extdataID = getle64(ctx->header.arm11systemlocalcaps.storageinfo.extsavedataid);
-
-	for(i = 0; i < 3; i++)
-	{
-		accessiblesaveID[i] = 0xfffff & (getle64(ctx->header.arm11systemlocalcaps.storageinfo.accessibleuniqueids) >> 20*(2-i));
-		otherusersaveID[i] = 0xfffff & (getle64(ctx->header.arm11systemlocalcaps.storageinfo.accessibleuniqueids) >> 20*(2-i));
-	}
-
-	for(i = 0; i < 3; i++)
-	{
-		accessiblesaveID[i+3] = 0xfffff & (getle64(ctx->header.arm11systemlocalcaps.storageinfo.extsavedataid) >> 20*(2-i));
-	}
-
-	if(otherattibutes & 2)
-	{
-		extdataID = 0;
-		for(i = 0; i < 3; i++)
-			otherusersaveID[i] = 0;
-	}
-	else
-	{
-		for(i = 0; i < 6; i++)
-			accessiblesaveID[i] = 0;
-	}
-
-	fprintf(stdout, "Ext savedata id:        0x%08llX\n",extdataID);
+	fprintf(stdout, "Ext savedata id:        0x%"PRIx64"\n",ctx->system_local_caps.extdata_id);
 	for(i = 0; i < 2; i++)
-		fprintf(stdout, "System savedata id %d:   0x%08x %s\n",i+1,systemsaveID[i],exheader_getvalidstring(ctx->validsystemsaveID[i]));
+		fprintf(stdout, "System savedata id %d:   0x%x %s\n",i+1, ctx->system_local_caps.system_saveid[i],exheader_getvalidstring(ctx->validsystemsaveID[i]));
 	for(i = 0; i < 3; i++)
-		fprintf(stdout, "OtherUserSaveDataId%d:   0x%05x\n",i+1,otherusersaveID[i]);
+		fprintf(stdout, "OtherUserSaveDataId%d:   0x%x\n",i+1, ctx->system_local_caps.other_user_saveid[i]);
 	fprintf(stdout, "Accessible Savedata Ids:\n");
 	for(i = 0; i < 6; i++)
 	{
-		if(accessiblesaveID[i] != 0x00000)
-			fprintf(stdout, " > 0x%05x\n",accessiblesaveID[i]);
+		if(ctx->system_local_caps.accessible_saveid[i] != 0x00000)
+			fprintf(stdout, " > 0x%05x\n", ctx->system_local_caps.accessible_saveid[i]);
 	}
 	
-	fprintf(stdout, "Other Variation Saves:  %s\n", accessOtherVariationSavedata ? "Accessible" : "Inaccessible");
-	if(ctx->validaccessinfo == Unchecked)
-		memdump(stdout, "Access info:            ", ctx->header.arm11systemlocalcaps.storageinfo.accessinfo, 7);
-	else if(ctx->validaccessinfo == Good)
-		memdump(stdout, "Access info (GOOD):     ", ctx->header.arm11systemlocalcaps.storageinfo.accessinfo, 7);
-	else
-		memdump(stdout, "Access info (FAIL):     ", ctx->header.arm11systemlocalcaps.storageinfo.accessinfo, 7);
-	exheader_print_arm11accessinfo(ctx);
-	
-	fprintf(stdout, "Other attributes:       %02X", ctx->header.arm11systemlocalcaps.storageinfo.otherattributes);
-	/*
-	if(otherattibutes & 1)
-		fprintf(stdout," [no use romfs]");
-	if(otherattibutes & 2)
-		fprintf(stdout," [use extended savedata access control]");
-	*/
-	printf("\n");
+	fprintf(stdout, "Other Variation Saves:  %s\n", ctx->system_local_caps.use_other_variation_savedata ? "Accessible" : "Inaccessible");
+	fprintf(stdout, "Access info:            0x%"PRIx64" %s\n", ctx->system_local_caps.accessinfo,exheader_getvalidstring(ctx->validaccessinfo));
+	exheader_print_arm11accessinfo(ctx);	
 }
 
 int exheader_signature_verify(exheader_context* ctx, rsakey2048* key)
@@ -467,61 +499,86 @@ int exheader_signature_verify(exheader_context* ctx, rsakey2048* key)
 	return ctr_rsa_verify_hash(ctx->header.accessdesc.signature, hash, key);
 }
 
-
 void exheader_verify(exheader_context* ctx)
 {
-	unsigned int i;
-	u8 exheaderflag6[3];
-	u8 descflag6[3];
+	unsigned int i, j;
+	exheader_arm11systemlocalcaps_deserialised accessdesc;
+
+	exheader_deserialise_arm11localcaps_permissions(&accessdesc, &ctx->header.accessdesc.arm11systemlocalcaps);
 
 	ctx->validsystemsaveID[0] = Good;
 	ctx->validsystemsaveID[1] = Good;
 	ctx->validaccessinfo = Good;
+	ctx->validcoreversion = Good;
 	ctx->validprogramid = Good;
 	ctx->validpriority = Good;
 	ctx->validaffinitymask = Good;
 	ctx->valididealprocessor = Good;
+	ctx->validold3dssystemmode = Good;
+	ctx->validnew3dssystemmode = Good;
+	ctx->validenablel2cache = Good;
+	ctx->validnew3dscpuspeed = Good;
+	ctx->validservicecontrol = Good;
 
 	for(i=0; i<8; i++)
 	{
-		if (0 == (ctx->header.arm11systemlocalcaps.programid[i] & ~ctx->header.accessdesc.arm11systemlocalcaps.programid[i]))
+		if (ctx->system_local_caps.program_id[i] == accessdesc.program_id[i] || accessdesc.program_id[i] == 0xFF)
 			continue;
 		ctx->validprogramid = Fail;
 		break;
 	}
 
-	// Ideal Proccessor
-	exheaderflag6[0] = (ctx->header.arm11systemlocalcaps.flag>>0)&0x3;
-	descflag6[0] = (ctx->header.accessdesc.arm11systemlocalcaps.flag>>0)&0x3;
-	// Affinity Mask
-	exheaderflag6[1] = (ctx->header.arm11systemlocalcaps.flag>>2)&0x3;
-	descflag6[1] = (ctx->header.accessdesc.arm11systemlocalcaps.flag>>2)&0x3;
-	// System Mode
-	//exheaderflag6[2] = (ctx->header.arm11systemlocalcaps.flag>>4)&0xf;
-	//descflag6[2] = (ctx->header.accessdesc.arm11systemlocalcaps.flag>>4)&0xf;
+	if (ctx->system_local_caps.core_version != accessdesc.core_version)
+		ctx->validcoreversion = Fail;
 
-	if (ctx->header.accessdesc.arm11systemlocalcaps.priority > ctx->header.arm11systemlocalcaps.priority ||  ctx->header.arm11systemlocalcaps.priority > 127)
+	if (ctx->system_local_caps.priority < accessdesc.priority)
 		ctx->validpriority = Fail;
 
-	if((1<<exheaderflag6[0] & descflag6[0]) == 0)
+	if((1<<ctx->system_local_caps.ideal_processor & accessdesc.ideal_processor) == 0)
 		ctx->valididealprocessor = Fail;
 
-	if (exheaderflag6[1] & ~descflag6[1])
+	if (ctx->system_local_caps.affinity_mask & ~accessdesc.affinity_mask)
 		ctx->validaffinitymask = Fail;
+
+	if (ctx->system_local_caps.old3ds_systemmode > accessdesc.old3ds_systemmode)
+		ctx->validold3dssystemmode = Fail;
+
+	if (ctx->system_local_caps.new3ds_systemmode > accessdesc.new3ds_systemmode)
+		ctx->validnew3dssystemmode = Fail;
+
+	if (ctx->system_local_caps.enable_l2_cache != accessdesc.enable_l2_cache)
+		ctx->validenablel2cache = Fail;
+
+	if (ctx->system_local_caps.new3ds_cpu_speed != accessdesc.new3ds_cpu_speed)
+		ctx->validnew3dscpuspeed = Fail;
+
+
 
 
 	// Storage Info Verify
-	if(0 != (getle32(ctx->header.arm11systemlocalcaps.storageinfo.systemsavedataid) & ~getle32(ctx->header.accessdesc.arm11systemlocalcaps.storageinfo.systemsavedataid)))
+	if(ctx->system_local_caps.system_saveid[0] & ~accessdesc.system_saveid[0])
 		ctx->validsystemsaveID[0] = Fail;
-	if(0 != (getle32(ctx->header.arm11systemlocalcaps.storageinfo.systemsavedataid+4) & ~getle32(ctx->header.accessdesc.arm11systemlocalcaps.storageinfo.systemsavedataid+4)))
+	if(ctx->system_local_caps.system_saveid[1] & ~accessdesc.system_saveid[1])
 		ctx->validsystemsaveID[1] = Fail;
 
-	for(i=0; i<7; i++)
-	{
-		if(0 == (ctx->header.arm11systemlocalcaps.storageinfo.accessinfo[i] & ~ctx->header.accessdesc.arm11systemlocalcaps.storageinfo.accessinfo[i]))
-			continue;
+
+	if (ctx->system_local_caps.accessinfo & ~accessdesc.accessinfo)
 		ctx->validaccessinfo = Fail;
-		break;
+
+	// Service Access Control
+	for (i = 0; i < 34; i++) {
+		if (strlen(ctx->system_local_caps.service_access_control[i]) == 0)
+			continue;
+
+		for (j = 0; j < 34; j++) {
+			if (strcmp(ctx->system_local_caps.service_access_control[i], accessdesc.service_access_control[j]) == 0)
+				break;
+		}
+
+		if (strcmp(ctx->system_local_caps.service_access_control[i], accessdesc.service_access_control[j]) == 0)
+			continue;
+
+		ctx->validservicecontrol = Fail;
 	}
 
 	if (ctx->usersettings)
@@ -538,7 +595,42 @@ const char* exheader_getvalidstring(int valid)
 		return "(FAIL)";
 }
 
-void exheader_print(exheader_context* ctx)
+const char* exheader_getsystemmodestring(u8 systemmode)
+{
+	switch (systemmode)
+	{
+	case (sysmode_64MB) :
+		return "64MB";
+	case (sysmode_96MB) :
+		return "96MB";
+	case (sysmode_80MB) :
+		return "80MB";
+	case (sysmode_72MB) :
+		return "72MB";
+	case (sysmode_32MB) :
+		return "32MB";
+	default:
+		return "Unknown";
+	}
+}
+
+const char* exheader_getsystemmodeextstring(u8 systemmodeext, u8 systemmode)
+{
+	switch (systemmodeext)
+	{
+	case (sysmode_ext_LEGACY) :
+		return exheader_getsystemmodestring(systemmode);
+	case (sysmode_ext_124MB) :
+		return "124MB";
+	case (sysmode_ext_178MB) :
+		return "178MB";
+	default:
+		return "124MB";
+	}
+}
+
+
+void exheader_print(exheader_context* ctx, u32 actions)
 {
 	u32 i;
 	u64 savedatasize = getle64(ctx->header.systeminfo.savedatasize);
@@ -578,33 +670,35 @@ void exheader_print(exheader_context* ctx)
 	for(i=0; i<0x30; i++)
 	{
 		if (getle64(ctx->header.deplist.programid[i]) != 0x0000000000000000UL)
-			fprintf(stdout, "Dependency:             %016llX\n", getle64(ctx->header.deplist.programid[i]));
+			fprintf(stdout, "Dependency:             %016"PRIx64"\n", getle64(ctx->header.deplist.programid[i]));
 	}
 	if(savedatasize < sizeKB)
-		fprintf(stdout, "Savedata size:          0x%X\n", savedatasize);
+		fprintf(stdout, "Savedata size:          0x%"PRIx64"\n", savedatasize);
 	else if(savedatasize < sizeMB)
-		fprintf(stdout, "Savedata size:          %dK\n", savedatasize/sizeKB);
+		fprintf(stdout, "Savedata size:          %"PRIu64"K\n", savedatasize/sizeKB);
 	else
-		fprintf(stdout, "Savedata size:          %dM\n", savedatasize/sizeMB);
-	fprintf(stdout, "Jump id:                %016llX\n", getle64(ctx->header.systeminfo.jumpid));
+		fprintf(stdout, "Savedata size:          %"PRIu64"M\n", savedatasize/sizeMB);
+	fprintf(stdout, "Jump id:                %016"PRIx64"\n", getle64(ctx->header.systeminfo.jumpid));
 
-	fprintf(stdout, "Program id:             %016llX %s\n", getle64(ctx->header.arm11systemlocalcaps.programid), exheader_getvalidstring(ctx->validprogramid));
+	fprintf(stdout, "Program id:             %016"PRIx64" %s\n", getle64(ctx->header.arm11systemlocalcaps.programid), exheader_getvalidstring(ctx->validprogramid));
 	fprintf(stdout, "Core version:           0x%X\n", getle32(ctx->header.arm11systemlocalcaps.coreversion));
-	fprintf(stdout, "System mode:            0x%X\n", (ctx->header.arm11systemlocalcaps.flag>>4)&0xF);
-	fprintf(stdout, "Ideal processor:        %d %s\n", (ctx->header.arm11systemlocalcaps.flag>>0)&0x3, exheader_getvalidstring(ctx->valididealprocessor));
-	fprintf(stdout, "Affinity mask:          %d %s\n", (ctx->header.arm11systemlocalcaps.flag>>2)&0x3, exheader_getvalidstring(ctx->validaffinitymask));
-	fprintf(stdout, "Main thread priority:   %d %s\n", ctx->header.arm11systemlocalcaps.priority, exheader_getvalidstring(ctx->validpriority));
+	fprintf(stdout, "System mode:            %s %s\n", exheader_getsystemmodestring(ctx->system_local_caps.old3ds_systemmode), exheader_getvalidstring(ctx->validold3dssystemmode));
+	fprintf(stdout, "System mode (New3DS):   %s %s\n", exheader_getsystemmodeextstring(ctx->system_local_caps.new3ds_systemmode, ctx->system_local_caps.old3ds_systemmode), exheader_getvalidstring(ctx->validnew3dssystemmode));
+	fprintf(stdout, "CPU Speed (New3DS):     %s %s\n", ctx->system_local_caps.new3ds_cpu_speed? "804MHz" : "268MHz", exheader_getvalidstring(ctx->validnew3dscpuspeed));
+	fprintf(stdout, "Enable L2 Cache:        %s %s\n", ctx->system_local_caps.enable_l2_cache ? "YES" : "NO", exheader_getvalidstring(ctx->validnew3dscpuspeed));
+	fprintf(stdout, "Ideal processor:        %d %s\n", ctx->system_local_caps.ideal_processor, exheader_getvalidstring(ctx->valididealprocessor));
+	fprintf(stdout, "Affinity mask:          %d %s\n", ctx->system_local_caps.affinity_mask, exheader_getvalidstring(ctx->validaffinitymask));
+	fprintf(stdout, "Main thread priority:   %d %s\n", ctx->system_local_caps.priority, exheader_getvalidstring(ctx->validpriority));
 	// print resource limit descriptor too? currently mostly zeroes...
 	exheader_print_arm11storageinfo(ctx);
-	exheader_print_arm11kernelcapabilities(ctx);
+	exheader_print_arm11kernelcapabilities(ctx, actions);
 	exheader_print_arm9accesscontrol(ctx);
 
-		
-	
-	for(i=0; i<0x20; i++)
+	fprintf(stdout, "Service access: %s\n", exheader_getvalidstring(ctx->validservicecontrol));
+	for(i=0; i<34; i++)
 	{
-		if (getle64(ctx->header.arm11systemlocalcaps.serviceaccesscontrol[i]) != 0x0000000000000000UL)
-			fprintf(stdout, "Service access:         %.8s\n", ctx->header.arm11systemlocalcaps.serviceaccesscontrol[i]);
+		if (strlen(ctx->system_local_caps.service_access_control[i]) > 0)
+			fprintf(stdout, " > %s\n", ctx->system_local_caps.service_access_control[i]);
 	}
 	fprintf(stdout, "Reslimit category:      %02X\n", ctx->header.arm11systemlocalcaps.resourcelimitcategory);
 }

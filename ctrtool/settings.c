@@ -104,6 +104,14 @@ filepath* settings_get_tmd_path(settings* usersettings)
 		return 0;
 }
 
+filepath* settings_get_content_path(settings* usersettings)
+{
+	if (usersettings)
+		return &usersettings->contentpath;
+	else
+		return 0;
+}
+
 filepath* settings_get_meta_path(settings* usersettings)
 {
 	if (usersettings)
@@ -112,10 +120,10 @@ filepath* settings_get_meta_path(settings* usersettings)
 		return 0;
 }
 
-filepath* settings_get_content_path(settings* usersettings)
+filepath* settings_get_plainrgn_path(settings* usersettings)
 {
 	if (usersettings)
-		return &usersettings->contentpath;
+		return &usersettings->plainrgnpath;
 	else
 		return 0;
 }
@@ -128,30 +136,62 @@ unsigned int settings_get_mediaunit_size(settings* usersettings)
 		return 0;
 }
 
-unsigned char* settings_get_ncch_key(settings* usersettings)
-{
-	if (usersettings && usersettings->keys.ncchkey.valid)
-		return usersettings->keys.ncchkey.data;
-	else
-		return 0;
-}
+#define GETKEY(s, k)	do {\
+	if ((s) && (s)->keys.k.valid)\
+		return (s)->keys.k.data;\
+	else\
+		return NULL;\
+} while (0)
 
 unsigned char* settings_get_ncch_fixedsystemkey(settings* usersettings)
 {
-	if (usersettings && usersettings->keys.ncchfixedsystemkey.valid)
-		return usersettings->keys.ncchfixedsystemkey.data;
-	else
-		return 0;
+	GETKEY(usersettings, ncchfixedsystemkey);
 }
 
-unsigned char* settings_get_common_key(settings* usersettings)
+unsigned char* settings_get_ncchkeyX_old(settings* usersettings)
 {
-	if (usersettings && usersettings->keys.commonkey.valid)
-		return usersettings->keys.commonkey.data;
-	else
-		return 0;
+	GETKEY(usersettings, ncchkeyX_old);
 }
 
+unsigned char* settings_get_ncchkeyX_seven(settings* usersettings)
+{
+	GETKEY(usersettings, ncchkeyX_seven);
+}
+
+unsigned char* settings_get_ncchkeyX_ninethree(settings* usersettings)
+{
+	GETKEY(usersettings, ncchkeyX_ninethree);
+}
+
+unsigned char* settings_get_ncchkeyX_ninesix(settings* usersettings)
+{
+	GETKEY(usersettings, ncchkeyX_ninesix);
+}
+
+unsigned char* settings_get_common_key(settings* usersettings, u8 index)
+{
+	if (index > (COMMONKEY_NUM - 1)) return NULL;
+	GETKEY(usersettings, commonkey[index]);
+}
+
+unsigned char* settings_get_seed(settings* usersettings, u64 title_id)
+{
+	for (u32 i = 0; i < usersettings->keys.seed_num; i++)
+	{
+		if (title_id == getle64(usersettings->keys.seed_db[i].title_id))
+		{
+			return usersettings->keys.seed_db[i].seed;
+		}
+	}
+	GETKEY(usersettings, seed_fallback);
+}
+
+unsigned char* settings_get_title_key(settings* usersettings)
+{
+	GETKEY(usersettings, titlekey);
+}
+
+#undef GETKEY
 
 int settings_get_ignore_programid(settings* usersettings)
 {
@@ -228,14 +268,14 @@ void settings_set_tmd_path(settings* usersettings, const char* path)
 	filepath_set(&usersettings->tmdpath, path);
 }
 
-void settings_set_meta_path(settings* usersettings, const char* path)
-{
-	filepath_set(&usersettings->metapath, path);
-}
-
 void settings_set_content_path(settings* usersettings, const char* path)
 {
 	filepath_set(&usersettings->contentpath, path);
+}
+
+void settings_set_meta_path(settings* usersettings, const char* path)
+{
+	filepath_set(&usersettings->metapath, path);
 }
 
 void settings_set_exefs_dir_path(settings* usersettings, const char* path)
@@ -246,6 +286,11 @@ void settings_set_exefs_dir_path(settings* usersettings, const char* path)
 void settings_set_romfs_dir_path(settings* usersettings, const char* path)
 {
 	filepath_set(&usersettings->romfsdirpath, path);
+}
+
+void settings_set_plainrgn_path(settings* usersettings, const char* path)
+{
+	filepath_set(&usersettings->plainrgnpath, path);
 }
 
 void settings_set_mediaunit_size(settings* usersettings, unsigned int size)

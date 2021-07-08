@@ -41,9 +41,9 @@ typedef struct
 typedef struct
 {
 	FILE* file;
-	u32 offset;
+	u64 offset;
 	u32 size;
-	u8 titlekey[16];
+	key128 titlekey;
 	eticket tik;
 	ctr_aes_context aes;
 	settings* usersettings;
@@ -51,13 +51,13 @@ typedef struct
 
 void tik_init(tik_context* ctx);
 void tik_set_file(tik_context* ctx, FILE* file);
-void tik_set_offset(tik_context* ctx, u32 offset);
+void tik_set_offset(tik_context* ctx, u64 offset);
 void tik_set_size(tik_context* ctx, u32 size);
 void tik_set_usersettings(tik_context* ctx, settings* usersettings);
-void tik_get_decrypted_titlekey(tik_context* ctx, u8 decryptedkey[0x10]);
+const unsigned char* tik_get_titlekey(tik_context* ctx);
 void tik_get_titleid(tik_context* ctx, u8 titleid[8]);
 void tik_get_iv(tik_context* ctx, u8 iv[0x10]);
-void tik_decrypt_titlekey(tik_context* ctx, u8 decryptedkey[0x10]);
+int tik_decrypt_titlekey(tik_context* ctx, u8 decryptedkey[0x10]);
 void tik_print(tik_context* ctx);
 void tik_process(tik_context* ctx, u32 actions);
 

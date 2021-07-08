@@ -1,4 +1,12 @@
 #pragma once
+#include "desc/desc.h"
+
+typedef enum
+{
+	AES_128_KEY_SIZE = 16,
+	MAX_CMN_KEY = 0x05,
+	MAX_NCCH_KEYX = MAX_U8
+} keydata_limits;
 
 typedef enum
 {
@@ -21,27 +29,23 @@ typedef enum
 	pki_CUSTOM,
 } pki_keyset;
 
-typedef enum
-{
-	desc_preset_NONE,
-	desc_preset_APP,
-	desc_preset_EC_APP,
-	desc_preset_DLP,
-	desc_preset_DEMO,
-	desc_preset_FIRM,
-} fixed_accessdesc_type;
-
 // Structs
+typedef struct
+{
+	u8 *pub;
+	u8 *pvt;
+} rsa2048_key;
 
 typedef struct
 {
 	pki_keyset keyset;
 	bool keysetLoaded;
 	bool dumpkeys;
+	bool ignore_sign;
 
 	struct
 	{
-		fixed_accessdesc_type presetType;
+		u32 presetType;
 		u32 targetFirmware;
 	} accessDescSign;
 
@@ -54,32 +58,24 @@ typedef struct
 		// NCCH Keys
 		u8 *normalKey;
 		u8 *systemFixedKey;
-
-		u8 *ncchKeyX0;
-		u8 *ncchKeyX1;
-		u8 *unFixedKey0;
-		u8 *unFixedKey1;
+		u8 **ncchKeyX;
+		
+		u8 *ncchKey0;
+		u8 *ncchKey1;
 	} aes;
 	
 	struct
 	{
-		bool isFalseSign;
 		// CIA RSA
-		u8 *cpPvt; //cpPvt
-		u8 *cpPub;
-		u8 *xsPvt;
-		u8 *xsPub;
+		rsa2048_key cp;
+		rsa2048_key xs;
 		
 		// CCI/CFA
-		u8 *cciCfaPvt;
-		u8 *cciCfaPub;
-		
+		rsa2048_key cciCfa;
+
 		// CXI
-		bool requiresPresignedDesc;
-		u8 *acexPvt;
-		u8 *acexPub;
-		u8 *cxiHdrPub;
-		u8 *cxiHdrPvt;
+		rsa2048_key acex;
+		rsa2048_key cxi;
 	} rsa;
 	
 	struct
@@ -96,10 +92,12 @@ void InitKeys(keys_struct *keys);
 int SetKeys(keys_struct *keys);
 void FreeKeys(keys_struct *keys);
 
-int SetCommonKey(keys_struct *keys, u8 *commonKey, u8 Index);
+int SetCommonKey(keys_struct *keys, const u8 *key, u8 Index);
 int SetCurrentCommonKey(keys_struct *keys, u8 Index);
-int SetNormalKey(keys_struct *keys, u8 *systemFixedKey);
-int SetSystemFixedKey(keys_struct *keys, u8 *systemFixedKey);
+int SetNormalKey(keys_struct *keys, const u8 *key);
+int SetSystemFixedKey(keys_struct *keys, const u8 *key);
 
-
-int SetNcchUnfixedKeys(keys_struct *keys, u8 *ncchSig);
+void Rsa2048Key_Alloc(rsa2048_key* key);
+void Rsa2048Key_Free(rsa2048_key* key);
+void Rsa2048Key_Set(rsa2048_key* key, const u8* pvt, const u8* pub);
+bool Rsa2048Key_CanSign(const rsa2048_key* key);

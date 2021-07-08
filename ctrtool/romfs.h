@@ -4,7 +4,7 @@
 #include "types.h"
 #include "info.h"
 #include "ctr.h"
-#include "filepath.h"
+#include "oschar.h"
 #include "settings.h"
 #include "ivfc.h"
 
@@ -55,9 +55,12 @@ typedef struct
 typedef struct
 {
 	FILE* file;
+	oschar_t* extractdir;
 	settings* usersettings;
-	u32 offset;
-	u32 size;
+	u8 counter[16];
+	u8 key[16];
+	u64 offset;
+	u64 size;
 	romfs_header header;
 	romfs_infoheader infoheader;
 	u8* dirblock;
@@ -69,21 +72,27 @@ typedef struct
 	romfs_direntry direntry;
 	romfs_fileentry fileentry;
 	ivfc_context ivfc;
+	ctr_aes_context aes;
+	int encrypted;
 } romfs_context;
 
 void romfs_init(romfs_context* ctx);
 void romfs_set_file(romfs_context* ctx, FILE* file);
-void romfs_set_offset(romfs_context* ctx, u32 offset);
-void romfs_set_size(romfs_context* ctx, u32 size);
+void romfs_set_offset(romfs_context* ctx, u64 offset);
+void romfs_set_size(romfs_context* ctx, u64 size);
 void romfs_set_usersettings(romfs_context* ctx, settings* usersettings);
-void romfs_test(romfs_context* ctx);
+void romfs_set_encrypted(romfs_context* ctx, u32 encrypted);
+void romfs_set_key(romfs_context* ctx, u8 key[16]);
+void romfs_set_counter(romfs_context* ctx, u8 counter[16]);
+void romfs_fseek(romfs_context* ctx, u64 offset);
+size_t romfs_fread(romfs_context* ctx, void* buffer, size_t size, size_t count);
 int  romfs_dirblock_read(romfs_context* ctx, u32 diroffset, u32 dirsize, void* buffer);
 int  romfs_dirblock_readentry(romfs_context* ctx, u32 diroffset, romfs_direntry* entry);
 int  romfs_fileblock_read(romfs_context* ctx, u32 fileoffset, u32 filesize, void* buffer);
 int  romfs_fileblock_readentry(romfs_context* ctx, u32 fileoffset, romfs_fileentry* entry);
-void romfs_visit_dir(romfs_context* ctx, u32 diroffset, u32 depth, u32 actions, filepath* rootpath);
-void romfs_visit_file(romfs_context* ctx, u32 fileoffset, u32 depth, u32 actions, filepath* rootpath);
-void romfs_extract_datafile(romfs_context* ctx, u64 offset, u64 size, filepath* path);
+void romfs_visit_dir(romfs_context* ctx, u32 diroffset, u32 depth, u32 actions, const oschar_t* rootpath);
+void romfs_visit_file(romfs_context* ctx, u32 fileoffset, u32 depth, u32 actions, const oschar_t* rootpath);
+void romfs_extract_datafile(romfs_context* ctx, u64 offset, u64 size, const oschar_t* path);
 void romfs_process(romfs_context* ctx, u32 actions);
 void romfs_print(romfs_context* ctx);
 

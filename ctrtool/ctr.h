@@ -26,6 +26,7 @@ typedef enum
 	FILETYPE_LZSS,
 	FILETYPE_FIRM,
 	FILETYPE_CWAV,
+	FILETYPE_EXEFS,
 	FILETYPE_ROMFS
 } ctr_filetypes;
 
@@ -55,15 +56,17 @@ void		ctr_set_iv( ctr_aes_context* ctx,
 						 u8 iv[16] );
 
 void		ctr_add_counter( ctr_aes_context* ctx,
-						     u32 carry );
+						     u32 block_num );
 
 void		ctr_set_counter( ctr_aes_context* ctx, 
 						 u8 ctr[16] );
 
+void		ctr_init_key(ctr_aes_context* ctx,
+						 u8 key[16]);
+
 
 void		ctr_init_counter( ctr_aes_context* ctx, 
-						  u8 key[16], 
-						  u8 ctr[16] );
+						 u8 ctr[16] );
 
 
 void		ctr_crypt_counter_block( ctr_aes_context* ctx, 

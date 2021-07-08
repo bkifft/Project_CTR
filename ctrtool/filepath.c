@@ -47,7 +47,7 @@ void filepath_append_utf16(filepath* fpath, const u8* name)
 		if (code > 0x7F)
 			code = '#';
 		
-		fpath->pathname[size++] = code;
+		fpath->pathname[size++] = (char) code;
 	}
 
 	fpath->pathname[size] = 0;

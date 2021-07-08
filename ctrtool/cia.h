@@ -33,8 +33,8 @@ typedef struct
 typedef struct
 {
 	FILE* file;
-	u32 offset;
-	u32 size;
+	u64 offset;
+	u64 size;
 	u8 titlekey[16];
 	u8 iv[16];
 	ctr_ciaheader header;
@@ -48,25 +48,25 @@ typedef struct
 	u32 sizecert;
 	u32 sizetik;
 	u32 sizetmd;
-	u32 sizecontent;
+	u64 sizecontent;
 	u32 sizemeta;
 	
-	u32 offsetcerts;
-	u32 offsettik;
-	u32 offsettmd;
-	u32 offsetcontent;
-	u32 offsetmeta;
+	u64 offsetcerts;
+	u64 offsettik;
+	u64 offsettmd;
+	u64 offsetcontent;
+	u64 offsetmeta;
 } cia_context;
 
 void cia_init(cia_context* ctx);
 void cia_set_file(cia_context* ctx, FILE* file);
-void cia_set_offset(cia_context* ctx, u32 offset);
-void cia_set_size(cia_context* ctx, u32 size);
+void cia_set_offset(cia_context* ctx, u64 offset);
+void cia_set_size(cia_context* ctx, u64 size);
 void cia_set_usersettings(cia_context* ctx, settings* usersettings);
 void cia_print(cia_context* ctx);
 void cia_save(cia_context* ctx, u32 type, u32 flags);
 void cia_process(cia_context* ctx, u32 actions);
-void cia_save_blob(cia_context *ctx, char *out_path, u32 offset, u32 size, int do_cbc);
+void cia_save_blob(cia_context *ctx, char *out_path, u64 offset, u64 size, int do_cbc);
 void cia_verify_contents(cia_context *ctx, u32 actions);
 
 #endif // _CIA_H_

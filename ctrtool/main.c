@@ -31,16 +31,17 @@ typedef struct
 	int actions;
 	u32 filetype;
 	FILE* infile;
-	u32 infilesize;
+	u64 infilesize;
 	settings usersettings;
 } toolcontext;
 
 static void usage(const char *argv0)
 {
 	fprintf(stderr,
-		   "Usage: %s [options...] <file>\n"
-		   "CTRTOOL (c) neimod, 3DSGuy.\n"
+		   "CTRTOOL v0.7 (c) neimod, 3DSGuy.\n"
+		   "Built: %s %s\n"
            "\n"
+		   "Usage: %s [options...] <file>\n"
            "Options:\n"
            "  -i, --info         Show file info.\n"
 		   "                          This is the default action.\n"
@@ -51,22 +52,30 @@ static void usage(const char *argv0)
 		   "  -k, --keyset=file  Specify keyset file.\n"
 		   "  -v, --verbose      Give verbose output.\n"
 		   "  -y, --verify       Verify hashes and signatures.\n"
+		   "  -d, --dev          Decrypt with development keys instead of retail.\n"
 		   "  --unitsize=size    Set media unit size (default 0x200).\n"
-		   "  --commonkey=key    Set common key.\n"
-		   "  --ncchkey=key      Set ncch key.\n"
-		   "  --ncchsyskey=key   Set ncch fixed system key.\n"
+//		   "  --commonkey=key    Set common key.\n"
+		   "  --titlekey=key     Set tik title key.\n"
+//		   "  --ncchkey=key      Set ncch key.\n"
+//		   "  --ncchsyskey=key   Set ncch fixed system key.\n"
+		   "  --seeddb=file      Set seeddb for ncch seed crypto.\n"
+		   "  --seed=key         Set specific seed for ncch seed crypto.\n"
 		   "  --showkeys         Show the keys being used.\n"
+		   "  --showsyscalls     Show system call names instead of numbers.\n"
 		   "  -t, --intype=type	 Specify input file type [ncsd, ncch, exheader, cia, tmd, lzss,\n"
-		   "                        firm, cwav, romfs]\n"
+		   "                        firm, cwav, exefs, romfs]\n"
 		   "LZSS options:\n"
 		   "  --lzssout=file	 Specify lzss output file\n"
 		   "CXI/CCI options:\n"
-		   "  -n, --ncch=offs    Specify offset for NCCH header.\n"
+		   "  -n, --ncch=index   Specify NCCH partition index.\n"
+		   "  --exheader=file    Specify Extended Header file path.\n"
+		   "  --logo=file        Specify Logo file path.\n"
+		   "  --plainrgn=file    Specify Plain region file path\n"
 		   "  --exefs=file       Specify ExeFS file path.\n"
 		   "  --exefsdir=dir     Specify ExeFS directory path.\n"
 		   "  --romfs=file       Specify RomFS file path.\n"
-		   "  --exheader=file    Specify Extended Header file path.\n"
-		   "  --logo=file        Specify Logo file path.\n"
+		   "  --romfsdir=dir     Specify RomFS directory path.\n"
+		   "  --listromfs        List files in RomFS.\n" 
 		   "CIA options:\n"
 		   "  --certs=file       Specify Certificate chain file path.\n"
 		   "  --tik=file         Specify Ticket file path.\n"
@@ -78,11 +87,11 @@ static void usage(const char *argv0)
 		   "CWAV options:\n"
 		   "  --wav=file         Specify wav output file.\n"
 		   "  --wavloops=count   Specify wav loop count, default 0.\n"
-		   "ROMFS options:\n"
-		   "  --romfsdir=dir     Specify RomFS directory path.\n"
-		   "  --listromfs        List files in RomFS.\n"
+		   "EXEFS options:\n"
+		   "  --decompresscode   Decompress .code section\n"
+		   "                     (only needed when using raw EXEFS file)\n"
            "\n",
-		   argv0);
+		   __TIME__, __DATE__, argv0);
    exit(1);
 }
 
@@ -93,18 +102,17 @@ int main(int argc, char* argv[])
 	u8 magic[4];
 	char infname[512];
 	int c;
-	u32 ncchoffset = ~0;
+	u32 ncchindex = 0;
 	char keysetfname[512] = "keys.xml";
 	keyset tmpkeys;
 	unsigned int checkkeysetfile = 0;
-	
+
 	memset(&ctx, 0, sizeof(toolcontext));
 	ctx.actions = InfoFlag | ExtractFlag;
 	ctx.filetype = FILETYPE_UNKNOWN;
 
 	settings_init(&ctx.usersettings);
-	keyset_init(&ctx.usersettings.keys);
-	keyset_init(&tmpkeys);
+	keyset_init(&tmpkeys, 0);
 
 
 	while (1) 
@@ -131,8 +139,8 @@ int main(int argc, char* argv[])
 			{"raw", 0, NULL, 'r'},
 			{"unitsize", 1, NULL, 9},
 			{"showkeys", 0, NULL, 10},
-			{"commonkey", 1, NULL, 11},
-			{"ncchkey", 1, NULL, 12},
+			//{"commonkeyx", 1, NULL, 11},
+			//{"ncchkeyxold", 1, NULL, 12},
 			{"intype", 1, NULL, 't'},
 			{"lzssout", 1, NULL, 13},
 			{"firmdir", 1, NULL, 14},
@@ -142,10 +150,19 @@ int main(int argc, char* argv[])
 			{"listromfs", 0, NULL, 18},
 			{"wavloops", 1, NULL, 19},
 			{"logo", 1, NULL, 20},
+			{"decompresscode", 0, NULL, 21},
+			{"titlekey", 1, NULL, 22},
+			{"plainrgn", 1, NULL, 23},
+			{"showsyscalls", 0, NULL, 24},
+			//{"ncchkeyxseven", 1, NULL, 25},
+			//{"ncchkeyxninethree", 1, NULL, 26},
+			//{"ncchkeyxninesix", 1, NULL, 27},
+			{"seeddb", 1, NULL, 28},
+			{"seed", 1, NULL, 29 },
 			{NULL},
 		};
 
-		c = getopt_long(argc, argv, "ryxivpk:n:t:", long_options, &option_index);
+		c = getopt_long(argc, argv, "dryxivpk:n:t:", long_options, &option_index);
 		if (c == -1)
 			break;
 
@@ -163,6 +180,10 @@ int main(int argc, char* argv[])
 				ctx.actions |= VerifyFlag;
 			break;
 
+			case 'd':
+				ctx.actions |= DevFlag;
+			break;
+
 			case 'p':
 				ctx.actions |= PlainFlag;
 			break;
@@ -176,7 +197,7 @@ int main(int argc, char* argv[])
 			break;
 
 			case 'n':
-				ncchoffset = strtoul(optarg, 0, 0);
+				ncchindex = strtoul(optarg, 0, 0);
 			break;
 
 			case 'k':
@@ -201,6 +222,8 @@ int main(int argc, char* argv[])
 					ctx.filetype = FILETYPE_FIRM;
 				else if (!strcmp(optarg, "cwav"))
 					ctx.filetype = FILETYPE_CWAV;
+				else if (!strcmp(optarg, "exefs"))
+					ctx.filetype = FILETYPE_EXEFS;
 				else if (!strcmp(optarg, "romfs"))
 					ctx.filetype = FILETYPE_ROMFS;
 			break;
@@ -212,20 +235,29 @@ int main(int argc, char* argv[])
 			case 4: settings_set_tik_path(&ctx.usersettings, optarg); break;
 			case 5: settings_set_tmd_path(&ctx.usersettings, optarg); break;
 			case 6: settings_set_content_path(&ctx.usersettings, optarg); break;
-			case 7: settings_set_content_path(&ctx.usersettings, optarg); break;
+			case 7: settings_set_meta_path(&ctx.usersettings, optarg); break;
 			case 8: settings_set_exefs_dir_path(&ctx.usersettings, optarg); break;
 			case 9: settings_set_mediaunit_size(&ctx.usersettings, strtoul(optarg, 0, 0)); break;
 			case 10: ctx.actions |= ShowKeysFlag; break;
-			case 11: keyset_parse_commonkey(&tmpkeys, optarg, strlen(optarg)); break;
-			case 12: keyset_parse_ncchkey(&tmpkeys, optarg, strlen(optarg)); break;
+			//case 11: keyset_parse_commonkeyX(&tmpkeys, optarg, strlen(optarg)); break;
+			//case 12: keyset_parse_ncchkeyX_old(&tmpkeys, optarg, strlen(optarg)); break;
 			case 13: settings_set_lzss_path(&ctx.usersettings, optarg); break;
 			case 14: settings_set_firm_dir_path(&ctx.usersettings, optarg); break;
-			case 15: keyset_parse_ncchfixedsystemkey(&tmpkeys, optarg, strlen(optarg)); break;
+			//case 15: keyset_parse_ncchfixedsystemkey(&tmpkeys, optarg, strlen(optarg)); break;
 			case 16: settings_set_wav_path(&ctx.usersettings, optarg); break;
 			case 17: settings_set_romfs_dir_path(&ctx.usersettings, optarg); break;
 			case 18: settings_set_list_romfs_files(&ctx.usersettings, 1); break;
 			case 19: settings_set_cwav_loopcount(&ctx.usersettings, strtoul(optarg, 0, 0)); break;
 			case 20: settings_set_logo_path(&ctx.usersettings, optarg); break;
+			case 21: ctx.actions |= DecompressCodeFlag; break;
+			case 22: keyset_parse_titlekey(&tmpkeys, optarg, strlen(optarg)); break;
+			case 23: settings_set_plainrgn_path(&ctx.usersettings, optarg); break;
+			case 24: ctx.actions |= ShowSyscallsFlag; break;
+			//case 25: keyset_parse_ncchkeyX_seven(&tmpkeys, optarg, strlen(optarg)); break;
+			//case 26: keyset_parse_ncchkeyX_ninethree(&tmpkeys, optarg, strlen(optarg)); break;
+			//case 27: keyset_parse_ncchkeyX_ninesix(&tmpkeys, optarg, strlen(optarg)); break;
+			case 28: keyset_parse_seeddb(&tmpkeys, optarg); break;
+			case 29: keyset_parse_seed_fallback(&tmpkeys, optarg, strlen(optarg)); break;
 
 			default:
 				usage(argv[0]);
@@ -243,11 +275,13 @@ int main(int argc, char* argv[])
 		usage(argv[0]);
 	}
 
+	keyset_init(&ctx.usersettings.keys, ctx.actions);
 	keyset_load(&ctx.usersettings.keys, keysetfname, (ctx.actions & VerboseFlag) | checkkeysetfile);
 	keyset_merge(&ctx.usersettings.keys, &tmpkeys);
 	if (ctx.actions & ShowKeysFlag)
 		keyset_dump(&ctx.usersettings.keys);
 
+	ctx.infilesize = _fsize(infname);
 	ctx.infile = fopen(infname, "rb");
 
 	if (ctx.infile == 0) 
@@ -256,16 +290,9 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	fseek(ctx.infile, 0, SEEK_END);
-	ctx.infilesize = ftell(ctx.infile);
-	fseek(ctx.infile, 0, SEEK_SET);
-
-
-
-
 	if (ctx.filetype == FILETYPE_UNKNOWN)
 	{
-		fseek(ctx.infile, 0x100, SEEK_SET);
+		fseeko64(ctx.infile, 0x100, SEEK_SET);
 		fread(&magic, 1, 4, ctx.infile);
 
 		switch(getle32(magic))
@@ -285,7 +312,7 @@ int main(int argc, char* argv[])
 
 	if (ctx.filetype == FILETYPE_UNKNOWN)
 	{
-		fseek(ctx.infile, 0, SEEK_SET);
+		fseeko64(ctx.infile, 0, SEEK_SET);
 		fread(magic, 1, 4, ctx.infile);
 		
 		switch(getle32(magic))
@@ -324,6 +351,7 @@ int main(int argc, char* argv[])
 			ncsd_init(&ncsdctx);
 			ncsd_set_file(&ncsdctx, ctx.infile);
 			ncsd_set_size(&ncsdctx, ctx.infilesize);
+			ncsd_set_ncch_index(&ncsdctx, ncchindex);
 			ncsd_set_usersettings(&ncsdctx, &ctx.usersettings);
 			ncsd_process(&ncsdctx, ctx.actions);
 			
@@ -336,7 +364,7 @@ int main(int argc, char* argv[])
 
 			firm_init(&firmctx);
 			firm_set_file(&firmctx, ctx.infile);
-			firm_set_size(&firmctx, ctx.infilesize);
+			firm_set_size(&firmctx, (u32) ctx.infilesize);
 			firm_set_usersettings(&firmctx, &ctx.usersettings);
 			firm_process(&firmctx, ctx.actions);
 			
@@ -391,7 +419,7 @@ int main(int argc, char* argv[])
 
 			tmd_init(&tmdctx);
 			tmd_set_file(&tmdctx, ctx.infile);
-			tmd_set_size(&tmdctx, ctx.infilesize);
+			tmd_set_size(&tmdctx, (u32) ctx.infilesize);
 			tmd_set_usersettings(&tmdctx, &ctx.usersettings);
 			tmd_process(&tmdctx, ctx.actions);
 	
@@ -404,7 +432,7 @@ int main(int argc, char* argv[])
 
 			lzss_init(&lzssctx);
 			lzss_set_file(&lzssctx, ctx.infile);
-			lzss_set_size(&lzssctx, ctx.infilesize);
+			lzss_set_size(&lzssctx, (u32) ctx.infilesize);
 			lzss_set_usersettings(&lzssctx, &ctx.usersettings);
 			lzss_process(&lzssctx, ctx.actions);
 	
@@ -424,6 +452,19 @@ int main(int argc, char* argv[])
 	
 			break;
 		}
+		
+		case FILETYPE_EXEFS:
+		{
+			exefs_context exefsctx;
+
+			exefs_init(&exefsctx);
+			exefs_set_file(&exefsctx, ctx.infile);
+			exefs_set_size(&exefsctx, ctx.infilesize);
+			exefs_set_usersettings(&exefsctx, &ctx.usersettings);
+			exefs_process(&exefsctx, ctx.actions);
+	
+			break;
+		}
 
 		case FILETYPE_ROMFS:
 		{
@@ -433,6 +474,7 @@ int main(int argc, char* argv[])
 			romfs_set_file(&romfsctx, ctx.infile);
 			romfs_set_size(&romfsctx, ctx.infilesize);
 			romfs_set_usersettings(&romfsctx, &ctx.usersettings);
+			romfs_set_encrypted(&romfsctx, 0);
 			romfs_process(&romfsctx, ctx.actions);
 	
 			break;

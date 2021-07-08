@@ -147,17 +147,17 @@ int base64_decode( unsigned char *dst, size_t *dlen,
             continue;
 
         if( src[i] == '=' && ++j > 2 ){
-			printf("err 0 char[%d] = '%c' (0x%x)\n",i,src[i],src[i]);
+			printf("err 0 char[%lu] = '%c' (0x%x)\n",i,src[i],src[i]);
             return( POLARSSL_ERR_BASE64_INVALID_CHARACTER );
 		}
 
         if( src[i] > 127 || base64_dec_map[src[i]] == 127 ){
-			printf("err 1 char[%d] = '%c' (0x%x)\n",i,src[i],src[i]);
+			printf("err 1 char[%lu] = '%c' (0x%x)\n",i,src[i],src[i]);
             return( POLARSSL_ERR_BASE64_INVALID_CHARACTER );
 		}
 
         if( base64_dec_map[src[i]] < 64 && j != 0 ){
-			printf("err 2 char[%d] = '%c' (0x%x)\n",i,src[i],src[i]);
+			printf("err 2 char[%lu] = '%c' (0x%x)\n",i,src[i],src[i]);
             return( POLARSSL_ERR_BASE64_INVALID_CHARACTER );
 		}
 

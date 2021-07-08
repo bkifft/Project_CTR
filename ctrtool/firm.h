@@ -13,7 +13,7 @@ typedef struct
 	u8 offset[4];
 	u8 address[4];
 	u8 size[4];
-	u8 type[4];
+	u8 copyMethod[4];
 	u8 hash[32];
 } firm_sectionheader;
 
@@ -23,10 +23,10 @@ typedef struct
 typedef struct
 {
 	u8 magic[4];
-	u8 reserved1[4];
+	u8 priority[4];
 	u8 entrypointarm11[4];
 	u8 entrypointarm9[4];
-	u8 reserved2[0x30];
+	u8 reserved1[0x30];
 	firm_sectionheader section[4];
 	u8 signature[0x100];
 } firm_header;
@@ -35,7 +35,7 @@ typedef struct
 {
 	FILE* file;
 	settings* usersettings;
-	u32 offset;
+	u64 offset;
 	u32 size;
 	firm_header header;
 	ctr_sha256_context sha;
@@ -45,7 +45,7 @@ typedef struct
 
 void firm_init(firm_context* ctx);
 void firm_set_file(firm_context* ctx, FILE* file);
-void firm_set_offset(firm_context* ctx, u32 offset);
+void firm_set_offset(firm_context* ctx, u64 offset);
 void firm_set_size(firm_context* ctx, u32 size);
 void firm_set_usersettings(firm_context* ctx, settings* usersettings);
 void firm_process(firm_context* ctx, u32 actions);

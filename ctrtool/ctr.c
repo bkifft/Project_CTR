@@ -4,6 +4,7 @@
 #include <time.h>
 
 #include "ctr.h"
+#include "utils.h"
 
 
 void ctr_set_iv( ctr_aes_context* ctx,
@@ -13,34 +14,32 @@ void ctr_set_iv( ctr_aes_context* ctx,
 }
 
 void ctr_add_counter( ctr_aes_context* ctx,
-				      u32 carry )
+				      u32 block_num )
 {
-	u32 counter[4];
-	u32 sum;
-	int i;
+	u32 ctr[4];
+	ctr[3] = getbe32(&ctx->ctr[0]);
+	ctr[2] = getbe32(&ctx->ctr[4]);
+	ctr[1] = getbe32(&ctx->ctr[8]);
+	ctr[0] = getbe32(&ctx->ctr[12]);
 
-	for(i=0; i<4; i++)
-		counter[i] = (ctx->ctr[i*4+0]<<24) | (ctx->ctr[i*4+1]<<16) | (ctx->ctr[i*4+2]<<8) | (ctx->ctr[i*4+3]<<0);
+	for (u32 i = 0; i < 4; i++) {
+		u64 total = ctr[i] + block_num;
+		// if there wasn't a wrap around, add the two together and exit
+		if (total <= 0xffffffff) {
+			ctr[i] += block_num;
+			break;
+		}
 
-	for(i=3; i>=0; i--)
-	{
-		sum = counter[i] + carry;
-
-		if (sum < counter[i])
-			carry = 1;
-		else
-			carry = 0;
-
-		counter[i] = sum;
+		// add the difference
+		ctr[i] = (u32)(total - 0x100000000);
+		// carry to next word
+		block_num = (u32)(total >> 32);
 	}
-
-	for(i=0; i<4; i++)
-	{
-		ctx->ctr[i*4+0] = counter[i]>>24;
-		ctx->ctr[i*4+1] = counter[i]>>16;
-		ctx->ctr[i*4+2] = counter[i]>>8;
-		ctx->ctr[i*4+3] = counter[i]>>0;
-	}
+	
+	putbe32(ctx->ctr + 0x00, ctr[3]);
+	putbe32(ctx->ctr + 0x04, ctr[2]);
+	putbe32(ctx->ctr + 0x08, ctr[1]);
+	putbe32(ctx->ctr + 0x0C, ctr[0]);
 }
 				  
 void ctr_set_counter( ctr_aes_context* ctx,
@@ -50,11 +49,15 @@ void ctr_set_counter( ctr_aes_context* ctx,
 }
 
 
-void ctr_init_counter( ctr_aes_context* ctx,
-				       u8 key[16],
-				       u8 ctr[16] )
+void ctr_init_key(ctr_aes_context* ctx,
+				       u8 key[16])
 {
 	aes_setkey_enc(&ctx->aes, key, 128);
+}
+
+void ctr_init_counter( ctr_aes_context* ctx,
+				       u8 ctr[16] )
+{
 	ctr_set_counter(ctx, ctr);
 }
 
@@ -253,7 +256,7 @@ int ctr_rsa_verify_hash(const u8 signature[0x100], const u8 hash[0x20], rsakey20
 {
 	ctr_rsa_context ctx;
 	u32 result;
-	u8 output[0x100];
+//	u8 output[0x100];
 
 	if (key->keytype == RSAKEY_INVALID)
 		return Fail;

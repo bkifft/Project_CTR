@@ -1,8 +1,7 @@
 #include "lib.h"
-#include "dir.h"
-#include "ncch.h"
+#include "ncch_build.h"
 #include "romfs.h"
-#include "romfs_binary.h"
+#include "romfs_gen.h"
 #include "romfs_import.h"
 
 void FreeRomFsCtx(romfs_buildctx *ctx);
@@ -10,6 +9,7 @@ void FreeRomFsCtx(romfs_buildctx *ctx);
 // RomFs Build Functions
 int SetupRomFs(ncch_settings *ncchset, romfs_buildctx *ctx)
 {
+	ctx->verbose = ncchset->options.verbose;
 	ctx->output = NULL;
 	ctx->romfsSize = 0;
 
@@ -45,11 +45,8 @@ int BuildRomFs(romfs_buildctx *ctx)
 
 void FreeRomFsCtx(romfs_buildctx *ctx)
 {
-	if(ctx->romfsBinary)
-		fclose(ctx->romfsBinary);
 	if(ctx->fs){
-		fs_FreeFiles(ctx->fs);
-		fs_FreeDir(ctx->fs);	
+		FreeDir(ctx->fs);	
 		free(ctx->fs);
 	}
 }

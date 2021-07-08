@@ -27,6 +27,10 @@ u32 getbe32(const u8* p);
 u32 getbe16(const u8* p);
 void putle16(u8* p, u16 n);
 void putle32(u8* p, u32 n);
+void putle64(u8* p, u64 n);
+void putbe16(u8* p, u16 n);
+void putbe32(u8* p, u32 n);
+void putbe64(u8* p, u64 n);
 
 void readkeyfile(u8* key, const char* keyfname);
 void memdump(FILE* fout, const char* prefix, const u8* data, u32 size);
@@ -34,6 +38,19 @@ void hexdump(void *ptr, int buflen);
 int key_load(char *name, u8 *out_buf);
 
 int makedir(const char* dir);
+
+u64 _fsize(const char *filename);
+
+#ifdef _MSC_VER
+inline int fseeko64(FILE *__stream, long long __off, int __whence)
+{
+	return _fseeki64(__stream, __off, __whence);
+}
+#elif __APPLE__ || __CYGWIN__
+    #define fseeko64 fseek // OS X file I/O is 64bit
+#elif __linux__
+    extern int fseeko64 (FILE *__stream, __off64_t __off, int __whence);
+#endif
 
 #ifdef __cplusplus
 }

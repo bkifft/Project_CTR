@@ -2,16 +2,26 @@
 
 typedef enum
 {
-	COMMON_HEADER_KEY_NOT_FOUND = -10,
-	EXHDR_BAD_YAML_OPT = -11,
-	CANNOT_SIGN_ACCESSDESC = -12
-} exheader_errors;
-
-typedef enum
-{
 	infoflag_COMPRESS_EXEFS_0 = 1,
 	infoflag_SD_APPLICATION = 2,
 } system_info_flags;
+
+typedef enum
+{
+	sysmode_64MB, // prod
+	sysmode_UNK, // null
+	sysmode_96MB, // dev1
+	sysmode_80MB, // dev2
+	sysmode_72MB, // dev3
+	sysmode_32MB, // dev4
+} system_mode;
+
+typedef enum
+{
+	sysmode_ext_LEGACY,
+	sysmode_ext_124MB, // snake Prod
+	sysmode_ext_178MB, // snake Dev1
+} system_mode_ext;
 
 typedef enum
 {
@@ -37,6 +47,12 @@ typedef enum
 
 typedef enum
 {
+	cpuspeed_268MHz,
+	cpuspeed_804MHz
+} cpu_speed;
+
+typedef enum
+{
 	othcap_PERMIT_DEBUG = (1 << 0),
 	othcap_FORCE_DEBUG = (1 << 1),
 	othcap_CAN_USE_NON_ALPHABET_AND_NUMBER = (1 << 2),
@@ -46,6 +62,7 @@ typedef enum
 	othcap_CAN_SHARE_DEVICE_MEMORY = (1 << 6),
 	othcap_RUNNABLE_ON_SLEEP = (1 << 7),
 	othcap_SPECIAL_MEMORY_ARRANGE = (1 << 12),
+	othcap_CAN_ACCESS_CORE2 = (1 << 13),
 } other_capabilities_flags;
 
 typedef enum
@@ -71,6 +88,7 @@ typedef enum
 	fsaccess_SHOP = (1 << 18), // 0x00040000 probably used by eshop
 	fsaccess_SHELL = (1 << 19), // 0x00080000 reference to "Nintendo [User Interface] Shell" (NS)?
 	fsaccess_CATEGORY_HOME_MENU = (1 << 20), // 0x00100000 used by homemenu
+	fsaccess_SEEDDB = (1 << 21), // 0x00200000 seeddb access
 } file_system_access;
 
 typedef enum
@@ -104,13 +122,20 @@ typedef struct
 {
 	u8 name[8];
 	u8 padding0[5];
-	u8 flag;
+	union {
+		u8 flag;
+		struct {
+			u8 compressExeFs0 : 1;
+			u8 useOnSd : 1;
+		};
+	};
+	
 	u8 remasterVersion[2]; // le u16
-	exhdr_CodeSegmentInfo textSectionInfo;
+	exhdr_CodeSegmentInfo text;
 	u8 stackSize[4]; // le u32
-	exhdr_CodeSegmentInfo readOnlySectionInfo;
+	exhdr_CodeSegmentInfo rodata;
 	u8 padding1[4];
-	exhdr_CodeSegmentInfo dataSectionInfo;
+	exhdr_CodeSegmentInfo data;
 	u8 bssSize[4]; // le u32
 } exhdr_CodeSetInfo;
 
@@ -124,7 +149,7 @@ typedef struct
 typedef struct
 {
 	u8 extSavedataId[8];
-	u8 systemSavedataId[8];
+	u8 systemSavedataId[2][4];
 	u8 storageAccessableUniqueIds[8];
 	u8 accessInfo[7];
 	u8 otherAttributes;
@@ -134,20 +159,34 @@ typedef struct
 {
 	u8 programId[8];
 	u8 coreVersion[4];
-	u8 padding0[2];
-	u8 flag;
-	u8 priority;
+	union {
+		u8 flag[4];
+		struct {
+			u8 enableL2Cache : 1;
+			u8 cpuSpeed : 1;
+			u8: 6;
+
+			u8 systemModeExt : 4;
+			u8: 4;
+
+			u8 idealProcessor : 2;
+			u8 affinityMask : 2;
+			u8 systemMode : 4;
+
+			s8 threadPriority;
+		};
+	};
 	u8 resourceLimitDescriptor[16][2];
 	exhdr_StorageInfo storageInfo;
-	u8 serviceAccessControl[32][8]; // Those char[8] server names
-	u8 padding1[0x1f];
+	u8 serviceAccessControl[34][8]; // Those char[8] server names
+	u8 padding1[0xf];
 	u8 resourceLimitCategory;
 } exhdr_ARM11SystemLocalCapabilities;
 
 typedef struct
 {
 	u16 num;
-	u32 *Data;
+	u32 *data;
 } ARM11KernelCapabilityDescriptor;
 
 typedef enum
@@ -186,47 +225,24 @@ typedef struct
 	exhdr_ARM11KernelCapabilities arm11KernelCapabilities;
 	exhdr_ARM9AccessControlInfo arm9AccessControlInfo;
 	// }
-	struct {
-		u8 signature[0x100];
-		u8 ncchRsaPubKey[0x100];
-		exhdr_ARM11SystemLocalCapabilities arm11SystemLocalCapabilities;
-		exhdr_ARM11KernelCapabilities arm11KernelCapabilities;
-		exhdr_ARM9AccessControlInfo arm9AccessControlInfo;
-	} accessDescriptor;
 } extended_hdr;
 
-typedef struct
+typedef struct 
 {
-	keys_struct *keys;
-	rsf_settings *rsf;
-	bool useAccessDescPreset;
-
-	/* Output */
-	extended_hdr *exHdr; // is the exheader output buffer ptr(in ncchset) cast as exheader struct ptr;
-} exheader_settings;
-
+	u8 signature[0x100];
+	u8 ncchRsaPubKey[0x100];
+	exhdr_ARM11SystemLocalCapabilities arm11SystemLocalCapabilities;
+	exhdr_ARM11KernelCapabilities arm11KernelCapabilities;
+	exhdr_ARM9AccessControlInfo arm9AccessControlInfo;
+} access_descriptor;
 
 /* ExHeader Signature Functions */
-int SignAccessDesc(extended_hdr *ExHdr, keys_struct *keys);
-int CheckaccessDescSignature(extended_hdr *ExHdr, keys_struct *keys);
+int SignAccessDesc(access_descriptor *acexDesc, keys_struct *keys);
+int CheckAccessDescSignature(access_descriptor *acexDesc, keys_struct *keys);
 
-/* ExHeader Build Functions */
-int BuildExHeader(ncch_settings *ncchset);
-
-/* ExHeader Binary Print Functions */
-void exhdr_Print_ServiceAccessControl(extended_hdr *hdr);
-
-/* ExHeader Binary Read Functions */
-u8* GetAccessDescSig_frm_exhdr(extended_hdr *hdr);
-u8* GetNcchHdrPubKey_frm_exhdr(extended_hdr *hdr);
-u8* GetAccessDesc_frm_exhdr(extended_hdr *hdr);
-u16 GetRemasterVersion_frm_exhdr(extended_hdr *hdr);
-u64 GetSaveDataSize_frm_exhdr(extended_hdr *hdr);
-int GetDependencyList_frm_exhdr(u8 *Dest,extended_hdr *hdr);
-void GetCoreVersion_frm_exhdr(u8 *Dest, extended_hdr *hdr);
-
-/* ExHeader Settings Read from Yaml */
+/* ExHeader Settings Read from Rsf */
 int GetSaveDataSizeFromString(u64 *out, char *string, char *moduleName);
 int GetRemasterVersion_rsf(u16 *RemasterVersion, user_settings *usrset);
 
 void ErrorParamNotFound(char *string);
+void WarnParamNotFound(char *string);

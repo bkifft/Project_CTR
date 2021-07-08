@@ -1,14 +1,11 @@
-
 #include <stdio.h>
 #include <string.h>
-#include "utils.h"
-
+#include <sys/stat.h>
 #ifdef _WIN32
 #include <direct.h>
-#else
-#include <sys/stat.h>
-#include <sys/types.h>
 #endif
+#include "utils.h"
+
 
 
 u32 align(u32 offset, u32 alignment)
@@ -20,7 +17,7 @@ u32 align(u32 offset, u32 alignment)
 
 u64 align64(u64 offset, u32 alignment)
 {
-	u64 mask = ~(alignment-1);
+	u64 mask = ~(u64)(alignment-1);
 
 	return (offset + (alignment-1)) & mask;
 }
@@ -76,37 +73,70 @@ u32 getbe16(const u8* p)
 
 void putle16(u8* p, u16 n)
 {
-	p[0] = n;
-	p[1] = n>>8;
+	p[0] = (u8) n;
+	p[1] = (u8) (n>>8);
 }
 
 void putle32(u8* p, u32 n)
 {
-	p[0] = n;
-	p[1] = n>>8;
-	p[2] = n>>16;
-	p[3] = n>>24;
+	p[0] = (u8) n;
+	p[1] = (u8) (n>>8);
+	p[2] = (u8) (n>>16);
+	p[3] = (u8) (n>>24);
 }
 
+void putle64(u8* p, u64 n)
+{
+	p[0] = (u8) n;
+	p[1] = (u8) (n >> 8);
+	p[2] = (u8) (n >> 16);
+	p[3] = (u8) (n >> 24);
+	p[4] = (u8) (n >> 32);
+	p[5] = (u8) (n >> 40);
+	p[6] = (u8) (n >> 48);
+	p[7] = (u8) (n >> 56);
+}
+
+void putbe16(u8* p, u16 n)
+{
+	p[1] = (u8) n;
+	p[0] = (u8) (n >> 8);
+}
+
+void putbe32(u8* p, u32 n)
+{
+	p[3] = (u8) n;
+	p[2] = (u8) (n >> 8);
+	p[1] = (u8) (n >> 16);
+	p[0] = (u8) (n >> 24);
+}
+
+void putbe64(u8* p, u64 n)
+{
+	p[7] = (u8) n;
+	p[6] = (u8) (n >> 8);
+	p[5] = (u8) (n >> 16);
+	p[4] = (u8) (n >> 24);
+	p[3] = (u8) (n >> 32);
+	p[2] = (u8) (n >> 40);
+	p[1] = (u8) (n >> 48);
+	p[0] = (u8) (n >> 56);
+}
 
 void readkeyfile(u8* key, const char* keyfname)
 {
+	u64 keysize = _fsize(keyfname);
 	FILE* f = fopen(keyfname, "rb");
-	u32 keysize = 0;
-
+	
 	if (0 == f)
 	{
 		fprintf(stdout, "Error opening key file\n");
 		goto clean;
 	}
 
-	fseek(f, 0, SEEK_END);
-	keysize = ftell(f);
-	fseek(f, 0, SEEK_SET);
-
 	if (keysize != 16)
 	{
-		fprintf(stdout, "Error key size mismatch, got %d, expected %d\n", keysize, 16);
+		fprintf(stdout, "Error key size mismatch, got %"PRIu64", expected %d\n", keysize, 16);
 		goto clean;
 	}
 
@@ -188,5 +218,22 @@ int makedir(const char* dir)
 	return _mkdir(dir);
 #else
 	return mkdir(dir, 0777);
+#endif
+}
+
+u64 _fsize(const char *filename)
+{
+#ifdef _WIN32
+	struct _stat64 st;
+	if (_stat64(filename, &st) != 0)
+		return 0;
+	else
+		return st.st_size;
+#else
+	struct stat st;
+	if (stat(filename, &st) != 0)
+		return 0;
+	else
+		return st.st_size;
 #endif
 }
