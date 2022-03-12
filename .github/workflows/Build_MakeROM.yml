@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         dist: [ubuntu_x86_64, macos_x86_64, win_x86_64]
-        prog: [ctrtool, makerom]
+        prog: [makerom]
         include:
           - dist: win_x86_64
             os: windows-latest
