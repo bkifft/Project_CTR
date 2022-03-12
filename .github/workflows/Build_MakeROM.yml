@@ -1,4 +1,4 @@
-name: Compile Master Branch
+name: Compile MakeROM (on master branch)
 
 on:
   push:
