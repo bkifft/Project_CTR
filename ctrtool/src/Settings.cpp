@@ -309,7 +309,8 @@ public:
 		{
 			mParam = ctrtool::Settings::FILE_TYPE_NCCH;
 		}
-		else if (params[0] == "exheader")
+		else if (params[0] == "exheader" \
+		 || params[0] == "exhdr")
 		{
 			mParam = ctrtool::Settings::FILE_TYPE_EXHEADER;
 		}
@@ -399,7 +400,6 @@ void ctrtool::SettingsInitializer::parse_args(const std::vector<std::string>& ar
 	// save input file
 	infile.path = tc::io::Path(args.back());
 
-
 	// test new option parser
 	tc::cli::OptionParser opts;
 
@@ -415,6 +415,8 @@ void ctrtool::SettingsInitializer::parse_args(const std::vector<std::string>& ar
 
 
 	// get option flags
+	opts.registerOptionHandler(std::shared_ptr<FlagOptionHandler>(new FlagOptionHandler(opt.info, {"-i", "--info"})));
+	opts.registerOptionHandler(std::shared_ptr<FlagOptionHandler>(new FlagOptionHandler(opt.info, {"-x", "--extract"})));
 	opts.registerOptionHandler(std::shared_ptr<FlagOptionHandler>(new FlagOptionHandler(opt.plain, {"-p", "--plain"})));
 	opts.registerOptionHandler(std::shared_ptr<FlagOptionHandler>(new FlagOptionHandler(opt.raw, {"-r", "--raw"})));
 	opts.registerOptionHandler(std::shared_ptr<FlagOptionHandler>(new FlagOptionHandler(opt.verbose, {"-v", "--verbose"})));
@@ -608,73 +610,17 @@ void ctrtool::SettingsInitializer::usage_text()
 		//"  --ncchsyskey=key   Set ncch fixed system key.\n"
 		"  --seeddb=file      Set seeddb for ncch seed crypto.\n"
 		"  --seed=key         Set specific seed for ncch seed crypto.\n"
-		"  --showkeys         Show the keys being used.\n"
+		//"  --showkeys         Show the keys being used.\n"
 		"  --showsyscalls     Show system call names instead of numbers.\n"
-		"  -t, --intype=type  Specify input file type [ncsd, ncch, exheader, cia, tmd, lzss,\n"
-		"                        firm, cwav, exefs, romfs]\n"
-		"LZSS options:\n"
-		"  --lzssout=file	  Specify lzss output file\n"
-		"CXI/CCI options:\n"
-		"  -n, --ncch=index   Specify NCCH partition index.\n"
-		"  --exheader=file    Specify Extended Header file path.\n"
-		"  --logo=file        Specify Logo file path.\n"
-		"  --plainrgn=file    Specify Plain region file path\n"
-		"  --exefs=file       Specify ExeFS file path.\n"
-		"  --exefsdir=dir     Specify ExeFS directory path.\n"
-		"  --romfs=file       Specify RomFS file path.\n"
-		"  --romfsdir=dir     Specify RomFS directory path.\n"
-		"  --listromfs        List files in RomFS.\n" 
-		"CIA options:\n"
-		"  --certs=file       Specify Certificate chain file path.\n"
-		"  --tik=file         Specify Ticket file path.\n"
-		"  --tmd=file         Specify TMD file path.\n"
-		"  --contents=file    Specify Contents file path.\n"
-		"  --meta=file        Specify Meta file path.\n"
-		"FIRM options:\n"
-		"  --firmdir=dir      Specify Firm directory path.\n"
-		"  --firmtype=type    Specify Firm location type, this determines encryption/signing.\n"
-		"                       - nand: (default) FIRM images installed to internal NAND,\n"
-	    "                       - ngc: FIRM images loaded from NTR game card at boot,\n"
-		"                       - nor: FIRM images loaded from WiFi board NOR at boot,\n"
-		"                       - sdmc: FIRM images installed from SD card by FIRM installers (internal dev tool).\n"
-		"CWAV options:\n"
-		"  --wav=file         Specify wav output file.\n"
-		"  --wavloops=count   Specify wav loop count, default 0.\n"
-		"EXEFS options:\n"
-		"  --decompresscode   Decompress .code section\n"
-		"                     (only needed when using raw EXEFS file)\n");
-/*
-	std::cerr << 
-		"Options:\n"
-		"  -i, --info         Show file info.\n"
-		"                          This is the default action.\n"
-		"  -x, --extract      Extract data from file.\n"
-		"                          This is also the default action.\n"
-		"  -p, --plain        Extract data without decrypting.\n"
-		"  -r, --raw          Keep raw data, don't unpack.\n"
-		//"  -k, --keyset=file  Specify keyset file.\n"
-		"  -v, --verbose      Give verbose output.\n"
-		"  -y, --verify       Verify hashes and signatures.\n"
-		"  -d, --dev          Decrypt with development keys instead of retail.\n"
-		//"  --unitsize=size    Set media unit size (default 0x200).\n"
-		//"  --commonkey=key    Set common key.\n"
-		"  --titlekey=key     Set tik title key.\n"
-		//"  --ncchkey=key      Set ncch key.\n"
-		//"  --ncchsyskey=key   Set ncch fixed system key.\n"
-		"  --seeddb=file      Set seeddb for ncch seed crypto.\n"
-		"  --seed=key         Set specific seed for ncch seed crypto.\n"
-		"  --showkeys         Show the keys being used.\n"
-		"  --showsyscalls     Show system call names instead of numbers.\n"
-		"  -t, --intype=type  Specify input file type [ncsd, ncch, exheader, cia, tmd, lzss,\n"
-		"                        firm, cwav, exefs, romfs]\n"
-		"LZSS options:\n"
-		"  --lzssout=file	  Specify lzss output file\n"
-		"CCI/CIA options:\n"
+		"  -t, --intype=type  Specify input file type. [cia, tik, tmd, ncsd, ncch, exheader, exefs, romfs, firm, lzss]\n"
+		"                     (only needed when file type isn't detected automatically)\n"
+		"CCI options:\n"
 		"  -n, --ncch=index   Specify NCCH partition index.\n"
 		"  --contents=dir     Specify Contents directory path.\n"
-		"CCI options:\n"
-		"  --initdata=file    Specify Initial Data file path.\n"
+		//"  --initdata=file    Specify Initial Data file path.\n"
 		"CIA options:\n"
+		"  -n, --ncch=index   Specify NCCH partition index.\n"
+		"  --contents=dir     Specify Contents directory path.\n"
 		"  --certs=file       Specify Certificate chain file path.\n"
 		"  --tik=file         Specify Ticket file path.\n"
 		"  --tmd=file         Specify TMD file path.\n"
@@ -695,10 +641,15 @@ void ctrtool::SettingsInitializer::usage_text()
 		"  --listromfs        List files in RomFS.\n" 
 		"FIRM options:\n"
 		"  --firmdir=dir      Specify Firm directory path.\n"
-		"CWAV options:\n"
-		"  --wav=file         Specify wav output file.\n"
-		"  --wavloops=count   Specify wav loop count, default 0.\n"
-		
-		<< std::flush;
-*/
+		"  --firmtype=type    Specify Firm location type, this determines encryption/signing.\n"
+		"                       - nand: (default) FIRM images installed to internal NAND,\n"
+	    "                       - ngc: FIRM images loaded from NTR game card at boot,\n"
+		"                       - nor: FIRM images loaded from WiFi board NOR at boot,\n"
+		"                       - sdmc: FIRM images installed from SD card by FIRM installers (internal dev tool).\n"
+		"LZSS options:\n"
+		"  --lzssout=file     Specify lzss output file\n"
+		//"CWAV options:\n"
+		//"  --wav=file         Specify wav output file.\n"
+		//"  --wavloops=count   Specify wav loop count, default 0.\n"
+	);
 }
