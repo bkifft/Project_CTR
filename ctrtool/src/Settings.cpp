@@ -537,7 +537,7 @@ void ctrtool::SettingsInitializer::determine_filetype()
 		infile.filetype = FILE_TYPE_ROMFS;
 	}
 	else if (_ASSERT_FILE_SIZE(sizeof(ntd::n3ds::SystemMenuDataHeader)) 
-	      && _TYPE_PTR(ntd::n3ds::SystemMenuDataHeader)->struct_magic.unwrap() == sizeof(ntd::n3ds::SystemMenuDataHeader::kStructMagic))
+	      && _TYPE_PTR(ntd::n3ds::SystemMenuDataHeader)->struct_magic.unwrap() == ntd::n3ds::SystemMenuDataHeader::kStructMagic)
 	{
 		infile.filetype = FILE_TYPE_SMDH;
 	}
