@@ -300,15 +300,11 @@ void ctrtool::FirmProcess::extractSections()
 			// create output file path
 			tc::io::Path f_path = mExtractPath.get() + f_name;
 
-			// save output file path string
-			std::string f_path_str;
-			tc::io::PathUtil::pathToUnixUTF8(f_path, f_path_str);
-
 			// open out stream
 			local_fs.createDirectory(mExtractPath.get());
 			local_fs.openFile(f_path, tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write, out_stream);
 
-			fmt::print("Saving section {} to {}...\n", i, f_path_str);
+			fmt::print("Saving section {} to {}...\n", i, f_path.to_string());
 
 			tc::ByteData filedata = tc::ByteData(in_stream->length());
 			in_stream->seek(0, tc::io::SeekOrigin::Begin);
