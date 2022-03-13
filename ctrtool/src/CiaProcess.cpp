@@ -23,6 +23,7 @@ ctrtool::CiaProcess::CiaProcess() :
 	mFooterExtractPath(),
 	mContentIndex(0),
 	mIssuerSigner(),
+	mCertImportedIssuerSigner(),
 	mCertChain(),
 	mCertSigValid(),
 	mTicket(),
@@ -255,37 +256,36 @@ void ctrtool::CiaProcess::importHeader()
 	// process CIA
 	if (mHeader.format_version.unwrap() == ntd::n3ds::CiaHeader::FormatVersion_Default)
 	{
-		std::shared_ptr<tc::io::IStream> cert_stream;
 		if (mCertSizeInfo.size > 0)
 		{
-			cert_stream = std::shared_ptr<tc::io::SubStream>(new tc::io::SubStream(mInputStream, mCertSizeInfo.offset, mCertSizeInfo.size));
+			std::shared_ptr<tc::io::IStream> certchain_stream = std::shared_ptr<tc::io::SubStream>(new tc::io::SubStream(mInputStream, mCertSizeInfo.offset, mCertSizeInfo.size));
 
-			if (mCertSizeInfo.size < 0x1000000)
+			while (certchain_stream->position() < certchain_stream->length())
 			{
-				tc::ByteData cert_data = tc::ByteData(mCertSizeInfo.size);
+				std::shared_ptr<tc::io::IStream> cert_stream = std::make_shared<tc::io::SubStream>(tc::io::SubStream(certchain_stream, certchain_stream->position(), certchain_stream->length() - certchain_stream->position()));
+				mCertChain.push_back(ntd::n3ds::es::CertificateDeserialiser(cert_stream));
+				mCertSigValid.push_back(ValidState::Unchecked);
 
-				cert_stream->seek(0, tc::io::SeekOrigin::Begin);
-				cert_stream->read(cert_data.data(), cert_data.size());
+				// update position of input stream
+				//certchain_stream->seek(cert_stream->position(), tc::io::SeekOrigin::Current);
 
-				for (size_t certchain_pos = 0; certchain_pos < cert_data.size();)
+				// import issuer profile from certificate
+				if (mCertChain.back().public_key_type == brd::es::ESCertPubKeyType::RSA2048)
 				{
-					size_t certbin_size = ntd::n3ds::es::getCertificateSize(cert_data.data() + certchain_pos);
-					if (certbin_size == 0)
-					{
-						throw tc::InvalidOperationException(mModuleLabel, "Certificate chain had invalid data.");
-					}
-
-					mCertChain.push_back(ntd::n3ds::es::CertificateDeserialiser(std::make_shared<tc::io::SubStream>(tc::io::SubStream(cert_stream, certchain_pos, certbin_size))));
-					mCertSigValid.push_back(ValidState::Unchecked);
-
-					certchain_pos += certbin_size;
-				}				
-			}
-			else
-			{
-				fmt::print("[LOG] Certificate chain too large, cannot verify Ticket or TitleMetaData.\n");
-				mCertSizeInfo.size = 0;
-				mCertSizeInfo.offset = 0;
+					std::string issuer = fmt::format("{}-{}", mCertChain.back().signature.issuer, mCertChain.back().subject);
+					brd::es::ESSigType sig_type = brd::es::ESSigType::RSA2048_SHA256;
+					auto& public_key = mCertChain.back().rsa2048_public_key;
+					
+					mCertImportedIssuerSigner.insert(std::pair<std::string, std::shared_ptr<ntd::n3ds::es::ISigner>>(issuer, std::make_shared<ntd::n3ds::es::RsaSigner>(ntd::n3ds::es::RsaSigner(sig_type, issuer, tc::crypto::RsaPublicKey(public_key.m.data(), public_key.m.size())))));
+				}
+				else if (mCertChain.back().public_key_type == brd::es::ESCertPubKeyType::RSA4096)
+				{
+					std::string issuer = fmt::format("{}-{}", mCertChain.back().signature.issuer + mCertChain.back().subject);
+					brd::es::ESSigType sig_type = brd::es::ESSigType::RSA4096_SHA256;
+					auto& public_key = mCertChain.back().rsa4096_public_key;
+					
+					mCertImportedIssuerSigner.insert(std::pair<std::string, std::shared_ptr<ntd::n3ds::es::ISigner>>(issuer, std::make_shared<ntd::n3ds::es::RsaSigner>(ntd::n3ds::es::RsaSigner(sig_type, issuer, tc::crypto::RsaPublicKey(public_key.m.data(), public_key.m.size())))));
+				}
 			}
 
 		}
@@ -406,11 +406,18 @@ void ctrtool::CiaProcess::verifyMetadata()
 		// verify cert
 		for (size_t i = 0; i < mCertChain.size(); i++)
 		{
-			auto issuer_itr = mIssuerSigner.find(mCertChain[i].signature.issuer);
-			if (issuer_itr != mIssuerSigner.end() && issuer_itr->second->getSigType() == mCertChain[i].signature.sig_type)
+			auto keybag_issuer_itr = mIssuerSigner.find(mCertChain[i].signature.issuer);
+			auto local_issuer_itr = mCertImportedIssuerSigner.find(mCertChain[i].signature.issuer);
+			
+			// try first with the keybag imported issuer
+			if (keybag_issuer_itr != mIssuerSigner.end() && keybag_issuer_itr->second->getSigType() == mCertChain[i].signature.sig_type)
 			{
-				//fmt::print("CertHash[{:d}]: {}\n", i, getTruncatedBytesString(mCertChain[i].calculated_hash.data(), mCertChain[i].calculated_hash.size(), mVerbose));
-				mCertSigValid[i] = issuer_itr->second->verifyHash(mCertChain[i].calculated_hash.data(), mCertChain[i].signature.sig.data()) ? ValidState::Good : ValidState::Fail;
+				mCertSigValid[i] = keybag_issuer_itr->second->verifyHash(mCertChain[i].calculated_hash.data(), mCertChain[i].signature.sig.data()) ? ValidState::Good : ValidState::Fail;
+			}
+			// fallback try with the issuer profiles imported from the local certificates
+			else if (local_issuer_itr != mCertImportedIssuerSigner.end() && local_issuer_itr->second->getSigType() == mCertChain[i].signature.sig_type)
+			{
+				mCertSigValid[i] = local_issuer_itr->second->verifyHash(mCertChain[i].calculated_hash.data(), mCertChain[i].signature.sig.data()) ? ValidState::Good : ValidState::Fail;
 			}
 			else
 			{
@@ -423,11 +430,18 @@ void ctrtool::CiaProcess::verifyMetadata()
 	if (mHeader.format_version.unwrap() == ntd::n3ds::CiaHeader::FormatVersion_Default && mTikSizeInfo.size > 0)
 	{
 		// verify ticket
-		auto issuer_itr = mIssuerSigner.find(mTicket.signature.issuer);
-		if (issuer_itr != mIssuerSigner.end() && issuer_itr->second->getSigType() == mTicket.signature.sig_type)
+		auto keybag_issuer_itr = mIssuerSigner.find(mTicket.signature.issuer);
+		auto local_issuer_itr = mCertImportedIssuerSigner.find(mTicket.signature.issuer);
+
+		// try first with the keybag imported issuer
+		if (keybag_issuer_itr != mIssuerSigner.end() && keybag_issuer_itr->second->getSigType() == mTicket.signature.sig_type)
 		{
-			//fmt::print("TikHash: {}\n", getTruncatedBytesString(mTicket.calculated_hash.data(), mTicket.calculated_hash.size(), mVerbose));
-			mTicketSigValid = issuer_itr->second->verifyHash(mTicket.calculated_hash.data(), mTicket.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
+			mTicketSigValid = keybag_issuer_itr->second->verifyHash(mTicket.calculated_hash.data(), mTicket.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
+		}
+		// fallback try with the issuer profiles imported from the local certificates
+		else if (local_issuer_itr != mCertImportedIssuerSigner.end() && local_issuer_itr->second->getSigType() == mTicket.signature.sig_type)
+		{
+			mTicketSigValid = local_issuer_itr->second->verifyHash(mTicket.calculated_hash.data(), mTicket.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
 		}
 		else
 		{
@@ -439,11 +453,18 @@ void ctrtool::CiaProcess::verifyMetadata()
 	if (mHeader.format_version.unwrap() == ntd::n3ds::CiaHeader::FormatVersion_Default && mTmdSizeInfo.size > 0)
 	{
 		// verify tmd
-		auto issuer_itr = mIssuerSigner.find(mTitleMetaData.signature.issuer);
-		if (issuer_itr != mIssuerSigner.end() && issuer_itr->second->getSigType() == mTitleMetaData.signature.sig_type)
+		auto keybag_issuer_itr = mIssuerSigner.find(mTitleMetaData.signature.issuer);
+		auto local_issuer_itr = mCertImportedIssuerSigner.find(mTitleMetaData.signature.issuer);
+
+		// try first with the keybag imported issuer
+		if (keybag_issuer_itr != mIssuerSigner.end() && keybag_issuer_itr->second->getSigType() == mTitleMetaData.signature.sig_type)
 		{
-			//fmt::print("TmdHash: {}\n", getTruncatedBytesString(mTitleMetaData.calculated_hash.data(), mTitleMetaData.calculated_hash.size(), mVerbose));
-			mTitleMetaDataSigValid = issuer_itr->second->verifyHash(mTitleMetaData.calculated_hash.data(), mTitleMetaData.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
+			mTitleMetaDataSigValid = keybag_issuer_itr->second->verifyHash(mTitleMetaData.calculated_hash.data(), mTitleMetaData.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
+		}
+		// fallback try with the issuer profiles imported from the local certificates
+		else if (local_issuer_itr != mCertImportedIssuerSigner.end() && local_issuer_itr->second->getSigType() == mTitleMetaData.signature.sig_type)
+		{
+			mTitleMetaDataSigValid = local_issuer_itr->second->verifyHash(mTitleMetaData.calculated_hash.data(), mTitleMetaData.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
 		}
 		else
 		{

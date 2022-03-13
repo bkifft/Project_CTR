@@ -57,6 +57,7 @@ private:
 	// process variables
 	ntd::n3ds::CiaHeader mHeader;
 	std::map<std::string, std::shared_ptr<ntd::n3ds::es::ISigner>> mIssuerSigner;
+	std::map<std::string, std::shared_ptr<ntd::n3ds::es::ISigner>> mCertImportedIssuerSigner;
 	std::vector<ntd::n3ds::es::Certificate> mCertChain;
 	std::vector<ValidState> mCertSigValid;
 	ntd::n3ds::es::Ticket mTicket;
