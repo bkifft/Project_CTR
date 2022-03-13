@@ -151,6 +151,8 @@
     <ClInclude Include="..\..\..\src\RomFsProcess.h" />
     <ClInclude Include="..\..\..\src\Settings.h" />
     <ClInclude Include="..\..\..\src\types.h" />
+    <ClInclude Include="..\..\..\src\TikProcess.h" />
+    <ClInclude Include="..\..\..\src\TmdProcess.h" />
     <ClInclude Include="..\..\..\src\version.h" />
   </ItemGroup>
   <ItemGroup>
@@ -168,6 +170,8 @@
     <ClCompile Include="..\..\..\src\NcchProcess.cpp" />
     <ClCompile Include="..\..\..\src\RomFsProcess.cpp" />
     <ClCompile Include="..\..\..\src\Settings.cpp" />
+    <ClCompile Include="..\..\..\src\TikProcess.cpp" />
+    <ClCompile Include="..\..\..\src\TmdProcess.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\deps\libfmt\build\visualstudio\libfmt\libfmt.vcxproj">
