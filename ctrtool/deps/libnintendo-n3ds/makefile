@@ -1,20 +1,20 @@
 # C++/C Recursive Project Makefile 
 # (c) Jack
-# Version 5
+# Version 6 (20211110)
 
 # Project Name
 PROJECT_NAME = libnintendo-n3ds
 
 # Project Relative Paths
 PROJECT_PATH = $(CURDIR)
-PROJECT_SRC_PATH = src src/es
+PROJECT_SRC_PATH = src
 PROJECT_SRC_SUBDIRS = $(PROJECT_SRC_PATH)
 PROJECT_INCLUDE_PATH = include
-#PROJECT_TESTSRC_PATH = test
-#PROJECT_TESTSRC_SUBDIRS = $(PROJECT_TESTSRC_PATH)
+PROJECT_TESTSRC_PATH = test
+PROJECT_TESTSRC_SUBDIRS = $(PROJECT_TESTSRC_PATH)
 PROJECT_BIN_PATH = bin
-#PROJECT_DOCS_PATH = docs
-#PROJECT_DOXYFILE_PATH = Doxyfile
+PROJECT_DOCS_PATH = docs
+PROJECT_DOXYFILE_PATH = Doxyfile
 
 # Determine if the root makefile has been established, and if not establish this makefile as the root makefile
 ifeq ($(ROOT_PROJECT_NAME),)
@@ -31,8 +31,8 @@ PROJECT_SONAME = $(PROJECT_NAME).so.$(PROJECT_SO_VER_MAJOR)
 PROJECT_SO_FILENAME = $(PROJECT_SONAME).$(PROJECT_SO_VER_MINOR).$(PROJECT_SO_VER_PATCH)
 
 # Project Dependencies
-PROJECT_DEPEND = mbedtls fmt toolchain broadon-es
-PROJECT_DEPEND_LOCAL_DIR = libmbedtls libfmt libtoolchain libbroadon-es
+PROJECT_DEPEND = broadon-es toolchain mbedtls fmt  
+PROJECT_DEPEND_LOCAL_DIR = libbroadon-es libtoolchain libmbedtls libfmt  
 
 # Generate compiler flags for including project include path
 ifneq ($(PROJECT_INCLUDE_PATH),)
@@ -112,8 +112,8 @@ CXXFLAGS = -std=c++11 $(INC) $(WARNFLAGS) $(ARCHFLAGS) -fPIC
 CFLAGS = -std=c11 $(INC) $(WARNFLAGS) $(ARCHFLAGS) -fPIC
 
 # Object Files
-SRC_OBJ = $(foreach dir,$(PROJECT_SRC_SUBDIRS),$(subst .cpp,.o,$(wildcard $(dir)/*.cpp))) $(foreach dir,$(PROJECT_SRC_SUBDIRS),$(subst .c,.o,$(wildcard $(dir)/*.c)))
-TESTSRC_OBJ = $(foreach dir,$(PROJECT_TESTSRC_SUBDIRS),$(subst .cpp,.o,$(wildcard $(dir)/*.cpp))) $(foreach dir,$(PROJECT_TESTSRC_SUBDIRS),$(subst .c,.o,$(wildcard $(dir)/*.c)))
+SRC_OBJ = $(foreach dir,$(PROJECT_SRC_SUBDIRS),$(subst .cpp,.o,$(wildcard $(dir)/*.cpp))) $(foreach dir,$(PROJECT_SRC_SUBDIRS),$(subst .cc,.o,$(wildcard $(dir)/*.cc))) $(foreach dir,$(PROJECT_SRC_SUBDIRS),$(subst .c,.o,$(wildcard $(dir)/*.c)))
+TESTSRC_OBJ = $(foreach dir,$(PROJECT_TESTSRC_SUBDIRS),$(subst .cpp,.o,$(wildcard $(dir)/*.cpp))) $(foreach dir,$(PROJECT_TESTSRC_SUBDIRS),$(subst .cc,.o,$(wildcard $(dir)/*.cc))) $(foreach dir,$(PROJECT_TESTSRC_SUBDIRS),$(subst .c,.o,$(wildcard $(dir)/*.c)))
 
 # all is the default, user should specify what the default should do
 #	- 'static_lib' for building static library
@@ -131,6 +131,10 @@ clean: clean_object_files remove_binary_dir
 	@$(CC) $(CFLAGS) -c $< -o $@ 
 
 %.o: %.cpp
+	@echo CXX $<
+	@$(CXX) $(CXXFLAGS) -c $< -o $@ 
+
+%.o: %.cc
 	@echo CXX $<
 	@$(CXX) $(CXXFLAGS) -c $< -o $@ 
 
@@ -161,13 +165,13 @@ shared_lib: $(SRC_OBJ) create_binary_dir
 # Build Program
 program: $(SRC_OBJ) create_binary_dir
 	@echo LINK $(PROJECT_BIN_PATH)/$(PROJECT_NAME)
-	@$(CXX) $(SRC_OBJ) $(LIB) -o "$(PROJECT_BIN_PATH)/$(PROJECT_NAME)"
+	@$(CXX) $(ARCHFLAGS) $(SRC_OBJ) $(LIB) -o "$(PROJECT_BIN_PATH)/$(PROJECT_NAME)"
 
 # Build Test Program
 test_program: $(TESTSRC_OBJ) $(SRC_OBJ) create_binary_dir
 ifneq ($(PROJECT_TESTSRC_PATH),)
 	@echo LINK $(PROJECT_BIN_PATH)/$(PROJECT_NAME)_test
-	@$(CXX) $(TESTSRC_OBJ) $(SRC_OBJ) $(LIB) -o "$(PROJECT_BIN_PATH)/$(PROJECT_NAME)_test"
+	@$(CXX) $(ARCHFLAGS) $(TESTSRC_OBJ) $(SRC_OBJ) $(LIB) -o "$(PROJECT_BIN_PATH)/$(PROJECT_NAME)_test"
 endif
 
 # Documentation
