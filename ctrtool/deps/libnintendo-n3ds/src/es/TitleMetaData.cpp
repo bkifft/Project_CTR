@@ -19,12 +19,8 @@ ntd::n3ds::es::TitleMetaDataDeserialiser::TitleMetaDataDeserialiser(const std::s
 		throw tc::ArgumentOutOfRangeException(mModuleLabel, "TMD was too small.");
 	}
 
-	// import TMD v1 data
-	if (tc::is_int64_t_too_large_for_size_t(tmd_stream->length()))
-	{
-		throw tc::ArgumentOutOfRangeException(mModuleLabel, "TMD was too large to read into memory.");
-	}
-	tc::ByteData tmd_data = tc::ByteData(static_cast<size_t>(tmd_stream->length()));
+	// import TMD v1 data (less the ESV1ContentMeta data)
+	tc::ByteData tmd_data = tc::ByteData(sizeof(brd::es::ESV1TitleMeta));
 	tmd_stream->seek(0, tc::io::SeekOrigin::Begin);
 	if (tmd_stream->read(tmd_data.data(), tmd_data.size()) < tmd_data.size())
 	{
@@ -43,19 +39,6 @@ ntd::n3ds::es::TitleMetaDataDeserialiser::TitleMetaDataDeserialiser(const std::s
 		throw tc::ArgumentOutOfRangeException(mModuleLabel, "TMD had unexpected format version.");
 	}
 
-	// hash for staged validiation
-	std::array<byte_t, tc::crypto::Sha256Generator::kHashSize> hash;
-
-	// calculate hash for optional signature validation later
-	tc::crypto::GenerateSha256Hash(calculated_hash.data(), (byte_t*)&tmd->sig.issuer, (size_t)((byte_t*)&tmd->v1Head.cmdGroups - (byte_t*)&tmd->sig.issuer));
-
-	// verify v1 ESV1ContentMetaGroup array using hash in v1 header
-	tc::crypto::GenerateSha256Hash(hash.data(), (byte_t*)&tmd->v1Head.cmdGroups, sizeof(tmd->v1Head.cmdGroups));
-	if (memcmp(hash.data(), tmd->v1Head.hash.data(), hash.size()) != 0)
-	{
-		throw tc::ArgumentOutOfRangeException(mModuleLabel, "TMD had invalid CMD group hash.");
-	}
-
 	/*
 	std::cout << "[Tmd]" << std::endl;
 	std::cout << "  > Issuer:            " << tmd->sig.issuer.data() << std::endl;
@@ -67,9 +50,34 @@ ntd::n3ds::es::TitleMetaDataDeserialiser::TitleMetaDataDeserialiser(const std::s
 
 	// determine if the TMD is the correct size given expected number of ESV1ContentMeta entries
 	size_t cmd_table_num = tmd->v1Head.cmdGroups[0].nCmds.unwrap();
-	if (tmd_data.size() != (sizeof(brd::es::ESV1TitleMeta) + (cmd_table_num * sizeof(brd::es::ESV1ContentMeta))))
+	size_t tmd_full_size = sizeof(brd::es::ESV1TitleMeta) + (cmd_table_num * sizeof(brd::es::ESV1ContentMeta));
+
+	if (tmd_stream->length() < (tmd_full_size))
 	{
-		throw tc::ArgumentOutOfRangeException(mModuleLabel, "TMD had unexpected size");
+		throw tc::ArgumentOutOfRangeException(mModuleLabel, "TMD was too small.");
+	}
+
+	// import full TMD v1 data
+	tmd_data = tc::ByteData(tmd_full_size);
+	tmd_stream->seek(0, tc::io::SeekOrigin::Begin);
+	if (tmd_stream->read(tmd_data.data(), tmd_data.size()) < tmd_data.size())
+	{
+		throw tc::ArgumentOutOfRangeException(mModuleLabel, "TMD had unexpected size after reading.");
+	}
+	// update tmd pointer
+	tmd = (brd::es::ESV1TitleMeta*)tmd_data.data();
+
+	// hash for staged validiation
+	std::array<byte_t, tc::crypto::Sha256Generator::kHashSize> hash;
+
+	// calculate hash for optional signature validation later
+	tc::crypto::GenerateSha256Hash(calculated_hash.data(), (byte_t*)&tmd->sig.issuer, (size_t)((byte_t*)&tmd->v1Head.cmdGroups - (byte_t*)&tmd->sig.issuer));
+
+	// verify v1 ESV1ContentMetaGroup array using hash in v1 header
+	tc::crypto::GenerateSha256Hash(hash.data(), (byte_t*)&tmd->v1Head.cmdGroups, sizeof(tmd->v1Head.cmdGroups));
+	if (memcmp(hash.data(), tmd->v1Head.hash.data(), hash.size()) != 0)
+	{
+		throw tc::ArgumentOutOfRangeException(mModuleLabel, "TMD had invalid CMD group hash.");
 	}
 
 	// verify ESV1ContentMeta array
