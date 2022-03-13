@@ -205,6 +205,7 @@ int umain(const std::vector<std::string>& args, const std::vector<std::string>& 
 			proc.process();
 		}
 		
+		/*
 		switch (set.infile.filetype)
 		{
 			case ctrtool::Settings::FILE_TYPE_NCSD :
@@ -256,6 +257,7 @@ int umain(const std::vector<std::string>& args, const std::vector<std::string>& 
 				fmt::print("## unknown({}) ##\n", (int)set.infile.filetype);
 				break;
 		}
+		*/
 		
 	}
 	catch (tc::Exception& e)
