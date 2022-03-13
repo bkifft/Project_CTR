@@ -121,7 +121,7 @@ TESTSRC_OBJ = $(foreach dir,$(PROJECT_TESTSRC_SUBDIRS),$(subst .cpp,.o,$(wildcar
 #	- 'program' for building the program
 #	- 'test_program' for building the test program
 # These can typically be used together however *_lib and program should not be used together
-all: static_lib
+all: program
 	
 clean: clean_object_files remove_binary_dir
 
