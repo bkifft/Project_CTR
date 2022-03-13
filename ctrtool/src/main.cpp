@@ -12,6 +12,8 @@
 #include "LzssProcess.h"
 #include "CrrProcess.h"
 #include "FirmProcess.h"
+#include "TikProcess.h"
+#include "TmdProcess.h"
 
 #include <tc/io/SubStream.h>
 #include <ntd/n3ds/IvfcStream.h>
@@ -180,6 +182,26 @@ int umain(const std::vector<std::string>& args, const std::vector<std::string>& 
 				proc.setExtractPath(set.firm.extract_path.get());
 			}
 			proc.setFirmwareType(set.firm.firm_type);
+			proc.process();
+		}
+		else if (set.infile.filetype == ctrtool::Settings::FILE_TYPE_TIK)
+		{
+			ctrtool::TikProcess proc;
+			proc.setInputStream(infile_stream);
+			proc.setKeyBag(set.opt.keybag);
+			proc.setCliOutputMode(true);
+			proc.setVerboseMode(set.opt.verbose);
+			proc.setVerifyMode(set.opt.verify);
+			proc.process();
+		}
+		else if (set.infile.filetype == ctrtool::Settings::FILE_TYPE_TMD)
+		{
+			ctrtool::TmdProcess proc;
+			proc.setInputStream(infile_stream);
+			proc.setKeyBag(set.opt.keybag);
+			proc.setCliOutputMode(true);
+			proc.setVerboseMode(set.opt.verbose);
+			proc.setVerifyMode(set.opt.verify);
 			proc.process();
 		}
 		
