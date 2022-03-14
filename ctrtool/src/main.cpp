@@ -30,7 +30,7 @@ int umain(const std::vector<std::string>& args, const std::vector<std::string>& 
 		{
 			ctrtool::ExeFsProcess proc;
 			proc.setInputStream(infile_stream);
-			proc.setCliOutputMode(true, set.exefs.list_fs);
+			proc.setCliOutputMode(set.opt.info, set.exefs.list_fs);
 			proc.setVerboseMode(set.opt.verbose);
 			proc.setVerifyMode(set.opt.verify);
 			proc.setRawMode(set.opt.raw);
@@ -46,7 +46,7 @@ int umain(const std::vector<std::string>& args, const std::vector<std::string>& 
 			ctrtool::RomFsProcess proc;
 			proc.setInputStream(infile_stream);
 			proc.setKeyBag(set.opt.keybag);
-			proc.setCliOutputMode(true, set.romfs.list_fs);
+			proc.setCliOutputMode(set.opt.info, set.romfs.list_fs);
 			proc.setVerboseMode(set.opt.verbose);
 			proc.setVerifyMode(set.opt.verify);
 			if (set.romfs.extract_path.isSet())
@@ -60,7 +60,7 @@ int umain(const std::vector<std::string>& args, const std::vector<std::string>& 
 			ctrtool::IvfcProcess proc;
 			proc.setInputStream(infile_stream);
 			proc.setKeyBag(set.opt.keybag);
-			proc.setCliOutputMode(true, set.romfs.list_fs);
+			proc.setCliOutputMode(set.opt.info, set.romfs.list_fs);
 			proc.setVerboseMode(set.opt.verbose);
 			proc.setVerifyMode(set.opt.verify);
 			if (set.romfs.extract_path.isSet())
@@ -79,12 +79,12 @@ int umain(const std::vector<std::string>& args, const std::vector<std::string>& 
 			proc.setRawMode(set.opt.raw);
 			proc.setPlainMode(set.opt.raw);
 			proc.setShowSyscallName(set.exheader.show_syscalls_as_names);
-			proc.setRegionProcessOutputMode(proc.NcchRegion_Header, true, false, tc::Optional<tc::io::Path>(), tc::Optional<tc::io::Path>());
-			proc.setRegionProcessOutputMode(proc.NcchRegion_ExHeader, true, false, set.ncch.exheader_path, tc::Optional<tc::io::Path>());
+			proc.setRegionProcessOutputMode(proc.NcchRegion_Header, set.opt.info, false, tc::Optional<tc::io::Path>(), tc::Optional<tc::io::Path>());
+			proc.setRegionProcessOutputMode(proc.NcchRegion_ExHeader, set.opt.info, false, set.ncch.exheader_path, tc::Optional<tc::io::Path>());
 			proc.setRegionProcessOutputMode(proc.NcchRegion_PlainRegion, false, false, set.ncch.plainregion_path, tc::Optional<tc::io::Path>());
 			proc.setRegionProcessOutputMode(proc.NcchRegion_Logo, false, false, set.ncch.logo_path, tc::Optional<tc::io::Path>());
-			proc.setRegionProcessOutputMode(proc.NcchRegion_ExeFs, true, set.exefs.list_fs, set.ncch.exefs_path, set.exefs.extract_path);
-			proc.setRegionProcessOutputMode(proc.NcchRegion_RomFs, true, set.romfs.list_fs, set.ncch.romfs_path, set.romfs.extract_path);
+			proc.setRegionProcessOutputMode(proc.NcchRegion_ExeFs, set.opt.info, set.exefs.list_fs, set.ncch.exefs_path, set.exefs.extract_path);
+			proc.setRegionProcessOutputMode(proc.NcchRegion_RomFs, set.opt.info, set.romfs.list_fs, set.ncch.romfs_path, set.romfs.extract_path);
 			proc.process();
 		}
 		else if (set.infile.filetype == ctrtool::Settings::FILE_TYPE_EXHEADER)
@@ -92,7 +92,7 @@ int umain(const std::vector<std::string>& args, const std::vector<std::string>& 
 			ctrtool::ExHeaderProcess proc;
 			proc.setInputStream(infile_stream);
 			proc.setKeyBag(set.opt.keybag);
-			proc.setCliOutputMode(true);
+			proc.setCliOutputMode(set.opt.info);
 			proc.setVerboseMode(set.opt.verbose);
 			proc.setVerifyMode(set.opt.verify);
 			proc.setShowSyscallName(set.exheader.show_syscalls_as_names);
@@ -104,7 +104,7 @@ int umain(const std::vector<std::string>& args, const std::vector<std::string>& 
 			ctrtool::CciProcess proc;
 			proc.setInputStream(infile_stream);
 			proc.setKeyBag(set.opt.keybag);
-			proc.setCliOutputMode(true, false);
+			proc.setCliOutputMode(set.opt.info);
 			proc.setVerboseMode(set.opt.verbose);
 			proc.setVerifyMode(set.opt.verify);
 			if (set.rom.content_extract_path.isSet())
@@ -113,12 +113,12 @@ int umain(const std::vector<std::string>& args, const std::vector<std::string>& 
 			proc.setRawMode(set.opt.raw);
 			proc.setPlainMode(set.opt.plain);
 			proc.setShowSyscallName(set.exheader.show_syscalls_as_names);
-			proc.setNcchRegionProcessOutputMode(ctrtool::NcchProcess::NcchRegion_Header, true, false, tc::Optional<tc::io::Path>(), tc::Optional<tc::io::Path>());
-			proc.setNcchRegionProcessOutputMode(ctrtool::NcchProcess::NcchRegion_ExHeader, true, false, set.ncch.exheader_path, tc::Optional<tc::io::Path>());
+			proc.setNcchRegionProcessOutputMode(ctrtool::NcchProcess::NcchRegion_Header, set.opt.info, false, tc::Optional<tc::io::Path>(), tc::Optional<tc::io::Path>());
+			proc.setNcchRegionProcessOutputMode(ctrtool::NcchProcess::NcchRegion_ExHeader, set.opt.info, false, set.ncch.exheader_path, tc::Optional<tc::io::Path>());
 			proc.setNcchRegionProcessOutputMode(ctrtool::NcchProcess::NcchRegion_PlainRegion, false, false, set.ncch.plainregion_path, tc::Optional<tc::io::Path>());
 			proc.setNcchRegionProcessOutputMode(ctrtool::NcchProcess::NcchRegion_Logo, false, false, set.ncch.logo_path, tc::Optional<tc::io::Path>());
-			proc.setNcchRegionProcessOutputMode(ctrtool::NcchProcess::NcchRegion_ExeFs, true, set.exefs.list_fs, set.ncch.exefs_path, set.exefs.extract_path);
-			proc.setNcchRegionProcessOutputMode(ctrtool::NcchProcess::NcchRegion_RomFs, true, set.romfs.list_fs, set.ncch.romfs_path, set.romfs.extract_path);
+			proc.setNcchRegionProcessOutputMode(ctrtool::NcchProcess::NcchRegion_ExeFs, set.opt.info, set.exefs.list_fs, set.ncch.exefs_path, set.exefs.extract_path);
+			proc.setNcchRegionProcessOutputMode(ctrtool::NcchProcess::NcchRegion_RomFs, set.opt.info, set.romfs.list_fs, set.ncch.romfs_path, set.romfs.extract_path);
 			proc.process();
 		}
 		else if (set.infile.filetype == ctrtool::Settings::FILE_TYPE_CIA)
@@ -143,12 +143,12 @@ int umain(const std::vector<std::string>& args, const std::vector<std::string>& 
 			proc.setRawMode(set.opt.raw);
 			proc.setPlainMode(set.opt.plain);
 			proc.setShowSyscallName(set.exheader.show_syscalls_as_names);
-			proc.setNcchRegionProcessOutputMode(ctrtool::NcchProcess::NcchRegion_Header, true, false, tc::Optional<tc::io::Path>(), tc::Optional<tc::io::Path>());
-			proc.setNcchRegionProcessOutputMode(ctrtool::NcchProcess::NcchRegion_ExHeader, true, false, set.ncch.exheader_path, tc::Optional<tc::io::Path>());
+			proc.setNcchRegionProcessOutputMode(ctrtool::NcchProcess::NcchRegion_Header, set.opt.info, false, tc::Optional<tc::io::Path>(), tc::Optional<tc::io::Path>());
+			proc.setNcchRegionProcessOutputMode(ctrtool::NcchProcess::NcchRegion_ExHeader, set.opt.info, false, set.ncch.exheader_path, tc::Optional<tc::io::Path>());
 			proc.setNcchRegionProcessOutputMode(ctrtool::NcchProcess::NcchRegion_PlainRegion, false, false, set.ncch.plainregion_path, tc::Optional<tc::io::Path>());
 			proc.setNcchRegionProcessOutputMode(ctrtool::NcchProcess::NcchRegion_Logo, false, false, set.ncch.logo_path, tc::Optional<tc::io::Path>());
-			proc.setNcchRegionProcessOutputMode(ctrtool::NcchProcess::NcchRegion_ExeFs, true, set.exefs.list_fs, set.ncch.exefs_path, set.exefs.extract_path);
-			proc.setNcchRegionProcessOutputMode(ctrtool::NcchProcess::NcchRegion_RomFs, true, set.romfs.list_fs, set.ncch.romfs_path, set.romfs.extract_path);
+			proc.setNcchRegionProcessOutputMode(ctrtool::NcchProcess::NcchRegion_ExeFs, set.opt.info, set.exefs.list_fs, set.ncch.exefs_path, set.exefs.extract_path);
+			proc.setNcchRegionProcessOutputMode(ctrtool::NcchProcess::NcchRegion_RomFs, set.opt.info, set.romfs.list_fs, set.ncch.romfs_path, set.romfs.extract_path);
 			proc.process();
 		}
 		else if (set.infile.filetype == ctrtool::Settings::FILE_TYPE_LZSS)
@@ -164,7 +164,7 @@ int umain(const std::vector<std::string>& args, const std::vector<std::string>& 
 			ctrtool::CrrProcess proc;
 			proc.setInputStream(infile_stream);
 			proc.setKeyBag(set.opt.keybag);
-			proc.setCliOutputMode(true);
+			proc.setCliOutputMode(set.opt.info);
 			proc.setVerboseMode(set.opt.verbose);
 			proc.setVerifyMode(set.opt.verify);
 			proc.process();
@@ -174,7 +174,7 @@ int umain(const std::vector<std::string>& args, const std::vector<std::string>& 
 			ctrtool::FirmProcess proc;
 			proc.setInputStream(infile_stream);
 			proc.setKeyBag(set.opt.keybag);
-			proc.setCliOutputMode(true);
+			proc.setCliOutputMode(set.opt.info);
 			proc.setVerboseMode(set.opt.verbose);
 			proc.setVerifyMode(set.opt.verify);
 			if (set.firm.extract_path.isSet())
@@ -189,7 +189,7 @@ int umain(const std::vector<std::string>& args, const std::vector<std::string>& 
 			ctrtool::TikProcess proc;
 			proc.setInputStream(infile_stream);
 			proc.setKeyBag(set.opt.keybag);
-			proc.setCliOutputMode(true);
+			proc.setCliOutputMode(set.opt.info);
 			proc.setVerboseMode(set.opt.verbose);
 			proc.setVerifyMode(set.opt.verify);
 			proc.process();
@@ -199,7 +199,7 @@ int umain(const std::vector<std::string>& args, const std::vector<std::string>& 
 			ctrtool::TmdProcess proc;
 			proc.setInputStream(infile_stream);
 			proc.setKeyBag(set.opt.keybag);
-			proc.setCliOutputMode(true);
+			proc.setCliOutputMode(set.opt.info);
 			proc.setVerboseMode(set.opt.verbose);
 			proc.setVerifyMode(set.opt.verify);
 			proc.process();
