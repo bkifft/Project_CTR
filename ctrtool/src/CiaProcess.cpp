@@ -128,13 +128,12 @@ void ctrtool::CiaProcess::process()
 		verifyMetadata();
 		verifyContent();
 	}
-		
+	
 	if (mShowHeaderInfo)
 	{
 		printHeader();
 	}
-		
-		
+
 	extractCia();
 	processContent();
 }
