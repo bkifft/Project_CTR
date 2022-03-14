@@ -407,6 +407,7 @@ void ctrtool::SettingsInitializer::parse_args(const std::vector<std::string>& ar
 	opts.registerUnrecognisedOptionHandler(std::shared_ptr<UnkOptionHandler>(new UnkOptionHandler(mModuleLabel)));
 
 	// register handler for deprecated options DeprecatedOptionHandler
+	opts.registerOptionHandler(std::shared_ptr<DeprecatedOptionHandler>(new DeprecatedOptionHandler("Extract flag is redundant.", {"-x", "--extract"})));
 	opts.registerOptionHandler(std::shared_ptr<DeprecatedOptionHandler>(new DeprecatedOptionHandler("Generic AES/RSA keys are initialised internally.", {"-k", "--keyset"})));
 	opts.registerOptionHandler(std::shared_ptr<DeprecatedOptionHandler>(new DeprecatedOptionHandler("", {"--unitsize"})));
 	opts.registerOptionHandler(std::shared_ptr<DeprecatedOptionHandler>(new DeprecatedOptionHandler("All common keys are initialised internally.", {"--commonkey"})));
@@ -416,7 +417,6 @@ void ctrtool::SettingsInitializer::parse_args(const std::vector<std::string>& ar
 
 	// get option flags
 	opts.registerOptionHandler(std::shared_ptr<FlagOptionHandler>(new FlagOptionHandler(opt.info, {"-i", "--info"})));
-	opts.registerOptionHandler(std::shared_ptr<FlagOptionHandler>(new FlagOptionHandler(opt.info, {"-x", "--extract"})));
 	opts.registerOptionHandler(std::shared_ptr<FlagOptionHandler>(new FlagOptionHandler(opt.plain, {"-p", "--plain"})));
 	opts.registerOptionHandler(std::shared_ptr<FlagOptionHandler>(new FlagOptionHandler(opt.raw, {"-r", "--raw"})));
 	opts.registerOptionHandler(std::shared_ptr<FlagOptionHandler>(new FlagOptionHandler(opt.verbose, {"-v", "--verbose"})));
@@ -595,8 +595,8 @@ void ctrtool::SettingsInitializer::usage_text()
 		"Options:\n"
 		"  -i, --info         Show file info.\n"
 		"                          This is the default action.\n"
-		"  -x, --extract      Extract data from file.\n"
-		"                          This is also the default action.\n"
+		//"  -x, --extract      Extract data from file.\n"
+		//"                          This is also the default action.\n"
 		"  -p, --plain        Extract data without decrypting.\n"
 		"  -r, --raw          Keep raw data, don't unpack.\n"
 		//"  -k, --keyset=file  Specify keyset file.\n"

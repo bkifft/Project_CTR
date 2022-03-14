@@ -40,7 +40,6 @@ struct Settings
 	struct Options
 	{
 		bool info;
-		bool extract;
 		bool plain;
 		bool raw;
 		bool verbose;
@@ -124,7 +123,6 @@ struct Settings
 		infile.path = tc::Optional<tc::io::Path>();
 
 		opt.info = true;
-		opt.extract = true;
 		opt.plain = false;
 		opt.raw = false;
 		opt.verbose = false;
