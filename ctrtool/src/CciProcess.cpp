@@ -14,7 +14,6 @@ ctrtool::CciProcess::CciProcess() :
 	mInputStream(),
 	mKeyBag(),
 	mShowHeaderInfo(false),
-	mShowFs(false),
 	mVerbose(false),
 	mVerify(false),
 	mExtractPath(),
@@ -41,10 +40,9 @@ void ctrtool::CciProcess::setKeyBag(const ctrtool::KeyBag& key_bag)
 	mNcchProcess.setKeyBag(key_bag);
 }
 
-void ctrtool::CciProcess::setCliOutputMode(bool show_header_info, bool show_fs)
+void ctrtool::CciProcess::setCliOutputMode(bool show_header_info)
 {
 	mShowHeaderInfo = show_header_info;
-	mShowFs = show_fs;
 }
 
 void ctrtool::CciProcess::setVerboseMode(bool verbose)
@@ -96,8 +94,6 @@ void ctrtool::CciProcess::process()
 		verifyHeader();
 	if (mShowHeaderInfo)
 		printHeader();
-	if (mShowFs)
-		printFs();
 	if (mExtractPath.isSet())
 		extractFs();
 	processContent();
@@ -328,19 +324,6 @@ void ctrtool::CciProcess::printHeader()
 	// card device info
 	fmt::print("CardDeviceInfo:\n");
 	fmt::print(" TitleKey:               {}\n", tc::cli::FormatUtil::formatBytesAsString(mHeader.card_device_info.title_key.data(), mHeader.card_device_info.title_key.size(), true, ""));
-}
-
-void ctrtool::CciProcess::printFs()
-{
-	tc::io::sDirectoryListing dir;
-	mFsReader->getDirectoryListing(tc::io::Path("/"), dir);
-
-	fmt::print("[CCI Filesystem]\n");
-	fmt::print("  CCI:/\n");
-	for (auto itr = dir.file_list.begin(); itr != dir.file_list.end(); itr++)
-	{
-		fmt::print("    {}\n", *itr); 
-	}
 }
 
 void ctrtool::CciProcess::extractFs()

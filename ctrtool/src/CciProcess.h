@@ -15,7 +15,7 @@ public:
 
 	void setInputStream(const std::shared_ptr<tc::io::IStream>& input_stream);
 	void setKeyBag(const ctrtool::KeyBag& key_bag);
-	void setCliOutputMode(bool show_header_info, bool show_fs);
+	void setCliOutputMode(bool show_header_info);
 	void setVerboseMode(bool verbose);
 	void setVerifyMode(bool verify);
 	void setExtractPath(const tc::io::Path& extract_path);
@@ -34,7 +34,6 @@ private:
 	std::shared_ptr<tc::io::IStream> mInputStream;
 	ctrtool::KeyBag mKeyBag;
 	bool mShowHeaderInfo;
-	bool mShowFs;
 	bool mVerbose;
 	bool mVerify;
 	tc::Optional<tc::io::Path> mExtractPath;
@@ -52,7 +51,6 @@ private:
 	void importHeader();
 	void verifyHeader();
 	void printHeader();
-	void printFs();
 	void extractFs();
 	void processContent();
 
