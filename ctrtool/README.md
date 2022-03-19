@@ -72,4 +72,4 @@ LZSS options:
 ```
 
 # Building
-See [BUILDING.md](/BUILDING.md).
+See [BUILDING.md](/ctrtool/BUILDING.md).
