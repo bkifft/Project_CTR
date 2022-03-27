@@ -109,8 +109,8 @@ struct ESTicket
     ESTicketCustomData        customData;        // 20-byte custom data
     ESTicketReserved          reserved;          // 25-byte reserved info
     uint8_t                   audit;             //
-    /* 2 bytes alignment padding */
     ESCidxMask                cidxMask;          // Bit-mask of the content indices
+    /* 2 bytes alignment padding */
     ESLimitedPlayArray        limits;            // Limited play entries
 };
 static_assert(sizeof(ESTicket) == 676, "ESTicket size");
