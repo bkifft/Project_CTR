@@ -921,7 +921,7 @@ void ctrtool::KeyBagInitializer::importSeedDb(const std::shared_ptr<tc::io::ISou
 	// import entries
 	for (size_t i = 0; i < n_entries; i++)
 	{
-		seed_db.insert(std::pair<byte_t, KeyBag::Aes128Key>(entry[i].title_id.unwrap(), entry[i].seed));
+		seed_db.insert(std::pair<uint64_t, KeyBag::Aes128Key>(entry[i].title_id.unwrap(), entry[i].seed));
 	}
 }
 
