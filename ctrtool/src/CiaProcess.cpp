@@ -13,7 +13,6 @@ ctrtool::CiaProcess::CiaProcess() :
 	mInputStream(),
 	mKeyBag(),
 	mShowHeaderInfo(false),
-	mShowFs(false),
 	mVerbose(false),
 	mVerify(false),
 	mCertExtractPath(),
@@ -49,10 +48,9 @@ void ctrtool::CiaProcess::setKeyBag(const ctrtool::KeyBag& key_bag)
 	mNcchProcess.setKeyBag(key_bag);
 }
 
-void ctrtool::CiaProcess::setCliOutputMode(bool show_header_info, bool show_fs)
+void ctrtool::CiaProcess::setCliOutputMode(bool show_header_info)
 {
 	mShowHeaderInfo = show_header_info;
-	mShowFs = show_fs;
 }
 
 void ctrtool::CiaProcess::setVerboseMode(bool verbose)

@@ -126,7 +126,7 @@ int umain(const std::vector<std::string>& args, const std::vector<std::string>& 
 			ctrtool::CiaProcess proc;
 			proc.setInputStream(infile_stream);
 			proc.setKeyBag(set.opt.keybag);
-			proc.setCliOutputMode(true, false);
+			proc.setCliOutputMode(set.opt.info);
 			proc.setVerboseMode(set.opt.verbose);
 			proc.setVerifyMode(set.opt.verify);
 			if (set.rom.content_extract_path.isSet())
