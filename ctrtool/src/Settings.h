@@ -40,9 +40,9 @@ struct Settings
 	struct Options
 	{
 		bool info;
+		bool verbose;
 		bool plain;
 		bool raw;
-		bool verbose;
 		bool verify;
 		bool show_keys;
 		bool is_dev;
@@ -123,9 +123,9 @@ struct Settings
 		infile.path = tc::Optional<tc::io::Path>();
 
 		opt.info = true;
+		opt.verbose = false;
 		opt.plain = false;
 		opt.raw = false;
-		opt.verbose = false;
 		opt.verify = false;
 		opt.show_keys = false;
 		opt.is_dev = false;
@@ -167,6 +167,8 @@ private:
 	void usage_text();
 
 	std::string mModuleLabel;
+
+	bool mSuppressOutput;
 
 	bool mShowKeys;
 	tc::Optional<std::string> mFallBackTitleKey;

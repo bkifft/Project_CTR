@@ -356,6 +356,8 @@ private:
 ctrtool::SettingsInitializer::SettingsInitializer(const std::vector<std::string>& args) :
 	Settings(),
 	mModuleLabel("ctrtool::SettingsInitializer"),
+	mSuppressOutput(false),
+	mShowKeys(false),
 	mFallBackTitleKey(),
 	mFallBackSeed(),
 	mSeedDbPath()
@@ -364,6 +366,15 @@ ctrtool::SettingsInitializer::SettingsInitializer(const std::vector<std::string>
 	parse_args(args);
 	if (infile.path.isNull())
 		throw tc::ArgumentException(mModuleLabel, "No input file was specified.");
+
+	// suppress output if requested
+	if (mSuppressOutput)
+	{
+		opt.info = false;
+		opt.verbose = false;
+		exefs.list_fs = false;
+		romfs.list_fs = false;
+	}
 
 	opt.keybag = KeyBagInitializer(opt.is_dev, mFallBackTitleKey, mSeedDbPath, mFallBackSeed);
 
@@ -417,9 +428,10 @@ void ctrtool::SettingsInitializer::parse_args(const std::vector<std::string>& ar
 
 	// get option flags
 	opts.registerOptionHandler(std::shared_ptr<FlagOptionHandler>(new FlagOptionHandler(opt.info, {"-i", "--info"})));
+	opts.registerOptionHandler(std::shared_ptr<FlagOptionHandler>(new FlagOptionHandler(opt.verbose, {"-v", "--verbose"})));
+	opts.registerOptionHandler(std::shared_ptr<FlagOptionHandler>(new FlagOptionHandler(mSuppressOutput, {"-q", "--quiet"})));
 	opts.registerOptionHandler(std::shared_ptr<FlagOptionHandler>(new FlagOptionHandler(opt.plain, {"-p", "--plain"})));
 	opts.registerOptionHandler(std::shared_ptr<FlagOptionHandler>(new FlagOptionHandler(opt.raw, {"-r", "--raw"})));
-	opts.registerOptionHandler(std::shared_ptr<FlagOptionHandler>(new FlagOptionHandler(opt.verbose, {"-v", "--verbose"})));
 	opts.registerOptionHandler(std::shared_ptr<FlagOptionHandler>(new FlagOptionHandler(opt.verify, {"-y", "--verify"})));
 	opts.registerOptionHandler(std::shared_ptr<FlagOptionHandler>(new FlagOptionHandler(opt.is_dev, {"-d", "--dev"})));
 	opts.registerOptionHandler(std::shared_ptr<FlagOptionHandler>(new FlagOptionHandler(opt.show_keys, {"--showkeys"})));
@@ -593,14 +605,16 @@ void ctrtool::SettingsInitializer::usage_text()
 
 	fmt::print(stderr,
 		"Options:\n"
-		"  -i, --info         Show file info.\n"
-		"                          This is the default action.\n"
+		//"  -i, --info         Show file info.\n"
+		//"                          This is the default action.\n"
 		//"  -x, --extract      Extract data from file.\n"
 		//"                          This is also the default action.\n"
+		"  -v, --verbose      Give verbose output.\n"
+		"  -q, --quiet        Only output errors (regular output is silenced).\n"
 		"  -p, --plain        Extract data without decrypting.\n"
 		"  -r, --raw          Keep raw data, don't unpack.\n"
 		//"  -k, --keyset=file  Specify keyset file.\n"
-		"  -v, --verbose      Give verbose output.\n"
+
 		"  -y, --verify       Verify hashes and signatures.\n"
 		"  -d, --dev          Decrypt with development keys instead of retail.\n"
 		//"  --unitsize=size    Set media unit size (default 0x200).\n"
