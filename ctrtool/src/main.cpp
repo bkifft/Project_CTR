@@ -77,7 +77,7 @@ int umain(const std::vector<std::string>& args, const std::vector<std::string>& 
 			proc.setVerboseMode(set.opt.verbose);
 			proc.setVerifyMode(set.opt.verify);
 			proc.setRawMode(set.opt.raw);
-			proc.setPlainMode(set.opt.raw);
+			proc.setPlainMode(set.opt.plain);
 			proc.setShowSyscallName(set.exheader.show_syscalls_as_names);
 			proc.setRegionProcessOutputMode(proc.NcchRegion_Header, set.opt.info, false, tc::Optional<tc::io::Path>(), tc::Optional<tc::io::Path>());
 			proc.setRegionProcessOutputMode(proc.NcchRegion_ExHeader, set.opt.info, false, set.ncch.exheader_path, tc::Optional<tc::io::Path>());
