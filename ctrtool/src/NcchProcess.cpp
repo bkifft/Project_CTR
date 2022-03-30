@@ -790,6 +790,17 @@ void ctrtool::NcchProcess::processRegions()
 	}
 	if (mRegionInfo[NcchRegion_ExeFs].size != 0 && mRegionInfo[NcchRegion_ExeFs].ready_stream != nullptr)
 	{
+		// prior to reading exefs, check compressed flag in exheader
+		if (mRegionInfo[NcchRegion_ExHeader].size > 0 && mRegionInfo[NcchRegion_ExHeader].ready_stream != nullptr)
+		{
+			// import exheader			
+			ntd::n3ds::ExtendedHeader exheader;
+			mRegionInfo[NcchRegion_ExHeader].ready_stream->seek(0, tc::io::SeekOrigin::Begin);
+			mRegionInfo[NcchRegion_ExHeader].ready_stream->read((byte_t*)&exheader, sizeof(ntd::n3ds::ExtendedHeader));
+
+			mDecompressExeFsCode = exheader.system_control_info.flags.bitarray.test(ntd::n3ds::SystemControlInfo::Flags_CompressExefsPartition0);
+		}
+
 		ctrtool::ExeFsProcess proc;
 		proc.setInputStream(mRegionInfo[NcchRegion_ExeFs].ready_stream);
 		proc.setCliOutputMode(mRegionOpt[NcchRegion_ExeFs].show_info, mRegionOpt[NcchRegion_ExeFs].show_fs);
