@@ -192,7 +192,7 @@ void ctrtool::CciProcess::importHeader()
 	}
 	else
 	{
-		fmt::print("[WARNING] Unsupported CardInfo::CryptoType ({})\n", (uint32_t)mHeader.card_info.flag.crypto_type);
+		fmt::print(stderr, "[{} LOG] Unsupported CardInfo::CryptoType ({})\n", mModuleLabel, (uint32_t)mHeader.card_info.flag.crypto_type);
 	}
 
 	if (initial_data_key_available)
@@ -210,6 +210,16 @@ void ctrtool::CciProcess::importHeader()
 		{
 			mDecryptedTitleKey = decrypted_title_key;
 		}
+		// Since CCM mode decrypts AND verifies, we should process the result here if required
+		if (mVerify)
+		{
+			mValidInitialDataMac = dec_result == 0 ? ValidState::Good :  ValidState::Fail;
+
+			if (mValidInitialDataMac != ValidState::Good)
+			{
+				fmt::print(stderr, "[{} LOG] InitialData MAC was invalid.\n", mModuleLabel);
+			}
+		}
 
 		/*
 		// test encrypt
@@ -221,6 +231,11 @@ void ctrtool::CciProcess::importHeader()
 		*/
 
 		mbedtls_ccm_free(&ccm_ctx);
+	}
+	else
+	{
+		// no initial data key
+		fmt::print(stderr, "[{} LOG] Failed to determine key to decrypt InitialData.\n", mModuleLabel);
 	}
 
 	// open fs reader
@@ -241,11 +256,14 @@ void ctrtool::CciProcess::verifyHeader()
 	}
 	else
 	{
-		fmt::print(stderr, "Could not read static CFA_CCI public key.\n");
+		fmt::print(stderr, "[{} LOG] Could not read static CFA/CCI RSA2048 public key.\n", mModuleLabel);
 		mValidSignature = ValidState::Fail;
 	}
 
-	mValidInitialDataMac = mDecryptedTitleKey.isSet() ? ValidState::Good : ValidState::Fail;
+	if (mValidSignature != ValidState::Good)
+	{
+		fmt::print(stderr, "[{} LOG] Signature for NcsdCommonHeader was invalid.\n", mModuleLabel);
+	}
 }
 
 void ctrtool::CciProcess::printHeader()
@@ -347,7 +365,7 @@ void ctrtool::CciProcess::extractFs()
 		// build out path
 		out_path = mExtractPath.get() + *itr;
 
-		fmt::print("Saving {}...\n", out_path.to_string());
+		fmt::print(stderr, "[{} LOG] Saving {}...\n", mModuleLabel, out_path.to_string());
 
 		// begin export
 		mFsReader->openFile(*itr, tc::io::FileMode::Open, tc::io::FileAccess::Read, in_stream);
@@ -360,7 +378,7 @@ void ctrtool::CciProcess::extractFs()
 			cache_read_len = in_stream->read(cache.data(), cache.size());
 			if (cache_read_len == 0)
 			{
-				throw tc::io::IOException(mModuleLabel, "Failed to read from RomFs file.");
+				throw tc::io::IOException(mModuleLabel, fmt::format("Failed to read from \"{}\".", (std::string)(dir.abs_path + *itr)));
 			}
 
 			out_stream->write(cache.data(), cache_read_len);
@@ -374,7 +392,7 @@ void ctrtool::CciProcess::processContent()
 {
 	if (mContentIndex >= ntd::n3ds::NcsdCommonHeader::kPartitionNum)
 	{
-		fmt::print(stderr, "Content index {:d} isn't valid for CCI, use index 0-7, defaulting to 0 now.\n", mContentIndex);
+		fmt::print(stderr, "[{} LOG] Content index {:d} isn't valid for CCI, use index 0-7, defaulting to 0 now.\n", mModuleLabel, mContentIndex);
 		mContentIndex = 0;
 	}
 	if (mHeader.ncsd_header.partition_offsetsize[mContentIndex].blk_size.unwrap() != 0)
