@@ -286,10 +286,9 @@ void ctrtool::CiaProcess::importHeader()
 			}
 
 		}
-		// TODO load certificates from KeyBag
 		else
 		{
-			fmt::print("[LOG] CIA has no Certificate, cannot verify Ticket or TitleMetaData.\n");
+			fmt::print(stderr, "[{} LOG] CIA has no Certificate, cannot verify Ticket or TitleMetaData.\n", mModuleLabel);
 		}
 
 		if (mTikSizeInfo.size > 0)
@@ -299,12 +298,12 @@ void ctrtool::CiaProcess::importHeader()
 			// determine title key
 			if (mKeyBag.fallback_title_key.isSet())
 			{
-				fmt::print("[LOG] Using fallback titlekey.\n");
+				fmt::print(stderr, "[{} LOG] Using fallback titlekey.\n", mModuleLabel);
 				mDecryptedTitleKey = mKeyBag.fallback_title_key.get();
 			}
 			else if (mKeyBag.common_key.find(mTicket.key_id) != mKeyBag.common_key.end())
 			{
-				fmt::print("[LOG] Decrypting titlekey from ticket.\n");
+				fmt::print(stderr, "[{} LOG] Decrypting titlekey from ticket.\n", mModuleLabel);
 				
 				// get common key
 				auto common_key = mKeyBag.common_key[mTicket.key_id];
@@ -322,7 +321,7 @@ void ctrtool::CiaProcess::importHeader()
 			}
 			else
 			{
-				fmt::print("[LOG] Cannot determine titlekey.\n");
+				fmt::print(stderr, "[{} LOG] Cannot determine titlekey.\n", mModuleLabel);
 			}
 		}
 		else
@@ -419,8 +418,14 @@ void ctrtool::CiaProcess::verifyMetadata()
 			else
 			{
 				// cannot locate rsa key to verify
-				fmt::print(stderr, "Could not read public key for \"{}\" (certificate).\n", mCertChain[i].signature.issuer);
+				fmt::print(stderr, "[{} LOG] Could not read public key for \"{}\" (certificate).\n", mModuleLabel, mCertChain[i].signature.issuer);
 				mCertSigValid[i] = ValidState::Fail;
+			}
+
+			// log certificate signature validation error
+			if (mCertSigValid[i] != ValidState::Good)
+			{
+				fmt::print(stderr, "[{} LOG] Signature for Certificate \"{}\" was invalid.\n", mModuleLabel, mCertChain[i].signature.issuer);
 			}
 		}
 	}
@@ -443,8 +448,14 @@ void ctrtool::CiaProcess::verifyMetadata()
 		else
 		{
 			// cannot locate rsa key to verify
-			fmt::print(stderr, "Could not read public key for \"{}\" (ticket).\n", mTicket.signature.issuer);
+			fmt::print(stderr, "[{} LOG] Could not read public key for \"{}\" (ticket).\n", mModuleLabel, mTicket.signature.issuer);
 			mTicketSigValid = ValidState::Fail;
+		}
+
+		// log ticket signature validation error
+		if (mTicketSigValid != ValidState::Good)
+		{
+			fmt::print(stderr, "[{} LOG] Signature for Ticket \"{}\" was invalid.\n", mModuleLabel, mTicket.signature.issuer);
 		}
 	}
 	if (mHeader.format_version.unwrap() == ntd::n3ds::CiaHeader::FormatVersion_Default && mTmdSizeInfo.size > 0)
@@ -466,8 +477,14 @@ void ctrtool::CiaProcess::verifyMetadata()
 		else
 		{
 			// cannot locate rsa key to verify
-			fmt::print(stderr, "Could not read public key for \"{}\" (tmd).\n", mTitleMetaData.signature.issuer);
+			fmt::print(stderr, "[{} LOG] Could not read public key for \"{}\" (tmd).\n", mModuleLabel, mTitleMetaData.signature.issuer);
 			mTitleMetaDataSigValid = ValidState::Fail;
+		}
+
+		// log tmd signature validation error
+		if (mTitleMetaDataSigValid != ValidState::Good)
+		{
+			fmt::print(stderr, "[{} LOG] Signature for TitleMetaData \"{}\" was invalid.\n", mModuleLabel, mTitleMetaData.signature.issuer);
 		}
 	}
 }
@@ -517,6 +534,11 @@ void ctrtool::CiaProcess::verifyContent()
 			sha256_calc.getHash(sha256_hash.data());
 
 			itr->second.valid_state = memcmp(sha256_hash.data(), itr->second.hash.data(), sha256_hash.size()) == 0 ? ValidState::Good : ValidState::Fail;
+
+			if (itr->second.valid_state != ValidState::Good)
+			{
+				fmt::print(stderr, "[{} LOG] Hash for content (index=0x{:04x}, id=0x{:08x}) was invalid.\n", mModuleLabel, itr->second.cindex, itr->second.cid);
+			}
 		}
 	}
 }
@@ -671,7 +693,7 @@ void ctrtool::CiaProcess::extractCia()
 		in_stream = std::shared_ptr<tc::io::SubStream>(new tc::io::SubStream(mInputStream, mCertSizeInfo.offset, mCertSizeInfo.size));
 		out_stream = std::shared_ptr<tc::io::FileStream>(new tc::io::FileStream(out_path, tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write));
 
-		fmt::print("Saving certs to {}...\n", out_path.to_string());
+		fmt::print(stderr, "[{} LOG] Saving certs to {}...\n", mModuleLabel, out_path.to_string());
 		copyStream(in_stream, out_stream);
 	}
 
@@ -682,7 +704,7 @@ void ctrtool::CiaProcess::extractCia()
 		in_stream = std::shared_ptr<tc::io::SubStream>(new tc::io::SubStream(mInputStream, mTikSizeInfo.offset, mTikSizeInfo.size));
 		out_stream = std::shared_ptr<tc::io::FileStream>(new tc::io::FileStream(out_path, tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write));
 
-		fmt::print("Saving tik to {}...\n", out_path.to_string());
+		fmt::print(stderr, "[{} LOG] Saving tik to {}...\n", mModuleLabel, out_path.to_string());
 		copyStream(in_stream, out_stream);
 	}
 
@@ -693,7 +715,7 @@ void ctrtool::CiaProcess::extractCia()
 		in_stream = std::shared_ptr<tc::io::SubStream>(new tc::io::SubStream(mInputStream, mTmdSizeInfo.offset, mTmdSizeInfo.size));
 		out_stream = std::shared_ptr<tc::io::FileStream>(new tc::io::FileStream(out_path, tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write));
 
-		fmt::print("Saving tmd to {}...\n", out_path.to_string());
+		fmt::print(stderr, "[{} LOG] Saving tmd to {}...\n", mModuleLabel, out_path.to_string());
 		copyStream(in_stream, out_stream);
 	}
 
@@ -704,7 +726,7 @@ void ctrtool::CiaProcess::extractCia()
 		in_stream = std::shared_ptr<tc::io::SubStream>(new tc::io::SubStream(mInputStream, mFooterSizeInfo.offset, mFooterSizeInfo.size));
 		out_stream = std::shared_ptr<tc::io::FileStream>(new tc::io::FileStream(out_path, tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write));
 
-		fmt::print("Saving meta to {}...\n", out_path.to_string());
+		fmt::print(stderr, "[{} LOG] Saving meta to {}...\n", mModuleLabel, out_path.to_string());
 		copyStream(in_stream, out_stream);
 	}
 
@@ -727,7 +749,7 @@ void ctrtool::CiaProcess::extractCia()
 
 			out_stream = std::shared_ptr<tc::io::FileStream>(new tc::io::FileStream(out_path, tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write));
 
-			fmt::print("Saving content {:04x} to {}...\n", itr->second.cindex, out_path.to_string());
+			fmt::print(stderr, "[{} LOG] Saving content {:04x} to {}...\n", mModuleLabel, itr->second.cindex, out_path.to_string());
 			copyStream(in_stream, out_stream);
 		}
 	}
@@ -758,7 +780,7 @@ void ctrtool::CiaProcess::processContent()
 {
 	if (mContentIndex >= ntd::n3ds::CiaHeader::kCiaMaxContentNum)
 	{
-		fmt::print(stderr, "Content index {:d} isn't valid for CIA, use index 0-{:d}, defaulting to 0 now.\n", mContentIndex, ((size_t)ntd::n3ds::CiaHeader::kCiaMaxContentNum)-1);
+		fmt::print(stderr, "[{} LOG] Content index {:d} isn't valid for CIA, use index 0-{:d}, defaulting to 0 now.\n", mModuleLabel, mContentIndex, ((size_t)ntd::n3ds::CiaHeader::kCiaMaxContentNum)-1);
 		mContentIndex = 0;
 	}
 	if (mContentInfo.find(mContentIndex) != mContentInfo.end() && mContentInfo[mContentIndex].size != 0)
@@ -780,7 +802,7 @@ void ctrtool::CiaProcess::processContent()
 		}
 		else
 		{
-			fmt::print("[LOG] TWL title processing not supported\n");
+			fmt::print(stderr, "[{} LOG] TWL title processing not supported\n", mModuleLabel);
 		}
 	}
 }
