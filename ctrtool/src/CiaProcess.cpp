@@ -288,7 +288,11 @@ void ctrtool::CiaProcess::importHeader()
 		}
 		else
 		{
-			fmt::print(stderr, "[{} LOG] CIA has no Certificate, cannot verify Ticket or TitleMetaData.\n", mModuleLabel);
+			if (mVerify)
+			{
+				fmt::print(stderr, "[{} LOG] CIA has no Certificates, verifying Ticket or TitleMetaData will use the bundled public keys.\n", mModuleLabel);
+			}
+			
 		}
 
 		if (mTikSizeInfo.size > 0)
@@ -402,23 +406,28 @@ void ctrtool::CiaProcess::verifyMetadata()
 		// verify cert
 		for (size_t i = 0; i < mCertChain.size(); i++)
 		{
-			auto keybag_issuer_itr = mIssuerSigner.find(mCertChain[i].signature.issuer);
 			auto local_issuer_itr = mCertImportedIssuerSigner.find(mCertChain[i].signature.issuer);
+			auto keybag_issuer_itr = mIssuerSigner.find(mCertChain[i].signature.issuer);
 			
-			// try first with the keybag imported issuer
-			if (keybag_issuer_itr != mIssuerSigner.end() && keybag_issuer_itr->second->getSigType() == mCertChain[i].signature.sig_type)
-			{
-				mCertSigValid[i] = keybag_issuer_itr->second->verifyHash(mCertChain[i].calculated_hash.data(), mCertChain[i].signature.sig.data()) ? ValidState::Good : ValidState::Fail;
-			}
-			// fallback try with the issuer profiles imported from the local certificates
-			else if (local_issuer_itr != mCertImportedIssuerSigner.end() && local_issuer_itr->second->getSigType() == mCertChain[i].signature.sig_type)
+			// first try with the issuer profiles imported from the local certificates
+			if (local_issuer_itr != mCertImportedIssuerSigner.end() && local_issuer_itr->second->getSigType() == mCertChain[i].signature.sig_type)
 			{
 				mCertSigValid[i] = local_issuer_itr->second->verifyHash(mCertChain[i].calculated_hash.data(), mCertChain[i].signature.sig.data()) ? ValidState::Good : ValidState::Fail;
+			}
+			// fallback try with the keybag imported issuer
+			else if (keybag_issuer_itr != mIssuerSigner.end() && keybag_issuer_itr->second->getSigType() == mCertChain[i].signature.sig_type)
+			{
+				// only show this warning for non-root signed certificates
+				if (mCertChain[i].signature.issuer != "Root")
+				{
+					fmt::print(stderr, "[{} LOG] Public key \"{}\" (for certificate \"{}\") was not present in the CIA certificate chain. The bundled public key was used instead.\n", mModuleLabel, mCertChain[i].signature.issuer, mCertChain[i].subject);
+				}
+				mCertSigValid[i] = keybag_issuer_itr->second->verifyHash(mCertChain[i].calculated_hash.data(), mCertChain[i].signature.sig.data()) ? ValidState::Good : ValidState::Fail;
 			}
 			else
 			{
 				// cannot locate rsa key to verify
-				fmt::print(stderr, "[{} LOG] Could not read public key for \"{}\" (certificate).\n", mModuleLabel, mCertChain[i].signature.issuer);
+				fmt::print(stderr, "[{} LOG] Could not locate public key for \"{}\" (certificate).\n", mModuleLabel, mCertChain[i].signature.issuer);
 				mCertSigValid[i] = ValidState::Fail;
 			}
 
@@ -432,59 +441,61 @@ void ctrtool::CiaProcess::verifyMetadata()
 	if (mHeader.format_version.unwrap() == ntd::n3ds::CiaHeader::FormatVersion_Default && mTikSizeInfo.size > 0)
 	{
 		// verify ticket
-		auto keybag_issuer_itr = mIssuerSigner.find(mTicket.signature.issuer);
 		auto local_issuer_itr = mCertImportedIssuerSigner.find(mTicket.signature.issuer);
+		auto keybag_issuer_itr = mIssuerSigner.find(mTicket.signature.issuer);
 
-		// try first with the keybag imported issuer
-		if (keybag_issuer_itr != mIssuerSigner.end() && keybag_issuer_itr->second->getSigType() == mTicket.signature.sig_type)
-		{
-			mTicketSigValid = keybag_issuer_itr->second->verifyHash(mTicket.calculated_hash.data(), mTicket.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
-		}
-		// fallback try with the issuer profiles imported from the local certificates
-		else if (local_issuer_itr != mCertImportedIssuerSigner.end() && local_issuer_itr->second->getSigType() == mTicket.signature.sig_type)
+		// first try with the issuer profiles imported from the local certificates
+		if (local_issuer_itr != mCertImportedIssuerSigner.end() && local_issuer_itr->second->getSigType() == mTicket.signature.sig_type)
 		{
 			mTicketSigValid = local_issuer_itr->second->verifyHash(mTicket.calculated_hash.data(), mTicket.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
+		}
+		// fallback try with the keybag imported issuer
+		else if (keybag_issuer_itr != mIssuerSigner.end() && keybag_issuer_itr->second->getSigType() == mTicket.signature.sig_type)
+		{
+			fmt::print(stderr, "[{} LOG] Public key \"{}\" (for ticket) was not present in the CIA certificate chain. The bundled public key was used instead.\n", mModuleLabel, mTicket.signature.issuer);
+			mTicketSigValid = keybag_issuer_itr->second->verifyHash(mTicket.calculated_hash.data(), mTicket.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
 		}
 		else
 		{
 			// cannot locate rsa key to verify
-			fmt::print(stderr, "[{} LOG] Could not read public key for \"{}\" (ticket).\n", mModuleLabel, mTicket.signature.issuer);
+			fmt::print(stderr, "[{} LOG] Could not locate public key \"{}\" (for ticket).\n", mModuleLabel, mTicket.signature.issuer);
 			mTicketSigValid = ValidState::Fail;
 		}
 
 		// log ticket signature validation error
 		if (mTicketSigValid != ValidState::Good)
 		{
-			fmt::print(stderr, "[{} LOG] Signature for Ticket \"{}\" was invalid.\n", mModuleLabel, mTicket.signature.issuer);
+			fmt::print(stderr, "[{} LOG] Signature for Ticket was invalid.\n", mModuleLabel);
 		}
 	}
 	if (mHeader.format_version.unwrap() == ntd::n3ds::CiaHeader::FormatVersion_Default && mTmdSizeInfo.size > 0)
 	{
 		// verify tmd
-		auto keybag_issuer_itr = mIssuerSigner.find(mTitleMetaData.signature.issuer);
 		auto local_issuer_itr = mCertImportedIssuerSigner.find(mTitleMetaData.signature.issuer);
+		auto keybag_issuer_itr = mIssuerSigner.find(mTitleMetaData.signature.issuer);
 
-		// try first with the keybag imported issuer
-		if (keybag_issuer_itr != mIssuerSigner.end() && keybag_issuer_itr->second->getSigType() == mTitleMetaData.signature.sig_type)
-		{
-			mTitleMetaDataSigValid = keybag_issuer_itr->second->verifyHash(mTitleMetaData.calculated_hash.data(), mTitleMetaData.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
-		}
-		// fallback try with the issuer profiles imported from the local certificates
-		else if (local_issuer_itr != mCertImportedIssuerSigner.end() && local_issuer_itr->second->getSigType() == mTitleMetaData.signature.sig_type)
+		// first try with the issuer profiles imported from the local certificates
+		if (local_issuer_itr != mCertImportedIssuerSigner.end() && local_issuer_itr->second->getSigType() == mTitleMetaData.signature.sig_type)
 		{
 			mTitleMetaDataSigValid = local_issuer_itr->second->verifyHash(mTitleMetaData.calculated_hash.data(), mTitleMetaData.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
+		}
+		// fallback try with the keybag imported issuer
+		else if (keybag_issuer_itr != mIssuerSigner.end() && keybag_issuer_itr->second->getSigType() == mTitleMetaData.signature.sig_type)
+		{
+			fmt::print(stderr, "[{} LOG] Public key \"{}\" (for tmd) was not present in the CIA certificate chain. The bundled public key was used instead.\n", mModuleLabel, mTitleMetaData.signature.issuer);
+			mTitleMetaDataSigValid = keybag_issuer_itr->second->verifyHash(mTitleMetaData.calculated_hash.data(), mTitleMetaData.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
 		}
 		else
 		{
 			// cannot locate rsa key to verify
-			fmt::print(stderr, "[{} LOG] Could not read public key for \"{}\" (tmd).\n", mModuleLabel, mTitleMetaData.signature.issuer);
+			fmt::print(stderr, "[{} LOG] Could not locate public key \"{}\" (for tmd).\n", mModuleLabel, mTitleMetaData.signature.issuer);
 			mTitleMetaDataSigValid = ValidState::Fail;
 		}
 
 		// log tmd signature validation error
 		if (mTitleMetaDataSigValid != ValidState::Good)
 		{
-			fmt::print(stderr, "[{} LOG] Signature for TitleMetaData \"{}\" was invalid.\n", mModuleLabel, mTitleMetaData.signature.issuer);
+			fmt::print(stderr, "[{} LOG] Signature for TitleMetaData was invalid.\n", mModuleLabel);
 		}
 	}
 }
