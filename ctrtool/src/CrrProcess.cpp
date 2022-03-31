@@ -124,7 +124,7 @@ void ctrtool::CrrProcess::verifyData()
 	}
 	else
 	{
-		fmt::print(stderr, "Could not read static CRR public key.\n");
+		fmt::print(stderr, "[{} LOG] Could not read static CRR public key.\n", mModuleLabel);
 		mValidCertificateSignature = ValidState::Fail;
 	}
 
@@ -144,6 +144,20 @@ void ctrtool::CrrProcess::verifyData()
 	// validate unique id
 	{
 		mValidUniqueId = ((mBodyHeader.unique_id.unwrap() & mHeader.body_certificate.unique_id_mask.unwrap()) == 0) ? ValidState::Good : ValidState::Fail;
+	}
+
+	// log validation errors
+	if (mValidCertificateSignature != ValidState::Good)
+	{
+		fmt::print(stderr, "[{} LOG] Signature for CRR Certificate was invalid.\n", mModuleLabel);
+	}
+	if (mValidBodySignature != ValidState::Good)
+	{
+		fmt::print(stderr, "[{} LOG] Signature for CRR Body was invalid.\n", mModuleLabel);
+	}
+	if (mValidUniqueId != ValidState::Good)
+	{
+		fmt::print(stderr, "[{} LOG] CRR UniqueId was invalid.\n", mModuleLabel);
 	}
 }
 
