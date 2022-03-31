@@ -130,11 +130,11 @@ void ctrtool::ExeFsProcess::verifyFs()
 			}
 			hash_calc.getHash(hash.data());
 
-			mSectionValidation[i] = memcmp(hash.data(), hdr_hash.data(), hash.size()) == 0? Good : Fail;
+			mSectionValidation[i] = memcmp(hash.data(), hdr_hash.data(), hash.size()) == 0? ValidState::Good : ValidState::Fail;
 
-			if (mVerbose)
+			if (mSectionValidation[i] != ValidState::Good)
 			{
-				fmt::print("[LOG/ExeFs] File: \"{}\" {} hash validation\n", mHeader.file_table[i].name.decode(), (mSectionValidation[i] == ValidState::Good ? "passed" : "failed"));
+				fmt::print(stderr, "[{} LOG] ExeFs file \"{}\" had an invalid SHA2-256 hash.\n", mModuleLabel, mHeader.file_table[i].name.decode());
 			}
 		}
 	}
@@ -223,7 +223,7 @@ void ctrtool::ExeFsProcess::extractFs()
 			}
 			if (test_hash != nullptr && memcmp(test_hash, hash.data(), hash.size()) == 0)
 			{
-				fmt::print("Decompressing section {} to {}...\n", *itr, f_path.to_string());
+				fmt::print(stderr, "[{} LOG] Decompressing file /{} to {}...\n", mModuleLabel, *itr, f_path.to_string());
 
 				tc::ByteData decompdata = tc::ByteData(lzss_get_decompressed_size(compdata.data(), compdata.size()));
 				lzss_decompress(compdata.data(), compdata.size(), decompdata.data(), decompdata.size());
@@ -233,7 +233,7 @@ void ctrtool::ExeFsProcess::extractFs()
 			}
 			else
 			{
-				fmt::print("Saving section {} to {}...\n", *itr, f_path.to_string());
+				fmt::print(stderr, "[{} LOG] Saving file /{} to {}...\n", mModuleLabel, *itr, f_path.to_string());
 
 				out_stream->seek(0, tc::io::SeekOrigin::Begin);
 				out_stream->write(compdata.data(), compdata.size());
@@ -241,7 +241,7 @@ void ctrtool::ExeFsProcess::extractFs()
 		}
 		else
 		{
-			fmt::print("Saving section {} to {}...\n", *itr, f_path.to_string());
+			fmt::print(stderr, "[{} LOG] Saving file /{} to {}...\n", mModuleLabel, *itr, f_path.to_string());
 
 			tc::ByteData filedata = tc::ByteData(in_stream->length());
 			in_stream->seek(0, tc::io::SeekOrigin::Begin);
