@@ -171,8 +171,10 @@ void ctrtool::CciProcess::importHeader()
 	ctrtool::KeyBag::Aes128Key initial_data_key;
 	bool initial_data_key_available = false;
 
-	// crypto_type 0 is the normal "secure" initial data key 
-	if (mHeader.card_info.flag.crypto_type == ntd::n3ds::CciHeader::CryptoType_Secure)
+	// crypto_type 0-2 is the normal "secure" initial data key 
+	if (mHeader.card_info.flag.crypto_type == ntd::n3ds::CciHeader::CryptoType_Secure0 ||
+		mHeader.card_info.flag.crypto_type == ntd::n3ds::CciHeader::CryptoType_Secure1 ||
+		mHeader.card_info.flag.crypto_type == ntd::n3ds::CciHeader::CryptoType_Secure2)
 	{
 		if (mKeyBag.brom_static_key_x.find(mKeyBag.KEYSLOT_INITIAL_DATA) != mKeyBag.brom_static_key_x.end())
 		{	
@@ -530,8 +532,14 @@ std::string ctrtool::CciProcess::getCryptoTypeString(byte_t crypto_type)
 
 	switch(crypto_type)
 	{
-		case ntd::n3ds::CciHeader::CryptoType_Secure :
-			ret_str = "Secure";
+		case ntd::n3ds::CciHeader::CryptoType_Secure0 :
+			ret_str = "Secure0";
+			break;
+		case ntd::n3ds::CciHeader::CryptoType_Secure1 :
+			ret_str = "Secure1";
+			break;
+		case ntd::n3ds::CciHeader::CryptoType_Secure2 :
+			ret_str = "Secure2";
 			break;
 		case ntd::n3ds::CciHeader::CryptoType_FixedKey :
 			ret_str = "FixedKey";
