@@ -171,10 +171,14 @@ void ctrtool::CciProcess::importHeader()
 	ctrtool::KeyBag::Aes128Key initial_data_key;
 	bool initial_data_key_available = false;
 
+	// crypto_type 3 zeros initial_data key (used in developer ROMs only)
+	if (mHeader.card_info.flag.crypto_type == ntd::n3ds::CciHeader::CryptoType_FixedKey)
+	{
+		memset(initial_data_key.data(), 0, initial_data_key.size());
+		initial_data_key_available = true;
+	}
 	// crypto_type 0-2 is the normal "secure" initial data key 
-	if (mHeader.card_info.flag.crypto_type == ntd::n3ds::CciHeader::CryptoType_Secure0 ||
-		mHeader.card_info.flag.crypto_type == ntd::n3ds::CciHeader::CryptoType_Secure1 ||
-		mHeader.card_info.flag.crypto_type == ntd::n3ds::CciHeader::CryptoType_Secure2)
+	else
 	{
 		if (mKeyBag.brom_static_key_x.find(mKeyBag.KEYSLOT_INITIAL_DATA) != mKeyBag.brom_static_key_x.end())
 		{	
@@ -185,16 +189,6 @@ void ctrtool::CciProcess::importHeader()
 		{
 			initial_data_key_available = false;
 		}
-	}
-	// crypto_type 3 zeros initial_data key (used in developer roms mostly)
-	else if (mHeader.card_info.flag.crypto_type == ntd::n3ds::CciHeader::CryptoType_FixedKey)
-	{
-		memset(initial_data_key.data(), 0, initial_data_key.size());
-		initial_data_key_available = true;
-	}
-	else
-	{
-		fmt::print(stderr, "[{} LOG] Unsupported CardInfo::CryptoType ({})\n", mModuleLabel, (uint32_t)mHeader.card_info.flag.crypto_type);
 	}
 
 	if (initial_data_key_available)
@@ -258,7 +252,7 @@ void ctrtool::CciProcess::verifyHeader()
 	}
 	else
 	{
-		fmt::print(stderr, "[{} LOG] Could not read static CFA/CCI RSA2048 public key.\n", mModuleLabel);
+		fmt::print(stderr, "[{} LOG] Could not load CCI RSA2048 public key.\n", mModuleLabel);
 		mValidSignature = ValidState::Fail;
 	}
 

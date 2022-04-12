@@ -39,7 +39,7 @@ private:
 		{
 			system_save_id[0] = ValidState::Unchecked;
 			system_save_id[1] = ValidState::Unchecked;
-			access_info = ValidState::Unchecked;
+			fs_access = ValidState::Unchecked;
 			core_version = ValidState::Unchecked;
 			program_id = ValidState::Unchecked;
 			priority = ValidState::Unchecked;
@@ -53,7 +53,7 @@ private:
 		}
 
 		std::array<byte_t, 2> system_save_id;
-		byte_t access_info;
+		byte_t fs_access;
 		byte_t core_version;
 		byte_t program_id;
 		byte_t priority;

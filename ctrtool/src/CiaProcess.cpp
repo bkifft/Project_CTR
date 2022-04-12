@@ -286,14 +286,6 @@ void ctrtool::CiaProcess::importHeader()
 			}
 
 		}
-		else
-		{
-			if (mVerify)
-			{
-				fmt::print(stderr, "[{} LOG] CIA has no Certificates, verifying Ticket or TitleMetaData will use the bundled public keys.\n", mModuleLabel);
-			}
-			
-		}
 
 		if (mTikSizeInfo.size > 0)
 		{
@@ -302,12 +294,18 @@ void ctrtool::CiaProcess::importHeader()
 			// determine title key
 			if (mKeyBag.fallback_title_key.isSet())
 			{
-				fmt::print(stderr, "[{} LOG] Using fallback titlekey.\n", mModuleLabel);
+				if (mVerbose)
+				{
+					fmt::print(stderr, "[{} LOG] Using fallback titlekey.\n", mModuleLabel);
+				}
 				mDecryptedTitleKey = mKeyBag.fallback_title_key.get();
 			}
 			else if (mKeyBag.common_key.find(mTicket.key_id) != mKeyBag.common_key.end())
 			{
-				fmt::print(stderr, "[{} LOG] Decrypting titlekey from ticket.\n", mModuleLabel);
+				if (mVerbose)
+				{
+					fmt::print(stderr, "[{} LOG] Decrypting titlekey from ticket.\n", mModuleLabel);
+				}
 				
 				// get common key
 				auto common_key = mKeyBag.common_key[mTicket.key_id];
@@ -420,7 +418,7 @@ void ctrtool::CiaProcess::verifyMetadata()
 				// only show this warning for non-root signed certificates
 				if (mCertChain[i].signature.issuer != "Root")
 				{
-					fmt::print(stderr, "[{} LOG] Public key \"{}\" (for certificate \"{}\") was not present in the CIA certificate chain. The bundled public key was used instead.\n", mModuleLabel, mCertChain[i].signature.issuer, mCertChain[i].subject);
+					fmt::print(stderr, "[{} LOG] Public key \"{}\" (for certificate \"{}\") was not present in the CIA certificate chain. The public key included with CTRTool was used instead.\n", mModuleLabel, mCertChain[i].signature.issuer, mCertChain[i].subject);
 				}
 				mCertSigValid[i] = keybag_issuer_itr->second->verifyHash(mCertChain[i].calculated_hash.data(), mCertChain[i].signature.sig.data()) ? ValidState::Good : ValidState::Fail;
 			}
@@ -452,7 +450,7 @@ void ctrtool::CiaProcess::verifyMetadata()
 		// fallback try with the keybag imported issuer
 		else if (keybag_issuer_itr != mIssuerSigner.end() && keybag_issuer_itr->second->getSigType() == mTicket.signature.sig_type)
 		{
-			fmt::print(stderr, "[{} LOG] Public key \"{}\" (for ticket) was not present in the CIA certificate chain. The bundled public key was used instead.\n", mModuleLabel, mTicket.signature.issuer);
+			fmt::print(stderr, "[{} LOG] Public key \"{}\" (for ticket) was not present in the CIA certificate chain. The public key included with CTRTool was used instead.\n", mModuleLabel, mTicket.signature.issuer);
 			mTicketSigValid = keybag_issuer_itr->second->verifyHash(mTicket.calculated_hash.data(), mTicket.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
 		}
 		else
@@ -482,7 +480,7 @@ void ctrtool::CiaProcess::verifyMetadata()
 		// fallback try with the keybag imported issuer
 		else if (keybag_issuer_itr != mIssuerSigner.end() && keybag_issuer_itr->second->getSigType() == mTitleMetaData.signature.sig_type)
 		{
-			fmt::print(stderr, "[{} LOG] Public key \"{}\" (for tmd) was not present in the CIA certificate chain. The bundled public key was used instead.\n", mModuleLabel, mTitleMetaData.signature.issuer);
+			fmt::print(stderr, "[{} LOG] Public key \"{}\" (for tmd) was not present in the CIA certificate chain. The public key included with CTRTool was used instead.\n", mModuleLabel, mTitleMetaData.signature.issuer);
 			mTitleMetaDataSigValid = keybag_issuer_itr->second->verifyHash(mTitleMetaData.calculated_hash.data(), mTitleMetaData.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
 		}
 		else

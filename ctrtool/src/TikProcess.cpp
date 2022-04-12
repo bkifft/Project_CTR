@@ -93,7 +93,10 @@ void ctrtool::TikProcess::importData()
 		// determine title key
 		if (mKeyBag.common_key.find(mTicket.key_id) != mKeyBag.common_key.end())
 		{
-			fmt::print("[LOG] Decrypting titlekey from ticket.\n");
+			if (mVerbose)
+			{
+				fmt::print(stderr, "[{} LOG] Decrypting titlekey from ticket.\n", mModuleLabel);
+			}
 			
 			// get common key
 			auto common_key = mKeyBag.common_key[mTicket.key_id];
@@ -111,7 +114,7 @@ void ctrtool::TikProcess::importData()
 		}
 		else
 		{
-			fmt::print("[LOG] Cannot determine titlekey.\n");
+			fmt::print(stderr, "[{} LOG] Cannot determine titlekey.\n", mModuleLabel);
 		}
 	}
 
@@ -150,47 +153,70 @@ void ctrtool::TikProcess::verifyData()
 	// verify cert
 	for (size_t i = 0; i < mCertChain.size(); i++)
 	{
-		auto keybag_issuer_itr = mIssuerSigner.find(mCertChain[i].signature.issuer);
 		auto local_issuer_itr = mCertImportedIssuerSigner.find(mCertChain[i].signature.issuer);
+		auto keybag_issuer_itr = mIssuerSigner.find(mCertChain[i].signature.issuer);
 		
-		// try first with the keybag imported issuer
-		if (keybag_issuer_itr != mIssuerSigner.end() && keybag_issuer_itr->second->getSigType() == mCertChain[i].signature.sig_type)
-		{
-			mCertSigValid[i] = keybag_issuer_itr->second->verifyHash(mCertChain[i].calculated_hash.data(), mCertChain[i].signature.sig.data()) ? ValidState::Good : ValidState::Fail;
-		}
-		// fallback try with the issuer profiles imported from the local certificates
-		else if (local_issuer_itr != mCertImportedIssuerSigner.end() && local_issuer_itr->second->getSigType() == mCertChain[i].signature.sig_type)
+		// first try with the issuer profiles imported from the local certificates
+		if (local_issuer_itr != mCertImportedIssuerSigner.end() && local_issuer_itr->second->getSigType() == mCertChain[i].signature.sig_type)
 		{
 			mCertSigValid[i] = local_issuer_itr->second->verifyHash(mCertChain[i].calculated_hash.data(), mCertChain[i].signature.sig.data()) ? ValidState::Good : ValidState::Fail;
+		}
+		// fallback try with the keybag imported issuer
+		else if (keybag_issuer_itr != mIssuerSigner.end() && keybag_issuer_itr->second->getSigType() == mCertChain[i].signature.sig_type)
+		{
+			// only show this warning for non-root signed certificates
+			if (mCertChain[i].signature.issuer != "Root")
+			{
+				fmt::print(stderr, "[{} LOG] Public key \"{}\" (for certificate \"{}\") was not present in the certificate chain. The public key included with CTRTool was used instead.\n", mModuleLabel, mCertChain[i].signature.issuer, mCertChain[i].subject);
+			}
+			mCertSigValid[i] = keybag_issuer_itr->second->verifyHash(mCertChain[i].calculated_hash.data(), mCertChain[i].signature.sig.data()) ? ValidState::Good : ValidState::Fail;
 		}
 		else
 		{
 			// cannot locate rsa key to verify
-			fmt::print(stderr, "Could not read public key for \"{}\" (certificate).\n", mCertChain[i].signature.issuer);
+			fmt::print(stderr, "[{} LOG] Could not locate public key for \"{}\" (certificate).\n", mModuleLabel, mCertChain[i].signature.issuer);
 			mCertSigValid[i] = ValidState::Fail;
+		}
+
+		// log certificate signature validation error
+		if (mCertSigValid[i] != ValidState::Good)
+		{
+			fmt::print(stderr, "[{} LOG] Signature for Certificate \"{}\" was invalid.\n", mModuleLabel, mCertChain[i].signature.issuer);
 		}
 	}
 
 	// verify ticket
 	{
-		auto keybag_issuer_itr = mIssuerSigner.find(mTicket.signature.issuer);
+		// verify ticket
 		auto local_issuer_itr = mCertImportedIssuerSigner.find(mTicket.signature.issuer);
+		auto keybag_issuer_itr = mIssuerSigner.find(mTicket.signature.issuer);
 
-		// try first with the keybag imported issuer
-		if (keybag_issuer_itr != mIssuerSigner.end() && keybag_issuer_itr->second->getSigType() == mTicket.signature.sig_type)
-		{
-			mTicketSigValid = keybag_issuer_itr->second->verifyHash(mTicket.calculated_hash.data(), mTicket.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
-		}
-		// fallback try with the issuer profiles imported from the local certificates
-		else if (local_issuer_itr != mCertImportedIssuerSigner.end() && local_issuer_itr->second->getSigType() == mTicket.signature.sig_type)
+		// first try with the issuer profiles imported from the local certificates
+		if (local_issuer_itr != mCertImportedIssuerSigner.end() && local_issuer_itr->second->getSigType() == mTicket.signature.sig_type)
 		{
 			mTicketSigValid = local_issuer_itr->second->verifyHash(mTicket.calculated_hash.data(), mTicket.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
+		}
+		// fallback try with the keybag imported issuer
+		else if (keybag_issuer_itr != mIssuerSigner.end() && keybag_issuer_itr->second->getSigType() == mTicket.signature.sig_type)
+		{
+			// only show this warning when there are certificates appended to the ticket (only tickets downloaded from CDN will have an appended certificate chain)
+			if (mCertChain.size() != 0)
+			{
+				fmt::print(stderr, "[{} LOG] Public key \"{}\" (for ticket) was not present in the appended certificate chain. The public key included with CTRTool was used instead.\n", mModuleLabel, mTicket.signature.issuer);
+			}
+			mTicketSigValid = keybag_issuer_itr->second->verifyHash(mTicket.calculated_hash.data(), mTicket.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
 		}
 		else
 		{
 			// cannot locate rsa key to verify
-			fmt::print(stderr, "Could not read public key for \"{}\" (ticket).\n", mTicket.signature.issuer);
+			fmt::print(stderr, "[{} LOG] Could not locate public key \"{}\" (for ticket).\n", mModuleLabel, mTicket.signature.issuer);
 			mTicketSigValid = ValidState::Fail;
+		}
+
+		// log ticket signature validation error
+		if (mTicketSigValid != ValidState::Good)
+		{
+			fmt::print(stderr, "[{} LOG] Signature for Ticket was invalid.\n", mModuleLabel);
 		}
 	}
 }
