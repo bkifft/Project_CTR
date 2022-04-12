@@ -167,7 +167,9 @@ struct CciHeader
 
 	enum CryptoType
 	{
-		CryptoType_Secure = 0, // Secure initial data key (keyX bootrom, keyY initial data seed) (used in production ROMs)
+		CryptoType_Secure0 = 0, // Secure initial data key (keyX bootrom, keyY initial data seed) (used in production ROMs)
+		CryptoType_Secure1 = 1, // Secure initial data key (keyX bootrom, keyY initial data seed) (used in production ROMs)
+		CryptoType_Secure2 = 2, // Secure initial data key (keyX bootrom, keyY initial data seed) (used in production ROMs)
 		CryptoType_FixedKey = 3, // Zeros initial data key (used in non-HSM enviroments like development)
 	};
 
