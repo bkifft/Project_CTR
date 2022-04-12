@@ -371,7 +371,7 @@ ctrtool::SettingsInitializer::SettingsInitializer(const std::vector<std::string>
 	if (mSuppressOutput)
 	{
 		opt.info = false;
-		opt.verbose = false;
+		//opt.verbose = false;
 		exefs.list_fs = false;
 		romfs.list_fs = false;
 	}
