@@ -311,7 +311,10 @@ void ctrtool::FirmProcess::extractSections()
 			local_fs.createDirectory(mExtractPath.get());
 			local_fs.openFile(f_path, tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write, out_stream);
 
-			fmt::print("Saving section {} to {}...\n", i, f_path.to_string());
+			if (mVerbose)
+			{
+				fmt::print(stderr, "[{} LOG] Saving section {} to {}...\n", mModuleLabel, i, f_path.to_string());
+			}
 
 			tc::ByteData filedata = tc::ByteData(in_stream->length());
 			in_stream->seek(0, tc::io::SeekOrigin::Begin);

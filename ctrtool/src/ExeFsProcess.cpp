@@ -223,8 +223,11 @@ void ctrtool::ExeFsProcess::extractFs()
 			}
 			if (test_hash != nullptr && memcmp(test_hash, hash.data(), hash.size()) == 0)
 			{
-				fmt::print(stderr, "[{} LOG] Decompressing file /{} to {}...\n", mModuleLabel, *itr, f_path.to_string());
-
+				if (mVerbose)
+				{
+					fmt::print(stderr, "[{} LOG] Decompressing {} to {}...\n", mModuleLabel, *itr, f_path.to_string());
+				}
+				
 				tc::ByteData decompdata = tc::ByteData(lzss_get_decompressed_size(compdata.data(), compdata.size()));
 				lzss_decompress(compdata.data(), compdata.size(), decompdata.data(), decompdata.size());
 
@@ -233,7 +236,10 @@ void ctrtool::ExeFsProcess::extractFs()
 			}
 			else
 			{
-				fmt::print(stderr, "[{} LOG] Saving file /{} to {}...\n", mModuleLabel, *itr, f_path.to_string());
+				if (mVerbose)
+				{
+					fmt::print(stderr, "[{} LOG] Saving {} to {}...\n", mModuleLabel, *itr, f_path.to_string());
+				}
 
 				out_stream->seek(0, tc::io::SeekOrigin::Begin);
 				out_stream->write(compdata.data(), compdata.size());
@@ -241,8 +247,11 @@ void ctrtool::ExeFsProcess::extractFs()
 		}
 		else
 		{
-			fmt::print(stderr, "[{} LOG] Saving file /{} to {}...\n", mModuleLabel, *itr, f_path.to_string());
-
+			if (mVerbose)
+			{
+				fmt::print(stderr, "[{} LOG] Saving {} to {}...\n", mModuleLabel, *itr, f_path.to_string());
+			}
+			
 			tc::ByteData filedata = tc::ByteData(in_stream->length());
 			in_stream->seek(0, tc::io::SeekOrigin::Begin);
 			in_stream->read(filedata.data(), filedata.size());

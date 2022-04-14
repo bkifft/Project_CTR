@@ -209,7 +209,7 @@ void ctrtool::CciProcess::importHeader()
 		// Since CCM mode decrypts AND verifies, we should process the result here if required
 		if (mVerify)
 		{
-			mValidInitialDataMac = dec_result == 0 ? ValidState::Good :  ValidState::Fail;
+			mValidInitialDataMac = dec_result == 0 ? ValidState::Good : ValidState::Fail;
 
 			if (mValidInitialDataMac != ValidState::Good)
 			{
@@ -361,7 +361,10 @@ void ctrtool::CciProcess::extractFs()
 		// build out path
 		out_path = mExtractPath.get() + *itr;
 
-		fmt::print(stderr, "[{} LOG] Saving {}...\n", mModuleLabel, out_path.to_string());
+		if (mVerbose)
+		{
+			fmt::print(stderr, "[{} LOG] Saving {}...\n", mModuleLabel, out_path.to_string());
+		}
 
 		// begin export
 		mFsReader->openFile(*itr, tc::io::FileMode::Open, tc::io::FileAccess::Read, in_stream);

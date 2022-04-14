@@ -702,7 +702,11 @@ void ctrtool::CiaProcess::extractCia()
 		in_stream = std::shared_ptr<tc::io::SubStream>(new tc::io::SubStream(mInputStream, mCertSizeInfo.offset, mCertSizeInfo.size));
 		out_stream = std::shared_ptr<tc::io::FileStream>(new tc::io::FileStream(out_path, tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write));
 
-		fmt::print(stderr, "[{} LOG] Saving certs to {}...\n", mModuleLabel, out_path.to_string());
+		if (mVerbose)
+		{
+			fmt::print(stderr, "[{} LOG] Saving certs to {}...\n", mModuleLabel, out_path.to_string());
+		}
+		
 		copyStream(in_stream, out_stream);
 	}
 
@@ -713,7 +717,10 @@ void ctrtool::CiaProcess::extractCia()
 		in_stream = std::shared_ptr<tc::io::SubStream>(new tc::io::SubStream(mInputStream, mTikSizeInfo.offset, mTikSizeInfo.size));
 		out_stream = std::shared_ptr<tc::io::FileStream>(new tc::io::FileStream(out_path, tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write));
 
-		fmt::print(stderr, "[{} LOG] Saving tik to {}...\n", mModuleLabel, out_path.to_string());
+		if (mVerbose)
+		{
+			fmt::print(stderr, "[{} LOG] Saving tik to {}...\n", mModuleLabel, out_path.to_string());
+		}
 		copyStream(in_stream, out_stream);
 	}
 
@@ -724,7 +731,10 @@ void ctrtool::CiaProcess::extractCia()
 		in_stream = std::shared_ptr<tc::io::SubStream>(new tc::io::SubStream(mInputStream, mTmdSizeInfo.offset, mTmdSizeInfo.size));
 		out_stream = std::shared_ptr<tc::io::FileStream>(new tc::io::FileStream(out_path, tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write));
 
-		fmt::print(stderr, "[{} LOG] Saving tmd to {}...\n", mModuleLabel, out_path.to_string());
+		if (mVerbose)
+		{
+			fmt::print(stderr, "[{} LOG] Saving tmd to {}...\n", mModuleLabel, out_path.to_string());
+		}
 		copyStream(in_stream, out_stream);
 	}
 
@@ -735,7 +745,10 @@ void ctrtool::CiaProcess::extractCia()
 		in_stream = std::shared_ptr<tc::io::SubStream>(new tc::io::SubStream(mInputStream, mFooterSizeInfo.offset, mFooterSizeInfo.size));
 		out_stream = std::shared_ptr<tc::io::FileStream>(new tc::io::FileStream(out_path, tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write));
 
-		fmt::print(stderr, "[{} LOG] Saving meta to {}...\n", mModuleLabel, out_path.to_string());
+		if (mVerbose)
+		{
+			fmt::print(stderr, "[{} LOG] Saving meta to {}...\n", mModuleLabel, out_path.to_string());
+		}
 		copyStream(in_stream, out_stream);
 	}
 
@@ -758,7 +771,11 @@ void ctrtool::CiaProcess::extractCia()
 
 			out_stream = std::shared_ptr<tc::io::FileStream>(new tc::io::FileStream(out_path, tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write));
 
-			fmt::print(stderr, "[{} LOG] Saving content {:04x} to {}...\n", mModuleLabel, itr->second.cindex, out_path.to_string());
+			if (mVerbose)
+			{
+				fmt::print(stderr, "[{} LOG] Saving content {:04x} to {}...\n", mModuleLabel, itr->second.cindex, out_path.to_string());
+			}
+			
 			copyStream(in_stream, out_stream);
 		}
 	}

@@ -768,15 +768,19 @@ void ctrtool::NcchProcess::extractRegionBinaries()
 	{
 		if (mRegionOpt[i].bin_extract_path.isSet() && mRegionInfo[i].ready_stream != nullptr)
 		{
-			switch(i)
+			if (mVerbose)
 			{
-				case NcchRegion_Header: fmt::print("Saving Header...\n"); break;
-				case NcchRegion_ExHeader: fmt::print("Saving Extended Header...\n"); break;
-				case NcchRegion_PlainRegion: fmt::print("Saving Plain Region...\n"); break;
-				case NcchRegion_Logo: fmt::print("Saving Logo...\n"); break;
-				case NcchRegion_ExeFs: fmt::print("Saving ExeFS...\n"); break;
-				case NcchRegion_RomFs: fmt::print("Saving RomFS...\n"); break;
+				switch(i)
+				{
+					case NcchRegion_Header: fmt::print(stderr, "[{} LOG] Saving Header...\n", mModuleLabel); break;
+					case NcchRegion_ExHeader: fmt::print(stderr, "[{} LOG] Saving Extended Header...\n", mModuleLabel); break;
+					case NcchRegion_PlainRegion: fmt::print(stderr, "[{} LOG] Saving Plain Region...\n", mModuleLabel); break;
+					case NcchRegion_Logo: fmt::print(stderr, "[{} LOG] Saving Logo...\n", mModuleLabel); break;
+					case NcchRegion_ExeFs: fmt::print(stderr, "[{} LOG] Saving ExeFS...\n", mModuleLabel); break;
+					case NcchRegion_RomFs: fmt::print(stderr, "[{} LOG] Saving RomFS...\n", mModuleLabel); break;
+				}
 			}
+			
 
 			in_stream = mRegionInfo[i].ready_stream;
 			local_fs.openFile(mRegionOpt[i].bin_extract_path.get(), tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write, out_stream);
