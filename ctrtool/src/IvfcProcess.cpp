@@ -127,7 +127,7 @@ void ctrtool::IvfcProcess::verifyLevels()
 			{
 				if (mVerbose)
 				{
-					fmt::print(stderr, "[{} LOG] IVFC Layer {:d}, Block {:d} failed validation.\n", mModuleLabel, i, j);
+					fmt::print(stderr, "[{} ERROR] IVFC Layer {:d}, Block {:d} failed validation.\n", mModuleLabel, i, j);
 				}
 					
 			}
@@ -141,7 +141,7 @@ void ctrtool::IvfcProcess::verifyLevels()
 		
 		if (mLevelValidation[i] != ValidState::Good)
 		{
-			fmt::print(stderr, "[{} LOG] IVFC Layer {:d} failed validation.\n", mModuleLabel, i);
+			fmt::print(stderr, "[{} ERROR] IVFC Layer {:d} failed validation.\n", mModuleLabel, i);
 		}
 	}
 }

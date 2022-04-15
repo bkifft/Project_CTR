@@ -139,21 +139,21 @@ void ctrtool::TmdProcess::verifyData()
 			// only show this warning for non-root signed certificates
 			if (mCertChain[i].signature.issuer != "Root")
 			{
-				fmt::print(stderr, "[{} LOG] Public key \"{}\" (for certificate \"{}\") was not present in the certificate chain. The public key included with CTRTool was used instead.\n", mModuleLabel, mCertChain[i].signature.issuer, mCertChain[i].subject);
+				fmt::print(stderr, "[{} ERROR] Public key \"{}\" (for certificate \"{}\") was not present in the certificate chain. The public key included with CTRTool was used instead.\n", mModuleLabel, mCertChain[i].signature.issuer, mCertChain[i].subject);
 			}
 			mCertSigValid[i] = keybag_issuer_itr->second->verifyHash(mCertChain[i].calculated_hash.data(), mCertChain[i].signature.sig.data()) ? ValidState::Good : ValidState::Fail;
 		}
 		else
 		{
 			// cannot locate rsa key to verify
-			fmt::print(stderr, "[{} LOG] Could not locate public key for \"{}\" (certificate).\n", mModuleLabel, mCertChain[i].signature.issuer);
+			fmt::print(stderr, "[{} ERROR] Could not locate public key for \"{}\" (certificate).\n", mModuleLabel, mCertChain[i].signature.issuer);
 			mCertSigValid[i] = ValidState::Fail;
 		}
 
 		// log certificate signature validation error
 		if (mCertSigValid[i] != ValidState::Good)
 		{
-			fmt::print(stderr, "[{} LOG] Signature for Certificate \"{}\" was invalid.\n", mModuleLabel, mCertChain[i].signature.issuer);
+			fmt::print(stderr, "[{} ERROR] Signature for Certificate \"{}\" was invalid.\n", mModuleLabel, mCertChain[i].signature.issuer);
 		}
 	}
 
@@ -174,21 +174,21 @@ void ctrtool::TmdProcess::verifyData()
 			// only show this warning when there are certificates appended to the tmd (only tmd downloaded from CDN will have an appended certificate chain)
 			if (mCertChain.size() != 0)
 			{
-				fmt::print(stderr, "[{} LOG] Public key \"{}\" (for tmd) was not present in the appended certificate chain. The public key included with CTRTool was used instead.\n", mModuleLabel, mTitleMetaData.signature.issuer);
+				fmt::print(stderr, "[{} ERROR] Public key \"{}\" (for tmd) was not present in the appended certificate chain. The public key included with CTRTool was used instead.\n", mModuleLabel, mTitleMetaData.signature.issuer);
 			}
 			mTitleMetaDataSigValid = keybag_issuer_itr->second->verifyHash(mTitleMetaData.calculated_hash.data(), mTitleMetaData.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
 		}
 		else
 		{
 			// cannot locate rsa key to verify
-			fmt::print(stderr, "[{} LOG] Could not locate public key \"{}\" (for tmd).\n", mModuleLabel, mTitleMetaData.signature.issuer);
+			fmt::print(stderr, "[{} ERROR] Could not locate public key \"{}\" (for tmd).\n", mModuleLabel, mTitleMetaData.signature.issuer);
 			mTitleMetaDataSigValid = ValidState::Fail;
 		}
 
 		// log tmd signature validation error
 		if (mTitleMetaDataSigValid != ValidState::Good)
 		{
-			fmt::print(stderr, "[{} LOG] Signature for TitleMetaData was invalid.\n", mModuleLabel);
+			fmt::print(stderr, "[{} ERROR] Signature for TitleMetaData was invalid.\n", mModuleLabel);
 		}
 	}
 }

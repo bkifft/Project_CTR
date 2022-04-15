@@ -323,7 +323,7 @@ void ctrtool::CiaProcess::importHeader()
 			}
 			else
 			{
-				fmt::print(stderr, "[{} LOG] Cannot determine titlekey.\n", mModuleLabel);
+				fmt::print(stderr, "[{} ERROR] Cannot determine titlekey.\n", mModuleLabel);
 			}
 		}
 		else
@@ -418,21 +418,21 @@ void ctrtool::CiaProcess::verifyMetadata()
 				// only show this warning for non-root signed certificates
 				if (mCertChain[i].signature.issuer != "Root")
 				{
-					fmt::print(stderr, "[{} LOG] Public key \"{}\" (for certificate \"{}\") was not present in the CIA certificate chain. The public key included with CTRTool was used instead.\n", mModuleLabel, mCertChain[i].signature.issuer, mCertChain[i].subject);
+					fmt::print(stderr, "[{} ERROR] Public key \"{}\" (for certificate \"{}\") was not present in the CIA certificate chain. The public key included with CTRTool was used instead.\n", mModuleLabel, mCertChain[i].signature.issuer, mCertChain[i].subject);
 				}
 				mCertSigValid[i] = keybag_issuer_itr->second->verifyHash(mCertChain[i].calculated_hash.data(), mCertChain[i].signature.sig.data()) ? ValidState::Good : ValidState::Fail;
 			}
 			else
 			{
 				// cannot locate rsa key to verify
-				fmt::print(stderr, "[{} LOG] Could not locate public key for \"{}\" (certificate).\n", mModuleLabel, mCertChain[i].signature.issuer);
+				fmt::print(stderr, "[{} ERROR] Could not locate public key for \"{}\" (certificate).\n", mModuleLabel, mCertChain[i].signature.issuer);
 				mCertSigValid[i] = ValidState::Fail;
 			}
 
 			// log certificate signature validation error
 			if (mCertSigValid[i] != ValidState::Good)
 			{
-				fmt::print(stderr, "[{} LOG] Signature for Certificate \"{}\" was invalid.\n", mModuleLabel, mCertChain[i].signature.issuer);
+				fmt::print(stderr, "[{} ERROR] Signature for Certificate \"{}\" was invalid.\n", mModuleLabel, mCertChain[i].signature.issuer);
 			}
 		}
 	}
@@ -450,20 +450,20 @@ void ctrtool::CiaProcess::verifyMetadata()
 		// fallback try with the keybag imported issuer
 		else if (keybag_issuer_itr != mIssuerSigner.end() && keybag_issuer_itr->second->getSigType() == mTicket.signature.sig_type)
 		{
-			fmt::print(stderr, "[{} LOG] Public key \"{}\" (for ticket) was not present in the CIA certificate chain. The public key included with CTRTool was used instead.\n", mModuleLabel, mTicket.signature.issuer);
+			fmt::print(stderr, "[{} ERROR] Public key \"{}\" (for ticket) was not present in the CIA certificate chain. The public key included with CTRTool was used instead.\n", mModuleLabel, mTicket.signature.issuer);
 			mTicketSigValid = keybag_issuer_itr->second->verifyHash(mTicket.calculated_hash.data(), mTicket.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
 		}
 		else
 		{
 			// cannot locate rsa key to verify
-			fmt::print(stderr, "[{} LOG] Could not locate public key \"{}\" (for ticket).\n", mModuleLabel, mTicket.signature.issuer);
+			fmt::print(stderr, "[{} ERROR] Could not locate public key \"{}\" (for ticket).\n", mModuleLabel, mTicket.signature.issuer);
 			mTicketSigValid = ValidState::Fail;
 		}
 
 		// log ticket signature validation error
 		if (mTicketSigValid != ValidState::Good)
 		{
-			fmt::print(stderr, "[{} LOG] Signature for Ticket was invalid.\n", mModuleLabel);
+			fmt::print(stderr, "[{} ERROR] Signature for Ticket was invalid.\n", mModuleLabel);
 		}
 	}
 	if (mHeader.format_version.unwrap() == ntd::n3ds::CiaHeader::FormatVersion_Default && mTmdSizeInfo.size > 0)
@@ -480,20 +480,20 @@ void ctrtool::CiaProcess::verifyMetadata()
 		// fallback try with the keybag imported issuer
 		else if (keybag_issuer_itr != mIssuerSigner.end() && keybag_issuer_itr->second->getSigType() == mTitleMetaData.signature.sig_type)
 		{
-			fmt::print(stderr, "[{} LOG] Public key \"{}\" (for tmd) was not present in the CIA certificate chain. The public key included with CTRTool was used instead.\n", mModuleLabel, mTitleMetaData.signature.issuer);
+			fmt::print(stderr, "[{} ERROR] Public key \"{}\" (for tmd) was not present in the CIA certificate chain. The public key included with CTRTool was used instead.\n", mModuleLabel, mTitleMetaData.signature.issuer);
 			mTitleMetaDataSigValid = keybag_issuer_itr->second->verifyHash(mTitleMetaData.calculated_hash.data(), mTitleMetaData.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
 		}
 		else
 		{
 			// cannot locate rsa key to verify
-			fmt::print(stderr, "[{} LOG] Could not locate public key \"{}\" (for tmd).\n", mModuleLabel, mTitleMetaData.signature.issuer);
+			fmt::print(stderr, "[{} ERROR] Could not locate public key \"{}\" (for tmd).\n", mModuleLabel, mTitleMetaData.signature.issuer);
 			mTitleMetaDataSigValid = ValidState::Fail;
 		}
 
 		// log tmd signature validation error
 		if (mTitleMetaDataSigValid != ValidState::Good)
 		{
-			fmt::print(stderr, "[{} LOG] Signature for TitleMetaData was invalid.\n", mModuleLabel);
+			fmt::print(stderr, "[{} ERROR] Signature for TitleMetaData was invalid.\n", mModuleLabel);
 		}
 	}
 }
@@ -546,7 +546,7 @@ void ctrtool::CiaProcess::verifyContent()
 
 			if (itr->second.valid_state != ValidState::Good)
 			{
-				fmt::print(stderr, "[{} LOG] Hash for content (index=0x{:04x}, id=0x{:08x}) was invalid.\n", mModuleLabel, itr->second.cindex, itr->second.cid);
+				fmt::print(stderr, "[{} ERROR] Hash for content (index=0x{:04x}, id=0x{:08x}) was invalid.\n", mModuleLabel, itr->second.cindex, itr->second.cid);
 			}
 		}
 	}
@@ -806,7 +806,7 @@ void ctrtool::CiaProcess::processContent()
 {
 	if (mContentIndex >= ntd::n3ds::CiaHeader::kCiaMaxContentNum)
 	{
-		fmt::print(stderr, "[{} LOG] Content index {:d} isn't valid for CIA, use index 0-{:d}, defaulting to 0 now.\n", mModuleLabel, mContentIndex, ((size_t)ntd::n3ds::CiaHeader::kCiaMaxContentNum)-1);
+		fmt::print(stderr, "[{} ERROR] Content index {:d} isn't valid for CIA, use index 0-{:d}, defaulting to 0 now.\n", mModuleLabel, mContentIndex, ((size_t)ntd::n3ds::CiaHeader::kCiaMaxContentNum)-1);
 		mContentIndex = 0;
 	}
 	if (mContentInfo.find(mContentIndex) != mContentInfo.end() && mContentInfo[mContentIndex].size != 0)
@@ -828,7 +828,7 @@ void ctrtool::CiaProcess::processContent()
 		}
 		else
 		{
-			fmt::print(stderr, "[{} LOG] TWL title processing not supported\n", mModuleLabel);
+			throw tc::NotImplementedException(mModuleLabel, "TWL title processing not supported.");
 		}
 	}
 }

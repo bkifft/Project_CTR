@@ -134,7 +134,7 @@ void ctrtool::ExeFsProcess::verifyFs()
 
 			if (mSectionValidation[i] != ValidState::Good)
 			{
-				fmt::print(stderr, "[{} LOG] ExeFs file \"{}\" had an invalid SHA2-256 hash.\n", mModuleLabel, mHeader.file_table[i].name.decode());
+				fmt::print(stderr, "[{} ERROR] ExeFs file \"{}\" had an invalid SHA2-256 hash.\n", mModuleLabel, mHeader.file_table[i].name.decode());
 			}
 		}
 	}

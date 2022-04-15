@@ -202,21 +202,21 @@ void ctrtool::TikProcess::verifyData()
 			// only show this warning when there are certificates appended to the ticket (only tickets downloaded from CDN will have an appended certificate chain)
 			if (mCertChain.size() != 0)
 			{
-				fmt::print(stderr, "[{} LOG] Public key \"{}\" (for ticket) was not present in the appended certificate chain. The public key included with CTRTool was used instead.\n", mModuleLabel, mTicket.signature.issuer);
+				fmt::print(stderr, "[{} ERROR] Public key \"{}\" (for ticket) was not present in the appended certificate chain. The public key included with CTRTool was used instead.\n", mModuleLabel, mTicket.signature.issuer);
 			}
 			mTicketSigValid = keybag_issuer_itr->second->verifyHash(mTicket.calculated_hash.data(), mTicket.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
 		}
 		else
 		{
 			// cannot locate rsa key to verify
-			fmt::print(stderr, "[{} LOG] Could not locate public key \"{}\" (for ticket).\n", mModuleLabel, mTicket.signature.issuer);
+			fmt::print(stderr, "[{} ERROR] Could not locate public key \"{}\" (for ticket).\n", mModuleLabel, mTicket.signature.issuer);
 			mTicketSigValid = ValidState::Fail;
 		}
 
 		// log ticket signature validation error
 		if (mTicketSigValid != ValidState::Good)
 		{
-			fmt::print(stderr, "[{} LOG] Signature for Ticket was invalid.\n", mModuleLabel);
+			fmt::print(stderr, "[{} ERROR] Signature for Ticket was invalid.\n", mModuleLabel);
 		}
 	}
 }

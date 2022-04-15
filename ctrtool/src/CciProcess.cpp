@@ -213,7 +213,7 @@ void ctrtool::CciProcess::importHeader()
 
 			if (mValidInitialDataMac != ValidState::Good)
 			{
-				fmt::print(stderr, "[{} LOG] InitialData MAC was invalid.\n", mModuleLabel);
+				fmt::print(stderr, "[{} ERROR] InitialData MAC was invalid.\n", mModuleLabel);
 			}
 		}
 
@@ -231,7 +231,7 @@ void ctrtool::CciProcess::importHeader()
 	else
 	{
 		// no initial data key
-		fmt::print(stderr, "[{} LOG] Failed to determine key to decrypt InitialData.\n", mModuleLabel);
+		fmt::print(stderr, "[{} ERROR] Failed to determine key to decrypt InitialData.\n", mModuleLabel);
 	}
 
 	// open fs reader
@@ -252,13 +252,13 @@ void ctrtool::CciProcess::verifyHeader()
 	}
 	else
 	{
-		fmt::print(stderr, "[{} LOG] Could not load CCI RSA2048 public key.\n", mModuleLabel);
+		fmt::print(stderr, "[{} ERROR] Could not load CCI RSA2048 public key.\n", mModuleLabel);
 		mValidSignature = ValidState::Fail;
 	}
 
 	if (mValidSignature != ValidState::Good)
 	{
-		fmt::print(stderr, "[{} LOG] Signature for NcsdCommonHeader was invalid.\n", mModuleLabel);
+		fmt::print(stderr, "[{} ERROR] Signature for NcsdCommonHeader was invalid.\n", mModuleLabel);
 	}
 }
 
@@ -391,7 +391,7 @@ void ctrtool::CciProcess::processContent()
 {
 	if (mContentIndex >= ntd::n3ds::NcsdCommonHeader::kPartitionNum)
 	{
-		fmt::print(stderr, "[{} LOG] Content index {:d} isn't valid for CCI, use index 0-7, defaulting to 0 now.\n", mModuleLabel, mContentIndex);
+		fmt::print(stderr, "[{} ERROR] Content index {:d} isn't valid for CCI, use index 0-7, defaulting to 0 now.\n", mModuleLabel, mContentIndex);
 		mContentIndex = 0;
 	}
 	if (mHeader.ncsd_header.partition_offsetsize[mContentIndex].blk_size.unwrap() != 0)

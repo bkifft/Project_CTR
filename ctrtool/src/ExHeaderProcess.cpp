@@ -96,13 +96,13 @@ void ctrtool::ExHeaderProcess::verifyExHeader()
 	}
 	else
 	{
-		fmt::print(stderr, "[{} LOG] Could not load AccessDescriptor RSA2048 public key.\n", mModuleLabel);
+		fmt::print(stderr, "[{} ERROR] Could not load AccessDescriptor RSA2048 public key.\n", mModuleLabel);
 		mValidSignature = ValidState::Fail;
 	}
 
 	if (mValidSignature != ValidState::Good)
 	{
-		fmt::print(stderr, "[{} LOG] Signature for AccessDescriptor was invalid.\n", mModuleLabel);
+		fmt::print(stderr, "[{} ERROR] Signature for AccessDescriptor was invalid.\n", mModuleLabel);
 	}
 
 	mValidLocalCaps.system_save_id[0] = ValidState::Good;
@@ -191,7 +191,7 @@ void ctrtool::ExHeaderProcess::verifyExHeader()
 			mValidLocalCaps.fs_access = ValidState::Fail;
 			if (mVerbose)
 			{
-				fmt::print(stderr, "[{} LOG] FsAccess Bit {:d} was not permitted\n", mModuleLabel, fs_bit);
+				fmt::print(stderr, "[{} ERROR] FsAccess Bit {:d} was not permitted\n", mModuleLabel, fs_bit);
 			}
 		}
 	}
@@ -218,64 +218,64 @@ void ctrtool::ExHeaderProcess::verifyExHeader()
 			mValidLocalCaps.service_control = Fail;
 			if (mVerbose)
 			{
-				fmt::print(stderr, "[{} LOG] Service \"{}\" was not permitted\n", mModuleLabel, exhdr_service_access_control[i].decode());
+				fmt::print(stderr, "[{} ERROR] Service \"{}\" was not permitted\n", mModuleLabel, exhdr_service_access_control[i].decode());
 			}
 		}
 	}
 
 	if (mValidLocalCaps.system_save_id[0] != ValidState::Good)
 	{
-		fmt::print(stderr, "[{} LOG] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "SystemSaveId1");
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "SystemSaveId1");
 	}
 	if (mValidLocalCaps.system_save_id[1] != ValidState::Good)
 	{
-		fmt::print(stderr, "[{} LOG] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "SystemSaveId2");
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "SystemSaveId2");
 	}
 	if (mValidLocalCaps.fs_access != ValidState::Good)
 	{
-		fmt::print(stderr, "[{} LOG] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "FsAccess");
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "FsAccess");
 	}
 	/*
 	if (mValidLocalCaps.core_version != ValidState::Good)
 	{
-		fmt::print(stderr, "[{} LOG] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "CoreVersion");
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "CoreVersion");
 	}
 	*/
 	if (mValidLocalCaps.program_id != ValidState::Good)
 	{
-		fmt::print(stderr, "[{} LOG] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "ProgramId");
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "ProgramId");
 	}
 	if (mValidLocalCaps.priority != ValidState::Good)
 	{
-		fmt::print(stderr, "[{} LOG] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "ThreadPriority");
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "ThreadPriority");
 	}
 	if (mValidLocalCaps.affinity_mask != ValidState::Good)
 	{
-		fmt::print(stderr, "[{} LOG] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "AffinityMask");
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "AffinityMask");
 	}
 	if (mValidLocalCaps.ideal_processor != ValidState::Good)
 	{
-		fmt::print(stderr, "[{} LOG] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "IdealProcessor");
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "IdealProcessor");
 	}
 	if (mValidLocalCaps.old3ds_system_mode != ValidState::Good)
 	{
-		fmt::print(stderr, "[{} LOG] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "SystemMode (Old3DS)");
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "SystemMode (Old3DS)");
 	}
 	if (mValidLocalCaps.new3ds_system_mode != ValidState::Good)
 	{
-		fmt::print(stderr, "[{} LOG] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "SystemMode (New3DS)");
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "SystemMode (New3DS)");
 	}
 	if (mValidLocalCaps.enable_l2_cache != ValidState::Good)
 	{
-		fmt::print(stderr, "[{} LOG] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "EnableL2Cache");
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "EnableL2Cache");
 	}
 	if (mValidLocalCaps.new3ds_cpu_speed != ValidState::Good)
 	{
-		fmt::print(stderr, "[{} LOG] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "CpuSpeed");
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "CpuSpeed");
 	}
 	if (mValidLocalCaps.service_control != ValidState::Good)
 	{
-		fmt::print(stderr, "[{} LOG] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "ServiceAccess");
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "ServiceAccess");
 	}
 }
 
