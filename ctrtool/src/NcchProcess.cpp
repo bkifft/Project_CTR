@@ -241,7 +241,7 @@ void ctrtool::NcchProcess::determineRegionEncryption()
 	}
 	if (crypto_is_stripped)
 	{
-		fmt::print("[LOG/NCCH] NCCH appears to be decrypted, contrary to header flags.\n");
+		fmt::print(stderr, "[{} ERROR] NCCH appears to be decrypted, contrary to header flags.\n", mModuleLabel);
 	}
 
 	// determine encryption mode
@@ -287,7 +287,7 @@ void ctrtool::NcchProcess::determineRegionEncryption()
 				keyslot[0].valid_key = ValidState::Fail;
 				keyslot[1].valid_key = ValidState::Fail;
 
-				fmt::print(stderr, "Could not read {} fixed key.\n", (isSystemTitle()? "system" : "application"));
+				fmt::print(stderr, "[{} ERROR] Could not load {} fixed key.\n", mModuleLabel, (isSystemTitle()? "system" : "application"));
 			}
 
 			// save keys
@@ -307,7 +307,7 @@ void ctrtool::NcchProcess::determineRegionEncryption()
 			{
 				keyslot[0].valid_x = ValidState::Fail;
 
-				fmt::print(stderr, "Could not read secure key_x[0x{:02x}].\n", 0);
+				fmt::print(stderr, "[{} ERROR] Could not load secure key_x[0x{:02x}].\n", mModuleLabel, 0);
 			}
 			else
 			{
@@ -328,7 +328,7 @@ void ctrtool::NcchProcess::determineRegionEncryption()
 			{
 				keyslot[1].valid_x = ValidState::Fail;
 
-				fmt::print(stderr, "Could not read secure key_x[0x{:02x}].\n", security_version);
+				fmt::print(stderr, "[{} ERROR] Could not load secure key_x[0x{:02x}].\n", mModuleLabel, security_version);
 			}
 			else
 			{
@@ -360,8 +360,8 @@ void ctrtool::NcchProcess::determineRegionEncryption()
 				{
 					keyslot[1].valid_y = ValidState::Fail;
 
-					fmt::print(stderr, "This title uses seed crypto, but no seed is set, unable to decrypt.\n");
-					fmt::print(stderr, "Use -p to avoid decryption or use --seeddb=dbfile or --seed=SEEDHERE.\n");
+					fmt::print(stderr, "[{} ERROR] This title uses seed crypto, but no seed is set, unable to decrypt.\n", mModuleLabel);
+					fmt::print(stderr, "         Use -p to avoid decryption or use --seeddb=dbfile or --seed=SEEDHERE.\n");
 				}
 
 				if (keyslot[1].valid_y != ValidState::Fail)
@@ -375,7 +375,8 @@ void ctrtool::NcchProcess::determineRegionEncryption()
 					{
 						keyslot[1].valid_y = ValidState::Fail;
 
-						fmt::print(stderr, "Seed check mismatch. (Got {:08x}, expected: {:08x})\n",
+						fmt::print(stderr, "[{} ERROR] Seed check mismatch. (Got {:08x}, expected: {:08x})\n",
+							mModuleLabel,
 							((tc::bn::be32<uint32_t>*)hash.data())->unwrap(),
 							((tc::bn::be32<uint32_t>*)mHeader.header.seed_checksum.data())->unwrap());
 					}
@@ -424,8 +425,8 @@ void ctrtool::NcchProcess::determineRegionEncryption()
 		// output keys if required
 		if (mVerbose)
 		{
-			fmt::print("[LOG/NCCH] NCCH AES Key0 {}\n", (keyslot[0].valid_key ? tc::cli::FormatUtil::formatBytesAsString(keyslot[0].key.data(), keyslot[0].key.size(), true, "") : "could not be determined"));
-			fmt::print("[LOG/NCCH] NCCH AES Key1 {}\n", (keyslot[1].valid_key ? tc::cli::FormatUtil::formatBytesAsString(keyslot[1].key.data(), keyslot[1].key.size(), true, "") : "could not be determined"));
+			fmt::print(stderr, "[{} LOG] NCCH AES Key0 {}\n", mModuleLabel, (keyslot[0].valid_key ? tc::cli::FormatUtil::formatBytesAsString(keyslot[0].key.data(), keyslot[0].key.size(), true, "") : "could not be determined"));
+			fmt::print(stderr, "[{} LOG] NCCH AES Key1 {}\n", mModuleLabel, (keyslot[1].valid_key ? tc::cli::FormatUtil::formatBytesAsString(keyslot[1].key.data(), keyslot[1].key.size(), true, "") : "could not be determined"));
 		}
 
 		// generate aes counter
@@ -436,7 +437,7 @@ void ctrtool::NcchProcess::determineRegionEncryption()
 
 			if (mVerbose)
 			{
-				fmt::print("[LOG/NCCH] NCCH ExHeader AES Counter {}\n", tc::cli::FormatUtil::formatBytesAsString(exheader_aesctr.data(), exheader_aesctr.size(), true, ""));
+				fmt::print(stderr, "[{} LOG] NCCH ExHeader AES Counter {}\n", mModuleLabel, tc::cli::FormatUtil::formatBytesAsString(exheader_aesctr.data(), exheader_aesctr.size(), true, ""));
 			}
 		}
 		if (mRegionInfo[NcchRegion_ExeFs].size)
@@ -445,7 +446,7 @@ void ctrtool::NcchProcess::determineRegionEncryption()
 
 			if (mVerbose)
 			{
-				fmt::print("[LOG/NCCH] NCCH ExeFS AES Counter {}\n", tc::cli::FormatUtil::formatBytesAsString(exefs_aesctr.data(), exefs_aesctr.size(), true, ""));
+				fmt::print(stderr, "[{} LOG] NCCH ExeFS AES Counter {}\n", mModuleLabel, tc::cli::FormatUtil::formatBytesAsString(exefs_aesctr.data(), exefs_aesctr.size(), true, ""));
 			}
 		}
 		if (mRegionInfo[NcchRegion_RomFs].size)
@@ -454,7 +455,7 @@ void ctrtool::NcchProcess::determineRegionEncryption()
 
 			if (mVerbose)
 			{
-				fmt::print("[LOG/NCCH] NCCH RomFS AES Counter {}\n", tc::cli::FormatUtil::formatBytesAsString(romfs_aesctr.data(), romfs_aesctr.size(), true, ""));
+				fmt::print(stderr, "[{} LOG] NCCH RomFS AES Counter {}\n", mModuleLabel, tc::cli::FormatUtil::formatBytesAsString(romfs_aesctr.data(), romfs_aesctr.size(), true, ""));
 			}
 		}
 
@@ -531,7 +532,7 @@ void ctrtool::NcchProcess::determineRegionEncryption()
 			// otherwise use the "best-effort" single key stream (only icon and banner will be decrypt properly)
 			else
 			{
-				fmt::print(stderr, "Only NCCH key0 was determined, so ExeFS will be partially decrypted\n");
+				fmt::print(stderr, "[{} ERROR] Only NCCH key0 was determined, ExeFS may be partially decrypted\n", mModuleLabel);
 				mRegionInfo[NcchRegion_ExeFs].ready_stream = std::shared_ptr<tc::crypto::Aes128CtrEncryptedStream>(new tc::crypto::Aes128CtrEncryptedStream(mRegionInfo[NcchRegion_ExeFs].raw_stream, keyslot[0].key, exefs_aesctr));
 			}
 		}
@@ -596,7 +597,7 @@ void ctrtool::NcchProcess::verifyRegions()
 			else
 			{
 				// cannot locate rsa key to verify
-				fmt::print(stderr, "Could not read CFA public key.\n");
+				fmt::print(stderr, "[{} ERROR] Could not load CFA RSA2048 public key.\n", mModuleLabel);
 				mRegionInfo[NcchRegion_Header].valid = ValidState::Fail;
 			}
 			
@@ -621,9 +622,14 @@ void ctrtool::NcchProcess::verifyRegions()
 			else
 			{
 				// cannot locate rsa key to verify
-				fmt::print(stderr, "Could not read CXI public key from AccessDescriptor.\n");
+				fmt::print(stderr, "[{} ERROR] Could not load CXI RSA2048 public key from AccessDescriptor.\n", mModuleLabel);
 				mRegionInfo[NcchRegion_Header].valid = ValidState::Fail;
 			}
+		}
+
+		if (mRegionInfo[NcchRegion_Header].valid != ValidState::Good)
+		{
+			fmt::print(stderr, "[{} ERROR] Signature for NcchHeader was invalid.\n", mModuleLabel);
 		}
 	}
 
@@ -631,26 +637,45 @@ void ctrtool::NcchProcess::verifyRegions()
 	if (mRegionInfo[NcchRegion_ExHeader].hashed_size > 0)
 	{
 		mRegionInfo[NcchRegion_ExHeader].valid = memcmp(region_hashes[NcchRegion_ExHeader].data(), mHeader.header.exhdr_hash.data(), region_hashes[NcchRegion_ExHeader].size()) == 0 ? ValidState::Good : ValidState::Fail;
+	
+		if (mRegionInfo[NcchRegion_ExHeader].valid != ValidState::Good)
+		{
+			fmt::print(stderr, "[{} ERROR] ExtendedHeader SHA2-256 hash was invalid.\n", mModuleLabel);
+		}
 	}
 
 	// logo hash
 	if (mRegionInfo[NcchRegion_Logo].hashed_size > 0)
 	{
 		mRegionInfo[NcchRegion_Logo].valid = memcmp(region_hashes[NcchRegion_Logo].data(), mHeader.header.logo_hash.data(), region_hashes[NcchRegion_Logo].size()) == 0 ? ValidState::Good : ValidState::Fail;
+	
+		if (mRegionInfo[NcchRegion_Logo].valid != ValidState::Good)
+		{
+			fmt::print(stderr, "[{} ERROR] Logo SHA2-256 hash was invalid.\n", mModuleLabel);
+		}
 	}
 
 	// exefs hash
 	if (mRegionInfo[NcchRegion_ExeFs].hashed_size > 0)
 	{
 		mRegionInfo[NcchRegion_ExeFs].valid = memcmp(region_hashes[NcchRegion_ExeFs].data(), mHeader.header.exefs_prot_hash.data(), region_hashes[NcchRegion_ExeFs].size()) == 0 ? ValidState::Good : ValidState::Fail;
+	
+		if (mRegionInfo[NcchRegion_ExeFs].valid != ValidState::Good)
+		{
+			fmt::print(stderr, "[{} ERROR] ExeFs SuperBlock SHA2-256 hash was invalid.\n", mModuleLabel);
+		}
 	}
 
 	// romfs hash
 	if (mRegionInfo[NcchRegion_RomFs].hashed_size > 0)
 	{
 		mRegionInfo[NcchRegion_RomFs].valid = memcmp(region_hashes[NcchRegion_RomFs].data(), mHeader.header.romfs_prot_hash.data(), region_hashes[NcchRegion_RomFs].size()) == 0 ? ValidState::Good : ValidState::Fail;
+	
+		if (mRegionInfo[NcchRegion_RomFs].valid != ValidState::Good)
+		{
+			fmt::print(stderr, "[{} ERROR] RomFs SuperBlock SHA2-256 hash was invalid.\n", mModuleLabel);
+		}
 	}
-
 }
 
 void ctrtool::NcchProcess::printHeader()
@@ -743,15 +768,19 @@ void ctrtool::NcchProcess::extractRegionBinaries()
 	{
 		if (mRegionOpt[i].bin_extract_path.isSet() && mRegionInfo[i].ready_stream != nullptr)
 		{
-			switch(i)
+			if (mVerbose)
 			{
-				case NcchRegion_Header: fmt::print("Saving Header...\n"); break;
-				case NcchRegion_ExHeader: fmt::print("Saving Extended Header...\n"); break;
-				case NcchRegion_PlainRegion: fmt::print("Saving Plain Region...\n"); break;
-				case NcchRegion_Logo: fmt::print("Saving Logo...\n"); break;
-				case NcchRegion_ExeFs: fmt::print("Saving ExeFS...\n"); break;
-				case NcchRegion_RomFs: fmt::print("Saving RomFS...\n"); break;
+				switch(i)
+				{
+					case NcchRegion_Header: fmt::print(stderr, "[{} LOG] Saving Header...\n", mModuleLabel); break;
+					case NcchRegion_ExHeader: fmt::print(stderr, "[{} LOG] Saving Extended Header...\n", mModuleLabel); break;
+					case NcchRegion_PlainRegion: fmt::print(stderr, "[{} LOG] Saving Plain Region...\n", mModuleLabel); break;
+					case NcchRegion_Logo: fmt::print(stderr, "[{} LOG] Saving Logo...\n", mModuleLabel); break;
+					case NcchRegion_ExeFs: fmt::print(stderr, "[{} LOG] Saving ExeFs...\n", mModuleLabel); break;
+					case NcchRegion_RomFs: fmt::print(stderr, "[{} LOG] Saving RomFs...\n", mModuleLabel); break;
+				}
 			}
+			
 
 			in_stream = mRegionInfo[i].ready_stream;
 			local_fs.openFile(mRegionOpt[i].bin_extract_path.get(), tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write, out_stream);

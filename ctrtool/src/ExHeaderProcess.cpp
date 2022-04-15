@@ -96,13 +96,18 @@ void ctrtool::ExHeaderProcess::verifyExHeader()
 	}
 	else
 	{
-		fmt::print(stderr, "Could not read AccessDescriptor public key.\n");
+		fmt::print(stderr, "[{} ERROR] Could not load AccessDescriptor RSA2048 public key.\n", mModuleLabel);
 		mValidSignature = ValidState::Fail;
 	}
-	
+
+	if (mValidSignature != ValidState::Good)
+	{
+		fmt::print(stderr, "[{} ERROR] Signature for AccessDescriptor was invalid.\n", mModuleLabel);
+	}
+
 	mValidLocalCaps.system_save_id[0] = ValidState::Good;
 	mValidLocalCaps.system_save_id[1] = ValidState::Good;
-	mValidLocalCaps.access_info = ValidState::Good;
+	mValidLocalCaps.fs_access = ValidState::Good;
 	mValidLocalCaps.core_version = ValidState::Good;
 	mValidLocalCaps.program_id = ValidState::Good;
 	mValidLocalCaps.priority = ValidState::Good;
@@ -183,10 +188,10 @@ void ctrtool::ExHeaderProcess::verifyExHeader()
 	{
 		if (exhdr_fs_access.test(fs_bit) == true && desc_fs_access.test(fs_bit) == false)
 		{
-			mValidLocalCaps.access_info = ValidState::Fail;
+			mValidLocalCaps.fs_access = ValidState::Fail;
 			if (mVerbose)
 			{
-				fmt::print("[LOG/ExHeader] FsAccess Bit {:d} was not permitted\n", fs_bit);
+				fmt::print(stderr, "[{} ERROR] FsAccess Bit {:d} was not permitted\n", mModuleLabel, fs_bit);
 			}
 		}
 	}
@@ -213,9 +218,64 @@ void ctrtool::ExHeaderProcess::verifyExHeader()
 			mValidLocalCaps.service_control = Fail;
 			if (mVerbose)
 			{
-				fmt::print("[LOG/ExHeader] Service \"{}\" was not permitted\n", exhdr_service_access_control[i].decode());
+				fmt::print(stderr, "[{} ERROR] Service \"{}\" was not permitted\n", mModuleLabel, exhdr_service_access_control[i].decode());
 			}
 		}
+	}
+
+	if (mValidLocalCaps.system_save_id[0] != ValidState::Good)
+	{
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "SystemSaveId1");
+	}
+	if (mValidLocalCaps.system_save_id[1] != ValidState::Good)
+	{
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "SystemSaveId2");
+	}
+	if (mValidLocalCaps.fs_access != ValidState::Good)
+	{
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "FsAccess");
+	}
+	/*
+	if (mValidLocalCaps.core_version != ValidState::Good)
+	{
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "CoreVersion");
+	}
+	*/
+	if (mValidLocalCaps.program_id != ValidState::Good)
+	{
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "ProgramId");
+	}
+	if (mValidLocalCaps.priority != ValidState::Good)
+	{
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "ThreadPriority");
+	}
+	if (mValidLocalCaps.affinity_mask != ValidState::Good)
+	{
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "AffinityMask");
+	}
+	if (mValidLocalCaps.ideal_processor != ValidState::Good)
+	{
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "IdealProcessor");
+	}
+	if (mValidLocalCaps.old3ds_system_mode != ValidState::Good)
+	{
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "SystemMode (Old3DS)");
+	}
+	if (mValidLocalCaps.new3ds_system_mode != ValidState::Good)
+	{
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "SystemMode (New3DS)");
+	}
+	if (mValidLocalCaps.enable_l2_cache != ValidState::Good)
+	{
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "EnableL2Cache");
+	}
+	if (mValidLocalCaps.new3ds_cpu_speed != ValidState::Good)
+	{
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "CpuSpeed");
+	}
+	if (mValidLocalCaps.service_control != ValidState::Good)
+	{
+		fmt::print(stderr, "[{} ERROR] {} was not permmited by AccessDescriptor.\n", mModuleLabel, "ServiceAccess");
 	}
 }
 
@@ -355,7 +415,7 @@ void ctrtool::ExHeaderProcess::printARM11SystemLocalCapabilities(const ntd::n3ds
 	}
 	fmt::print("Other Variation Saves:  {}\n", (use_other_variation_savedata ? "Accessible" : "Inaccessible"));
 	uint64_t fs_access_raw = ((((tc::bn::le64<uint64_t>*)&info.fs_access)->unwrap() << 8) >> 8); // clearing the upper 8 bits since fs_access is 56 bits
-	fmt::print("Access info: {:6}     0x{:014x}\n", getValidString(valid.access_info), fs_access_raw);
+	fmt::print("FS access: {:6}       0x{:014x}\n", getValidString(valid.fs_access), fs_access_raw);
 	for (size_t i = 0; i < info.fs_access.bit_size(); i++)
 	{
 		if (info.fs_access.test(i))

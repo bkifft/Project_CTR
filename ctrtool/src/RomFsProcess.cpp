@@ -200,7 +200,10 @@ void ctrtool::RomFsProcess::visitDir(const tc::io::Path& v_path, const tc::io::P
 			// build out path
 			out_path = l_path + *itr;
 
-			fmt::print("Saving {}...\n", out_path.to_string());
+			if (mVerbose)
+			{
+				fmt::print(stderr, "[{} LOG] Saving {}...\n", mModuleLabel, out_path.to_string());
+			}
 
 			// begin export
 			mFsReader->openFile(v_path + *itr, tc::io::FileMode::Open, tc::io::FileAccess::Read, in_stream);

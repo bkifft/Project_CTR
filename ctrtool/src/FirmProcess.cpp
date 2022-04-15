@@ -188,6 +188,11 @@ void ctrtool::FirmProcess::verifyHashes()
 			hash_calc.getHash(hash.data());
 
 			mValidFirmSectionHash[i] = memcmp(hash.data(), hdr_hash.data(), hash.size()) == 0? ValidState::Good : ValidState::Fail;
+
+			if (mValidFirmSectionHash[i] != ValidState::Good)
+			{
+				fmt::print(stderr, "[{} ERROR] FIRM section {:d} SHA2-256 hash was invalid.\n", mModuleLabel, i);
+			}
 		}
 	}
 }
@@ -226,7 +231,7 @@ void ctrtool::FirmProcess::verifySignature()
 	}
 	else
 	{
-		fmt::print(stderr, "Could not read static rsa_key {}.\n", key_id == mKeyBag.RSAKEY_FIRM_NAND ? "RSAKEY_FIRM_NAND" : "RSAKEY_FIRM_RECOVERY");
+		fmt::print(stderr, "[{} ERROR] Could not load {} RSA2048 public key.\n", mModuleLabel, key_id == mKeyBag.RSAKEY_FIRM_NAND ? "FIRM_NAND" : "FIRM_RECOVERY");
 		valid_signature = ValidState::Fail;
 	}
 
@@ -239,7 +244,7 @@ void ctrtool::FirmProcess::verifySignature()
 	}
 	else
 	{
-		fmt::print(stderr, "Could not read rsa_sighax_signature for {}.\n", key_id == mKeyBag.RSAKEY_FIRM_NAND ? "RSAKEY_FIRM_NAND" : "RSAKEY_FIRM_RECOVERY");
+		fmt::print(stderr, "[{} ERROR] Could not load {} SigHax RSA2048 signature.\n", mModuleLabel, key_id == mKeyBag.RSAKEY_FIRM_NAND ? "FIRM_NAND" : "FIRM_RECOVERY");
 		is_sighax = false;
 	}
 
@@ -251,10 +256,12 @@ void ctrtool::FirmProcess::verifySignature()
 	// check if sighax
 	else if (valid_signature == ValidState::Fail && is_sighax == true)
 	{
+		fmt::print(stderr, "[{} ERROR] Signature for FIRM was invalid (SigHax).\n", mModuleLabel);
 		mSignatureState = SignatureState_SigHax;
 	}
 	else
 	{
+		fmt::print(stderr, "[{} ERROR] Signature for FIRM was invalid.\n", mModuleLabel);
 		mSignatureState = SignatureState_Fail;
 	}
 }
@@ -304,7 +311,10 @@ void ctrtool::FirmProcess::extractSections()
 			local_fs.createDirectory(mExtractPath.get());
 			local_fs.openFile(f_path, tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write, out_stream);
 
-			fmt::print("Saving section {} to {}...\n", i, f_path.to_string());
+			if (mVerbose)
+			{
+				fmt::print(stderr, "[{} LOG] Saving section {} to {}...\n", mModuleLabel, i, f_path.to_string());
+			}
 
 			tc::ByteData filedata = tc::ByteData(in_stream->length());
 			in_stream->seek(0, tc::io::SeekOrigin::Begin);

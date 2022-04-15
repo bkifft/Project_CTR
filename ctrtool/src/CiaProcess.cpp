@@ -13,7 +13,6 @@ ctrtool::CiaProcess::CiaProcess() :
 	mInputStream(),
 	mKeyBag(),
 	mShowHeaderInfo(false),
-	mShowFs(false),
 	mVerbose(false),
 	mVerify(false),
 	mCertExtractPath(),
@@ -49,10 +48,9 @@ void ctrtool::CiaProcess::setKeyBag(const ctrtool::KeyBag& key_bag)
 	mNcchProcess.setKeyBag(key_bag);
 }
 
-void ctrtool::CiaProcess::setCliOutputMode(bool show_header_info, bool show_fs)
+void ctrtool::CiaProcess::setCliOutputMode(bool show_header_info)
 {
 	mShowHeaderInfo = show_header_info;
-	mShowFs = show_fs;
 }
 
 void ctrtool::CiaProcess::setVerboseMode(bool verbose)
@@ -288,11 +286,6 @@ void ctrtool::CiaProcess::importHeader()
 			}
 
 		}
-		// TODO load certificates from KeyBag
-		else
-		{
-			fmt::print("[LOG] CIA has no Certificate, cannot verify Ticket or TitleMetaData.\n");
-		}
 
 		if (mTikSizeInfo.size > 0)
 		{
@@ -301,12 +294,18 @@ void ctrtool::CiaProcess::importHeader()
 			// determine title key
 			if (mKeyBag.fallback_title_key.isSet())
 			{
-				fmt::print("[LOG] Using fallback titlekey.\n");
+				if (mVerbose)
+				{
+					fmt::print(stderr, "[{} LOG] Using fallback titlekey.\n", mModuleLabel);
+				}
 				mDecryptedTitleKey = mKeyBag.fallback_title_key.get();
 			}
 			else if (mKeyBag.common_key.find(mTicket.key_id) != mKeyBag.common_key.end())
 			{
-				fmt::print("[LOG] Decrypting titlekey from ticket.\n");
+				if (mVerbose)
+				{
+					fmt::print(stderr, "[{} LOG] Decrypting titlekey from ticket.\n", mModuleLabel);
+				}
 				
 				// get common key
 				auto common_key = mKeyBag.common_key[mTicket.key_id];
@@ -324,7 +323,7 @@ void ctrtool::CiaProcess::importHeader()
 			}
 			else
 			{
-				fmt::print("[LOG] Cannot determine titlekey.\n");
+				fmt::print(stderr, "[{} ERROR] Cannot determine titlekey.\n", mModuleLabel);
 			}
 		}
 		else
@@ -405,71 +404,96 @@ void ctrtool::CiaProcess::verifyMetadata()
 		// verify cert
 		for (size_t i = 0; i < mCertChain.size(); i++)
 		{
-			auto keybag_issuer_itr = mIssuerSigner.find(mCertChain[i].signature.issuer);
 			auto local_issuer_itr = mCertImportedIssuerSigner.find(mCertChain[i].signature.issuer);
+			auto keybag_issuer_itr = mIssuerSigner.find(mCertChain[i].signature.issuer);
 			
-			// try first with the keybag imported issuer
-			if (keybag_issuer_itr != mIssuerSigner.end() && keybag_issuer_itr->second->getSigType() == mCertChain[i].signature.sig_type)
-			{
-				mCertSigValid[i] = keybag_issuer_itr->second->verifyHash(mCertChain[i].calculated_hash.data(), mCertChain[i].signature.sig.data()) ? ValidState::Good : ValidState::Fail;
-			}
-			// fallback try with the issuer profiles imported from the local certificates
-			else if (local_issuer_itr != mCertImportedIssuerSigner.end() && local_issuer_itr->second->getSigType() == mCertChain[i].signature.sig_type)
+			// first try with the issuer profiles imported from the local certificates
+			if (local_issuer_itr != mCertImportedIssuerSigner.end() && local_issuer_itr->second->getSigType() == mCertChain[i].signature.sig_type)
 			{
 				mCertSigValid[i] = local_issuer_itr->second->verifyHash(mCertChain[i].calculated_hash.data(), mCertChain[i].signature.sig.data()) ? ValidState::Good : ValidState::Fail;
+			}
+			// fallback try with the keybag imported issuer
+			else if (keybag_issuer_itr != mIssuerSigner.end() && keybag_issuer_itr->second->getSigType() == mCertChain[i].signature.sig_type)
+			{
+				// only show this warning for non-root signed certificates
+				if (mCertChain[i].signature.issuer != "Root")
+				{
+					fmt::print(stderr, "[{} ERROR] Public key \"{}\" (for certificate \"{}\") was not present in the CIA certificate chain. The public key included with CTRTool was used instead.\n", mModuleLabel, mCertChain[i].signature.issuer, mCertChain[i].subject);
+				}
+				mCertSigValid[i] = keybag_issuer_itr->second->verifyHash(mCertChain[i].calculated_hash.data(), mCertChain[i].signature.sig.data()) ? ValidState::Good : ValidState::Fail;
 			}
 			else
 			{
 				// cannot locate rsa key to verify
-				fmt::print(stderr, "Could not read public key for \"{}\" (certificate).\n", mCertChain[i].signature.issuer);
+				fmt::print(stderr, "[{} ERROR] Could not locate public key for \"{}\" (certificate).\n", mModuleLabel, mCertChain[i].signature.issuer);
 				mCertSigValid[i] = ValidState::Fail;
+			}
+
+			// log certificate signature validation error
+			if (mCertSigValid[i] != ValidState::Good)
+			{
+				fmt::print(stderr, "[{} ERROR] Signature for Certificate \"{}\" was invalid.\n", mModuleLabel, mCertChain[i].signature.issuer);
 			}
 		}
 	}
 	if (mHeader.format_version.unwrap() == ntd::n3ds::CiaHeader::FormatVersion_Default && mTikSizeInfo.size > 0)
 	{
 		// verify ticket
-		auto keybag_issuer_itr = mIssuerSigner.find(mTicket.signature.issuer);
 		auto local_issuer_itr = mCertImportedIssuerSigner.find(mTicket.signature.issuer);
+		auto keybag_issuer_itr = mIssuerSigner.find(mTicket.signature.issuer);
 
-		// try first with the keybag imported issuer
-		if (keybag_issuer_itr != mIssuerSigner.end() && keybag_issuer_itr->second->getSigType() == mTicket.signature.sig_type)
-		{
-			mTicketSigValid = keybag_issuer_itr->second->verifyHash(mTicket.calculated_hash.data(), mTicket.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
-		}
-		// fallback try with the issuer profiles imported from the local certificates
-		else if (local_issuer_itr != mCertImportedIssuerSigner.end() && local_issuer_itr->second->getSigType() == mTicket.signature.sig_type)
+		// first try with the issuer profiles imported from the local certificates
+		if (local_issuer_itr != mCertImportedIssuerSigner.end() && local_issuer_itr->second->getSigType() == mTicket.signature.sig_type)
 		{
 			mTicketSigValid = local_issuer_itr->second->verifyHash(mTicket.calculated_hash.data(), mTicket.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
+		}
+		// fallback try with the keybag imported issuer
+		else if (keybag_issuer_itr != mIssuerSigner.end() && keybag_issuer_itr->second->getSigType() == mTicket.signature.sig_type)
+		{
+			fmt::print(stderr, "[{} ERROR] Public key \"{}\" (for ticket) was not present in the CIA certificate chain. The public key included with CTRTool was used instead.\n", mModuleLabel, mTicket.signature.issuer);
+			mTicketSigValid = keybag_issuer_itr->second->verifyHash(mTicket.calculated_hash.data(), mTicket.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
 		}
 		else
 		{
 			// cannot locate rsa key to verify
-			fmt::print(stderr, "Could not read public key for \"{}\" (ticket).\n", mTicket.signature.issuer);
+			fmt::print(stderr, "[{} ERROR] Could not locate public key \"{}\" (for ticket).\n", mModuleLabel, mTicket.signature.issuer);
 			mTicketSigValid = ValidState::Fail;
+		}
+
+		// log ticket signature validation error
+		if (mTicketSigValid != ValidState::Good)
+		{
+			fmt::print(stderr, "[{} ERROR] Signature for Ticket was invalid.\n", mModuleLabel);
 		}
 	}
 	if (mHeader.format_version.unwrap() == ntd::n3ds::CiaHeader::FormatVersion_Default && mTmdSizeInfo.size > 0)
 	{
 		// verify tmd
-		auto keybag_issuer_itr = mIssuerSigner.find(mTitleMetaData.signature.issuer);
 		auto local_issuer_itr = mCertImportedIssuerSigner.find(mTitleMetaData.signature.issuer);
+		auto keybag_issuer_itr = mIssuerSigner.find(mTitleMetaData.signature.issuer);
 
-		// try first with the keybag imported issuer
-		if (keybag_issuer_itr != mIssuerSigner.end() && keybag_issuer_itr->second->getSigType() == mTitleMetaData.signature.sig_type)
-		{
-			mTitleMetaDataSigValid = keybag_issuer_itr->second->verifyHash(mTitleMetaData.calculated_hash.data(), mTitleMetaData.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
-		}
-		// fallback try with the issuer profiles imported from the local certificates
-		else if (local_issuer_itr != mCertImportedIssuerSigner.end() && local_issuer_itr->second->getSigType() == mTitleMetaData.signature.sig_type)
+		// first try with the issuer profiles imported from the local certificates
+		if (local_issuer_itr != mCertImportedIssuerSigner.end() && local_issuer_itr->second->getSigType() == mTitleMetaData.signature.sig_type)
 		{
 			mTitleMetaDataSigValid = local_issuer_itr->second->verifyHash(mTitleMetaData.calculated_hash.data(), mTitleMetaData.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
+		}
+		// fallback try with the keybag imported issuer
+		else if (keybag_issuer_itr != mIssuerSigner.end() && keybag_issuer_itr->second->getSigType() == mTitleMetaData.signature.sig_type)
+		{
+			fmt::print(stderr, "[{} ERROR] Public key \"{}\" (for tmd) was not present in the CIA certificate chain. The public key included with CTRTool was used instead.\n", mModuleLabel, mTitleMetaData.signature.issuer);
+			mTitleMetaDataSigValid = keybag_issuer_itr->second->verifyHash(mTitleMetaData.calculated_hash.data(), mTitleMetaData.signature.sig.data()) ? ValidState::Good : ValidState::Fail;
 		}
 		else
 		{
 			// cannot locate rsa key to verify
-			fmt::print(stderr, "Could not read public key for \"{}\" (tmd).\n", mTitleMetaData.signature.issuer);
+			fmt::print(stderr, "[{} ERROR] Could not locate public key \"{}\" (for tmd).\n", mModuleLabel, mTitleMetaData.signature.issuer);
 			mTitleMetaDataSigValid = ValidState::Fail;
+		}
+
+		// log tmd signature validation error
+		if (mTitleMetaDataSigValid != ValidState::Good)
+		{
+			fmt::print(stderr, "[{} ERROR] Signature for TitleMetaData was invalid.\n", mModuleLabel);
 		}
 	}
 }
@@ -519,6 +543,11 @@ void ctrtool::CiaProcess::verifyContent()
 			sha256_calc.getHash(sha256_hash.data());
 
 			itr->second.valid_state = memcmp(sha256_hash.data(), itr->second.hash.data(), sha256_hash.size()) == 0 ? ValidState::Good : ValidState::Fail;
+
+			if (itr->second.valid_state != ValidState::Good)
+			{
+				fmt::print(stderr, "[{} ERROR] Hash for content (index=0x{:04x}, id=0x{:08x}) was invalid.\n", mModuleLabel, itr->second.cindex, itr->second.cid);
+			}
 		}
 	}
 }
@@ -673,7 +702,11 @@ void ctrtool::CiaProcess::extractCia()
 		in_stream = std::shared_ptr<tc::io::SubStream>(new tc::io::SubStream(mInputStream, mCertSizeInfo.offset, mCertSizeInfo.size));
 		out_stream = std::shared_ptr<tc::io::FileStream>(new tc::io::FileStream(out_path, tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write));
 
-		fmt::print("Saving certs to {}...\n", out_path.to_string());
+		if (mVerbose)
+		{
+			fmt::print(stderr, "[{} LOG] Saving certs to {}...\n", mModuleLabel, out_path.to_string());
+		}
+		
 		copyStream(in_stream, out_stream);
 	}
 
@@ -684,7 +717,10 @@ void ctrtool::CiaProcess::extractCia()
 		in_stream = std::shared_ptr<tc::io::SubStream>(new tc::io::SubStream(mInputStream, mTikSizeInfo.offset, mTikSizeInfo.size));
 		out_stream = std::shared_ptr<tc::io::FileStream>(new tc::io::FileStream(out_path, tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write));
 
-		fmt::print("Saving tik to {}...\n", out_path.to_string());
+		if (mVerbose)
+		{
+			fmt::print(stderr, "[{} LOG] Saving tik to {}...\n", mModuleLabel, out_path.to_string());
+		}
 		copyStream(in_stream, out_stream);
 	}
 
@@ -695,7 +731,10 @@ void ctrtool::CiaProcess::extractCia()
 		in_stream = std::shared_ptr<tc::io::SubStream>(new tc::io::SubStream(mInputStream, mTmdSizeInfo.offset, mTmdSizeInfo.size));
 		out_stream = std::shared_ptr<tc::io::FileStream>(new tc::io::FileStream(out_path, tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write));
 
-		fmt::print("Saving tmd to {}...\n", out_path.to_string());
+		if (mVerbose)
+		{
+			fmt::print(stderr, "[{} LOG] Saving tmd to {}...\n", mModuleLabel, out_path.to_string());
+		}
 		copyStream(in_stream, out_stream);
 	}
 
@@ -706,7 +745,10 @@ void ctrtool::CiaProcess::extractCia()
 		in_stream = std::shared_ptr<tc::io::SubStream>(new tc::io::SubStream(mInputStream, mFooterSizeInfo.offset, mFooterSizeInfo.size));
 		out_stream = std::shared_ptr<tc::io::FileStream>(new tc::io::FileStream(out_path, tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write));
 
-		fmt::print("Saving meta to {}...\n", out_path.to_string());
+		if (mVerbose)
+		{
+			fmt::print(stderr, "[{} LOG] Saving meta to {}...\n", mModuleLabel, out_path.to_string());
+		}
 		copyStream(in_stream, out_stream);
 	}
 
@@ -729,7 +771,11 @@ void ctrtool::CiaProcess::extractCia()
 
 			out_stream = std::shared_ptr<tc::io::FileStream>(new tc::io::FileStream(out_path, tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write));
 
-			fmt::print("Saving content {:04x} to {}...\n", itr->second.cindex, out_path.to_string());
+			if (mVerbose)
+			{
+				fmt::print(stderr, "[{} LOG] Saving content {:04x} to {}...\n", mModuleLabel, itr->second.cindex, out_path.to_string());
+			}
+			
 			copyStream(in_stream, out_stream);
 		}
 	}
@@ -760,7 +806,7 @@ void ctrtool::CiaProcess::processContent()
 {
 	if (mContentIndex >= ntd::n3ds::CiaHeader::kCiaMaxContentNum)
 	{
-		fmt::print(stderr, "Content index {:d} isn't valid for CIA, use index 0-{:d}, defaulting to 0 now.\n", mContentIndex, ((size_t)ntd::n3ds::CiaHeader::kCiaMaxContentNum)-1);
+		fmt::print(stderr, "[{} ERROR] Content index {:d} isn't valid for CIA, use index 0-{:d}, defaulting to 0 now.\n", mModuleLabel, mContentIndex, ((size_t)ntd::n3ds::CiaHeader::kCiaMaxContentNum)-1);
 		mContentIndex = 0;
 	}
 	if (mContentInfo.find(mContentIndex) != mContentInfo.end() && mContentInfo[mContentIndex].size != 0)
@@ -782,7 +828,7 @@ void ctrtool::CiaProcess::processContent()
 		}
 		else
 		{
-			fmt::print("[LOG] TWL title processing not supported\n");
+			throw tc::NotImplementedException(mModuleLabel, "TWL title processing not supported.");
 		}
 	}
 }
