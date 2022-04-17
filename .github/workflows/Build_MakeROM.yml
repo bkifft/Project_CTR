@@ -15,28 +15,31 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        dist: [ubuntu_x86_64, macos_x86_64, win_x86_64]
+        dist: [ubuntu_x86_64, macos_x86_64, macos_arm64, win_x86_64]
         prog: [makerom]
         include:
-          - dist: win_x86_64
-            os: windows-latest
-            makeArgs: -j $env:NUMBER_OF_PROCESSORS
-            binExt: .exe
           - dist: ubuntu_x86_64
             os: ubuntu-latest
-            makeArgs: -j$(nproc)
+            arch: x86_64
           - dist: macos_x86_64
             os: macos-latest
-            makeArgs: -j$(sysctl -n hw.activecpu)
+            arch: x86_64
+          - dist: macos_arm64
+            os: macos-latest
+            arch: arm64
+          - dist: win_x86_64
+            os: windows-latest
+            arch: x86_64
+            binExt: .exe
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
       - name: Compile ${{ matrix.prog }}
         working-directory: ${{ matrix.prog }}
-        run: make ${{ matrix.makeArgs }}
+        run: make PROJECT_PLATFORM_ARCH=${{ matrix.arch }} deps all
       - uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.prog }}-${{ matrix.dist }}
-          path: ${{ matrix.prog }}/${{ matrix.prog }}${{ matrix.binExt }}
+          path: ./${{ matrix.prog }}/bin/${{ matrix.prog }}${{ matrix.binExt }}
           if-no-files-found: error

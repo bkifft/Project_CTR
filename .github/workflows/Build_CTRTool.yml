@@ -27,16 +27,17 @@ jobs:
            os: macos-latest
            arch: arm64
     steps:
-    - uses: actions/checkout@v1
-    - name: Clone submodules
-      run: git submodule init && git submodule update
-    - name: Compile ${{ matrix.prog }}
-      working-directory: ${{ matrix.prog }}
-      run: make PROJECT_PLATFORM_ARCH=${{ matrix.arch }} deps all
-    - uses: actions/upload-artifact@v2
-      with:
-        name: ${{ matrix.prog }}-${{ matrix.dist }}
-        path: ./${{ matrix.prog }}/bin/${{ matrix.prog }}
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Compile ${{ matrix.prog }}
+        working-directory: ${{ matrix.prog }}
+        run: make PROJECT_PLATFORM_ARCH=${{ matrix.arch }} deps all
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.prog }}-${{ matrix.dist }}
+          path: ./${{ matrix.prog }}/bin/${{ matrix.prog }}
+          if-no-files-found: error
   build_visualstudio:
     name: Compile ${{ matrix.prog }} for ${{ matrix.dist }}
     runs-on: ${{ matrix.os }}
@@ -56,15 +57,16 @@ jobs:
            configuration: Release
            build_path: Release
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v1.1
-    - name: Clone submodules
-      run: git submodule init && git submodule update
     - name: Compile ${{ matrix.prog }}
       run: msbuild .\${{ matrix.prog }}\build\visualstudio\${{ matrix.prog }}.sln /p:configuration=${{ matrix.configuration }} /p:platform=${{ matrix.platform }} 
     - uses: actions/upload-artifact@v2
       with:
         name: ${{ matrix.prog }}-${{ matrix.dist }}
         path: .\${{ matrix.prog }}\build\visualstudio\${{ matrix.build_path }}\${{ matrix.prog }}.exe
+        if-no-files-found: error
 
