@@ -135,10 +135,15 @@ int SetCardInfoBitmask(cardinfo_hdr *hdr, cci_settings *set)
 	
 	str = set->rsf->CardInfo.CryptoType;
 	if(!str) {
-		if(set->options.useExternalSdkCardInfo)
-			bitmask |= (3 << 6);
-		else
-			bitmask |= 0;
+		u32 val = 0;
+		if(set->keys->keyset == pki_DEVELOPMENT) {
+			val = 3;
+		}
+		else{
+			val = 0;
+		}
+
+		bitmask |= (val << 6);
 	}
 	else{
 		int val = strtol(str,NULL,10);

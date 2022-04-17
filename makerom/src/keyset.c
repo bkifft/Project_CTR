@@ -150,7 +150,7 @@ int LoadKeysFromResources(keys_struct *keys)
 			SetNcchKeyX(keys, prod_unfixed_ncch_keyX[i],i);
 		
 		// CCI
-		SetCciInitialDataKeyX(keys, dev_initial_data_keyx);
+		SetCciInitialDataKeyX(keys, prod_initial_data_keyx);
 
 		/* RSA Keys */
 		// CIA

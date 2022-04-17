@@ -581,7 +581,7 @@ int GenCciHdr(cci_settings *set)
 	// Sign Header
 	if (Rsa2048Key_CanSign(&set->keys->rsa.cciCfa) == false)
 	{
-		printf("[NCSD WARNING] Failed to sign header\n");
+		printf("[NCSD WARNING] Failed to sign header (key was incomplete)\n");
 		memset(hdr->signature, 0xFF, 0x100);
 		return 0;
 	}
