@@ -1,6 +1,6 @@
 # C++/C Recursive Project Makefile 
 # (c) Jack
-# Version 7 (20220416)
+# Version 8 (20220420)
 
 # Project Name
 PROJECT_NAME = libyaml
@@ -75,6 +75,7 @@ ifeq ($(PROJECT_PLATFORM), WIN32)
 	# Windows Flags/Libs
 	CC = x86_64-w64-mingw32-gcc
 	CXX = x86_64-w64-mingw32-g++
+	DEFINEFLAGS =
 	WARNFLAGS = -Wall -Wno-unused-value -Wno-unused-but-set-variable
 	ARCHFLAGS =
 	INC +=
@@ -84,6 +85,7 @@ else ifeq ($(PROJECT_PLATFORM), GNU)
 	# GNU/Linux Flags/Libs
 	#CC = 
 	#CXX =
+	DEFINEFLAGS = -D_GNU_SOURCE
 	WARNFLAGS = -Wall -Wno-unused-value -Wno-unused-but-set-variable
 	ARCHFLAGS =
 	INC +=
@@ -93,6 +95,7 @@ else ifeq ($(PROJECT_PLATFORM), MACOS)
 	# MacOS Flags/Libs
 	#CC = 
 	#CXX =
+	DEFINEFLAGS =
 	WARNFLAGS = -Wall -Wno-unused-value -Wno-unused-private-field
 	ARCHFLAGS = -arch $(PROJECT_PLATFORM_ARCH)
 	INC +=
@@ -101,8 +104,8 @@ else ifeq ($(PROJECT_PLATFORM), MACOS)
 endif
 
 # Compiler Flags
-CXXFLAGS = -std=c++11 $(INC) $(WARNFLAGS) $(ARCHFLAGS) -fPIC
-CFLAGS = -std=c11 $(INC) $(WARNFLAGS) $(ARCHFLAGS) -fPIC
+CXXFLAGS = -std=c++11 $(INC) $(DEFINEFLAGS) $(WARNFLAGS) $(ARCHFLAGS) -fPIC
+CFLAGS = -std=c11 $(INC) $(DEFINEFLAGS) $(WARNFLAGS) $(ARCHFLAGS) -fPIC
 
 # Object Files
 SRC_OBJ = $(foreach dir,$(PROJECT_SRC_SUBDIRS),$(subst .cpp,.o,$(wildcard $(dir)/*.cpp))) $(foreach dir,$(PROJECT_SRC_SUBDIRS),$(subst .cc,.o,$(wildcard $(dir)/*.cc))) $(foreach dir,$(PROJECT_SRC_SUBDIRS),$(subst .c,.o,$(wildcard $(dir)/*.c)))
