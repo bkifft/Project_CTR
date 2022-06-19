@@ -1,4 +1,5 @@
 #include "CiaProcess.h"
+#include "util.h"
 #include <tc/io.h>
 #include <tc/cli.h>
 #include <tc/crypto.h>
@@ -15,6 +16,7 @@ ctrtool::CiaProcess::CiaProcess() :
 	mShowHeaderInfo(false),
 	mVerbose(false),
 	mVerify(false),
+	mPlain(false),
 	mCertExtractPath(),
 	mTikExtractPath(),
 	mTmdExtractPath(),
@@ -103,6 +105,7 @@ void ctrtool::CiaProcess::setRawMode(bool raw)
 
 void ctrtool::CiaProcess::setPlainMode(bool plain)
 {
+	mPlain = plain;
 	mNcchProcess.setPlainMode(plain);
 }
 
@@ -515,7 +518,7 @@ void ctrtool::CiaProcess::verifyContent()
 
 			content_stream = std::shared_ptr<tc::io::SubStream>(new tc::io::SubStream(mInputStream, itr->second.offset, itr->second.size));
 
-			if (itr->second.is_encrypted && mDecryptedTitleKey.isSet())
+			if (!mPlain && itr->second.is_encrypted && mDecryptedTitleKey.isSet())
 			{
 				tc::crypto::Aes128CbcEncryptedStream::iv_t content_iv;
 				createContentIv(content_iv, itr->second.cindex);
@@ -691,23 +694,22 @@ void ctrtool::CiaProcess::printHeader()
 
 void ctrtool::CiaProcess::extractCia()
 {
+	tc::ByteData cache = tc::ByteData(0x10000);
 	tc::io::Path out_path;
 	std::shared_ptr<tc::io::IStream> in_stream;
-	std::shared_ptr<tc::io::IStream> out_stream;
 
 	if (mCertExtractPath.isSet() && mCertSizeInfo.size > 0)
 	{
 		out_path = mCertExtractPath.get();
 
 		in_stream = std::shared_ptr<tc::io::SubStream>(new tc::io::SubStream(mInputStream, mCertSizeInfo.offset, mCertSizeInfo.size));
-		out_stream = std::shared_ptr<tc::io::FileStream>(new tc::io::FileStream(out_path, tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write));
 
 		if (mVerbose)
 		{
 			fmt::print(stderr, "[{} LOG] Saving certs to {}...\n", mModuleLabel, out_path.to_string());
 		}
 		
-		copyStream(in_stream, out_stream);
+		writeStreamToFile(in_stream, out_path, cache);
 	}
 
 	if (mTikExtractPath.isSet() && mTikSizeInfo.size > 0)
@@ -715,13 +717,13 @@ void ctrtool::CiaProcess::extractCia()
 		out_path = mTikExtractPath.get();
 
 		in_stream = std::shared_ptr<tc::io::SubStream>(new tc::io::SubStream(mInputStream, mTikSizeInfo.offset, mTikSizeInfo.size));
-		out_stream = std::shared_ptr<tc::io::FileStream>(new tc::io::FileStream(out_path, tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write));
 
 		if (mVerbose)
 		{
 			fmt::print(stderr, "[{} LOG] Saving tik to {}...\n", mModuleLabel, out_path.to_string());
 		}
-		copyStream(in_stream, out_stream);
+
+		writeStreamToFile(in_stream, out_path, cache);
 	}
 
 	if (mTmdExtractPath.isSet() && mTmdSizeInfo.size > 0)
@@ -729,13 +731,13 @@ void ctrtool::CiaProcess::extractCia()
 		out_path = mTmdExtractPath.get();
 
 		in_stream = std::shared_ptr<tc::io::SubStream>(new tc::io::SubStream(mInputStream, mTmdSizeInfo.offset, mTmdSizeInfo.size));
-		out_stream = std::shared_ptr<tc::io::FileStream>(new tc::io::FileStream(out_path, tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write));
 
 		if (mVerbose)
 		{
 			fmt::print(stderr, "[{} LOG] Saving tmd to {}...\n", mModuleLabel, out_path.to_string());
 		}
-		copyStream(in_stream, out_stream);
+
+		writeStreamToFile(in_stream, out_path, cache);
 	}
 
 	if (mFooterExtractPath.isSet() && mFooterSizeInfo.size > 0)
@@ -743,13 +745,13 @@ void ctrtool::CiaProcess::extractCia()
 		out_path = mFooterExtractPath.get();
 
 		in_stream = std::shared_ptr<tc::io::SubStream>(new tc::io::SubStream(mInputStream, mFooterSizeInfo.offset, mFooterSizeInfo.size));
-		out_stream = std::shared_ptr<tc::io::FileStream>(new tc::io::FileStream(out_path, tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write));
 
 		if (mVerbose)
 		{
 			fmt::print(stderr, "[{} LOG] Saving meta to {}...\n", mModuleLabel, out_path.to_string());
 		}
-		copyStream(in_stream, out_stream);
+
+		writeStreamToFile(in_stream, out_path, cache);
 	}
 
 	if (mContentExtractPath.isSet() && mContentInfo.size() > 0)
@@ -761,7 +763,7 @@ void ctrtool::CiaProcess::extractCia()
 
 			in_stream = std::shared_ptr<tc::io::SubStream>(new tc::io::SubStream(mInputStream, itr->second.offset, itr->second.size));
 
-			if (itr->second.is_encrypted && mDecryptedTitleKey.isSet())
+			if (!mPlain && itr->second.is_encrypted && mDecryptedTitleKey.isSet())
 			{
 				tc::crypto::Aes128CbcEncryptedStream::iv_t content_iv;
 				createContentIv(content_iv, itr->second.cindex);
@@ -769,36 +771,13 @@ void ctrtool::CiaProcess::extractCia()
 				in_stream = std::shared_ptr<tc::crypto::Aes128CbcEncryptedStream>(new tc::crypto::Aes128CbcEncryptedStream(in_stream, mDecryptedTitleKey.get(), content_iv));
 			}
 
-			out_stream = std::shared_ptr<tc::io::FileStream>(new tc::io::FileStream(out_path, tc::io::FileMode::OpenOrCreate, tc::io::FileAccess::Write));
-
 			if (mVerbose)
 			{
 				fmt::print(stderr, "[{} LOG] Saving content {:04x} to {}...\n", mModuleLabel, itr->second.cindex, out_path.to_string());
 			}
 			
-			copyStream(in_stream, out_stream);
+			writeStreamToFile(in_stream, out_path, cache);
 		}
-	}
-}
-
-void ctrtool::CiaProcess::copyStream(const std::shared_ptr<tc::io::IStream>& in, const std::shared_ptr<tc::io::IStream>& out)
-{
-	tc::ByteData cache = tc::ByteData(0x10000);
-	size_t cache_read_len;
-
-	in->seek(0, tc::io::SeekOrigin::Begin);
-	out->seek(0, tc::io::SeekOrigin::Begin);
-	for (int64_t remaining_data = in->length(); remaining_data > 0;)
-	{
-		cache_read_len = in->read(cache.data(), cache.size());
-		if (cache_read_len == 0)
-		{
-			throw tc::io::IOException(mModuleLabel, "Failed to read from source file.");
-		}
-
-		out->write(cache.data(), cache_read_len);
-
-		remaining_data -= int64_t(cache_read_len);
 	}
 }
 
@@ -813,7 +792,7 @@ void ctrtool::CiaProcess::processContent()
 	{
 		std::shared_ptr<tc::io::IStream> content_stream = std::shared_ptr<tc::io::SubStream>(new tc::io::SubStream(mInputStream, mContentInfo[mContentIndex].offset, mContentInfo[mContentIndex].size));
 		
-		if (mContentInfo[mContentIndex].is_encrypted && mDecryptedTitleKey.isSet())
+		if (!mPlain && mContentInfo[mContentIndex].is_encrypted && mDecryptedTitleKey.isSet())
 		{
 			tc::crypto::Aes128CbcEncryptedStream::iv_t content_iv;
 			createContentIv(content_iv, mContentInfo[mContentIndex].cindex);

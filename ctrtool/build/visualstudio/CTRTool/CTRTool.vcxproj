@@ -153,6 +153,7 @@
     <ClInclude Include="..\..\..\src\types.h" />
     <ClInclude Include="..\..\..\src\TikProcess.h" />
     <ClInclude Include="..\..\..\src\TmdProcess.h" />
+    <ClInclude Include="..\..\..\src\util.h" />
     <ClInclude Include="..\..\..\src\version.h" />
   </ItemGroup>
   <ItemGroup>
@@ -172,6 +173,7 @@
     <ClCompile Include="..\..\..\src\Settings.cpp" />
     <ClCompile Include="..\..\..\src\TikProcess.cpp" />
     <ClCompile Include="..\..\..\src\TmdProcess.cpp" />
+    <ClCompile Include="..\..\..\src\util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\deps\libfmt\build\visualstudio\libfmt\libfmt.vcxproj">

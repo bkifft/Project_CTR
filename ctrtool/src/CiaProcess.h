@@ -46,6 +46,7 @@ private:
 	bool mShowHeaderInfo;
 	bool mVerbose;
 	bool mVerify;
+	bool mPlain;
 	tc::Optional<tc::io::Path> mCertExtractPath;
 	tc::Optional<tc::io::Path> mTikExtractPath;
 	tc::Optional<tc::io::Path> mTmdExtractPath;
@@ -108,7 +109,6 @@ private:
 	void verifyContent();
 	void printHeader();
 	void extractCia();
-	void copyStream(const std::shared_ptr<tc::io::IStream>& in, const std::shared_ptr<tc::io::IStream>& out);
 	void processContent();
 
 	void createContentIv(std::array<byte_t, 16>& content_iv, uint16_t index);
