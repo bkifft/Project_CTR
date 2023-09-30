@@ -168,10 +168,6 @@ int CreateExeFsCode(elf_context *elf, ncch_settings *set)
 
 	/* Checking the existence of essential ELF Segments */
 	if (!text.fileSize) return NOT_FIND_TEXT_SEGMENT;
-	if (!rwdata.fileSize) return NOT_FIND_DATA_SEGMENT;
-
-	/* Calculating BSS size */
-	set->codeDetails.bssSize = rwdata.memSize - rwdata.fileSize;
 
 	/* Allocating Buffer for ExeFs Code */
 	bool noCodePadding = set->options.noCodePadding;
@@ -209,7 +205,7 @@ int CreateExeFsCode(elf_context *elf, ncch_settings *set)
 		set->exefsSections.code.buffer = code;
 	}
 
-	/* Setting code_segment data and freeing original buffers */
+	/* Setting code_segment data */
 	set->codeDetails.textAddress = text.address;
 	set->codeDetails.textMaxPages = text.pageNum;
 	set->codeDetails.textSize = text.fileSize;
@@ -221,6 +217,14 @@ int CreateExeFsCode(elf_context *elf, ncch_settings *set)
 	set->codeDetails.rwAddress = rwdata.address;
 	set->codeDetails.rwMaxPages = rwdata.pageNum;
 	set->codeDetails.rwSize = rwdata.fileSize;
+
+	/* Calculating BSS size */
+	if (rwdata.fileSize) {
+		set->codeDetails.bssSize = rwdata.memSize - rwdata.fileSize;
+	}
+	else {
+		set->codeDetails.bssSize = 0;
+	}
 
 	if (set->rsfSet->SystemControlInfo.StackSize)
 		set->codeDetails.stackSize = strtoul(set->rsfSet->SystemControlInfo.StackSize, NULL, 0);
