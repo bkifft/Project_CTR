@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{7789491c-5403-4613-b06b-db0c58e19a01}</ProjectGuid>
+    <RootNamespace>libnintendon3ds</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\deps\libmbedtls\include;$(SolutionDir)..\..\deps\libfmt\include;$(SolutionDir)..\..\deps\libtoolchain\include;$(SolutionDir)..\..\deps\libbroadon-es\include;$(ProjectDir)..\..\..\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\deps\libmbedtls\include;$(SolutionDir)..\..\deps\libfmt\include;$(SolutionDir)..\..\deps\libtoolchain\include;$(SolutionDir)..\..\deps\libbroadon-es\include;$(ProjectDir)..\..\..\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\deps\libmbedtls\include;$(SolutionDir)..\..\deps\libfmt\include;$(SolutionDir)..\..\deps\libtoolchain\include;$(SolutionDir)..\..\deps\libbroadon-es\include;$(ProjectDir)..\..\..\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\deps\libmbedtls\include;$(SolutionDir)..\..\deps\libfmt\include;$(SolutionDir)..\..\deps\libtoolchain\include;$(SolutionDir)..\..\deps\libbroadon-es\include;$(ProjectDir)..\..\..\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(SolutionDir)..\..\deps\libmbedtls\build\visualstudio\libmbedtls\libmbedtls.vcxproj">
+      <Project>{7a7c66f3-2b5b-4e23-85d8-2a74fedad92c}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(SolutionDir)..\..\deps\libfmt\build\visualstudio\libfmt\libfmt.vcxproj">
+      <Project>{f4b0540e-0aae-4006-944b-356944ef61fa}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(SolutionDir)..\..\deps\libtoolchain\build\visualstudio\libtoolchain\libtoolchain.vcxproj">
+      <Project>{e194e4b8-1482-40a2-901b-75d4387822e9}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(SolutionDir)..\..\deps\libbroadon-es\build\visualstudio\libbroadon-es\libbroadon-es.vcxproj">
+      <Project>{8a35d7dc-293a-4669-9c1e-4f45abfe8838}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\src\CciFsSnapshotGenerator.cpp" />
+    <ClCompile Include="..\..\..\src\CiaFsSnapshotGenerator.cpp" />
+    <ClCompile Include="..\..\..\src\CtrKeyGenerator.cpp" />
+    <ClCompile Include="..\..\..\src\es\Certificate.cpp" />
+    <ClCompile Include="..\..\..\src\es\RsaSigner.cpp" />
+    <ClCompile Include="..\..\..\src\es\Signature.cpp" />
+    <ClCompile Include="..\..\..\src\es\Ticket.cpp" />
+    <ClCompile Include="..\..\..\src\es\TitleMetaData.cpp" />
+    <ClCompile Include="..\..\..\src\ExeFsSnapshotGenerator.cpp" />
+    <ClCompile Include="..\..\..\src\IvfcStream.cpp" />
+    <ClCompile Include="..\..\..\src\RomFsSnapshotGenerator.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\include\ntd\n3ds.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\bcwav.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\cci.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\CciFsSnapshotGenerator.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\cia.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\CiaFsSnapshotGenerator.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\cro.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\crr.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\CtrKeyGenerator.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\es.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\es\Certificate.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\es\ISigner.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\es\RsaSigner.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\es\Signature.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\es\Ticket.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\es\TitleMetaData.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\exefs.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\ExeFsSnapshotGenerator.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\exheader.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\firm.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\ivfc.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\IvfcStream.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\ncch.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\romfs.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\RomFsSnapshotGenerator.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\smdh.h" />
+    <ClInclude Include="..\..\..\include\ntd\n3ds\systemupdater.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

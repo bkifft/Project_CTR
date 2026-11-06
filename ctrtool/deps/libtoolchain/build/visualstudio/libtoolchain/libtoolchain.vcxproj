@@ -1,0 +1,350 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>15.0</VCProjectVersion>
+    <ProjectGuid>{E194E4B8-1482-40A2-901B-75D4387822E9}</ProjectGuid>
+    <RootNamespace>libtoolchain</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\deps\libmbedtls\include;$(SolutionDir)..\..\deps\libfmt\include;$(ProjectDir)..\..\..\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\deps\libmbedtls\include;$(SolutionDir)..\..\deps\libfmt\include;$(ProjectDir)..\..\..\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\deps\libmbedtls\include;$(SolutionDir)..\..\deps\libfmt\include;$(ProjectDir)..\..\..\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\deps\libmbedtls\include;$(SolutionDir)..\..\deps\libfmt\include;$(ProjectDir)..\..\..\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\include\tc\AccessViolationException.h" />
+    <ClInclude Include="..\..\..\include\tc\ArgumentException.h" />
+    <ClInclude Include="..\..\..\include\tc\ArgumentNullException.h" />
+    <ClInclude Include="..\..\..\include\tc\ArgumentOutOfRangeException.h" />
+    <ClInclude Include="..\..\..\include\tc\ArithmeticException.h" />
+    <ClInclude Include="..\..\..\include\tc\ByteData.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Aes128CbcEncryptedStream.h" />
+    <ClInclude Include="..\..\..\include\tc\Exception.h" />
+    <ClInclude Include="..\..\..\include\tc\InvalidOperationException.h" />
+    <ClInclude Include="..\..\..\include\tc\NotImplementedException.h" />
+    <ClInclude Include="..\..\..\include\tc\NotSupportedException.h" />
+    <ClInclude Include="..\..\..\include\tc\ObjectDisposedException.h" />
+    <ClInclude Include="..\..\..\include\tc\Optional.h" />
+    <ClInclude Include="..\..\..\include\tc\OutOfMemoryException.h" />
+    <ClInclude Include="..\..\..\include\tc\OverflowException.h" />
+    <ClInclude Include="..\..\..\include\tc\PlatformErrorHandlingUtil.h" />
+    <ClInclude Include="..\..\..\include\tc\ResourceStatus.h" />
+    <ClInclude Include="..\..\..\include\tc\string\detail\utf16.h" />
+    <ClInclude Include="..\..\..\include\tc\string\detail\utf8.h" />
+    <ClInclude Include="..\..\..\include\tc\UnauthorisedAccessException.h" />
+    <ClInclude Include="..\..\..\include\tc\bn\binary_utils.h" />
+    <ClInclude Include="..\..\..\include\tc\bn\bitarray.h" />
+    <ClInclude Include="..\..\..\include\tc\bn\endian_types.h" />
+    <ClInclude Include="..\..\..\include\tc\bn\pad.h" />
+    <ClInclude Include="..\..\..\include\tc\bn\string.h" />
+    <ClInclude Include="..\..\..\include\tc\bn.h" />
+    <ClInclude Include="..\..\..\include\tc\cli\FormatUtil.h" />
+    <ClInclude Include="..\..\..\include\tc\cli\OptionParser.h" />
+    <ClInclude Include="..\..\..\include\tc\cli.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Aes128CbcEncryptor.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Aes128CtrEncryptedStream.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Aes128CtrEncryptor.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Aes128EcbEncryptor.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Aes128XtsEncryptor.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Aes192CbcEncryptor.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Aes192CtrEncryptor.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Aes192EcbEncryptor.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Aes256CbcEncryptor.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Aes256CtrEncryptor.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Aes256EcbEncryptor.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Aes256XtsEncryptor.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\AesEncryptor.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\CbcEncryptor.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\CryptoException.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\CtrEncryptor.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\EcbEncryptor.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\HmacGenerator.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\HmacMd5Generator.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\HmacSha1Generator.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\HmacSha256Generator.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\HmacSha512Generator.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Md5Generator.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Pbkdf1KeyDeriver.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Pbkdf1Md5KeyDeriver.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Pbkdf1Sha1KeyDeriver.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Pbkdf2KeyDeriver.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Pbkdf2Sha1KeyDeriver.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Pbkdf2Sha256KeyDeriver.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Pbkdf2Sha512KeyDeriver.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\PseudoRandomByteGenerator.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\RsaKey.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\RsaKeyGenerator.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\RsaOaepEncryptor.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\RsaOaepSha256Encryptor.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\RsaOaepSha512Encryptor.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\RsaPkcs1Md5Signer.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\RsaPkcs1Sha1Signer.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\RsaPkcs1Sha256Signer.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\RsaPkcs1Sha512Signer.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\RsaPkcs1Signer.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\RsaPssSha256Signer.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\RsaPssSha512Signer.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\RsaPssSigner.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Sha1Generator.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Sha256Generator.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\Sha512Generator.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\XtsEncryptor.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\detail\AesImpl.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\detail\BlockUtilImpl.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\detail\CbcModeImpl.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\detail\CtrModeImpl.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\detail\EcbModeImpl.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\detail\HmacImpl.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\detail\Md5Impl.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\detail\Pbkdf1Impl.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\detail\Pbkdf2Impl.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\detail\PrbgImpl.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\detail\RsaImpl.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\detail\RsaKeyGeneratorImpl.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\detail\RsaOaepPadding.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\detail\RsaPkcs1Padding.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\detail\RsaPssPadding.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\detail\Sha1Impl.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\detail\Sha2Impl.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto\detail\XtsModeImpl.h" />
+    <ClInclude Include="..\..\..\include\tc\crypto.h" />
+    <ClInclude Include="..\..\..\include\tc\io\BasicPathResolver.h" />
+    <ClInclude Include="..\..\..\include\tc\io\ConcatenatedStream.h" />
+    <ClInclude Include="..\..\..\include\tc\io\DirectoryNotEmptyException.h" />
+    <ClInclude Include="..\..\..\include\tc\io\DirectoryNotFoundException.h" />
+    <ClInclude Include="..\..\..\include\tc\io\FileAccess.h" />
+    <ClInclude Include="..\..\..\include\tc\io\FileExistsException.h" />
+    <ClInclude Include="..\..\..\include\tc\io\FileMode.h" />
+    <ClInclude Include="..\..\..\include\tc\io\FileNotFoundException.h" />
+    <ClInclude Include="..\..\..\include\tc\io\FileStream.h" />
+    <ClInclude Include="..\..\..\include\tc\io\IOException.h" />
+    <ClInclude Include="..\..\..\include\tc\io\IOUtil.h" />
+    <ClInclude Include="..\..\..\include\tc\io\IPathResolver.h" />
+    <ClInclude Include="..\..\..\include\tc\io\IPortablePathResolver.h" />
+    <ClInclude Include="..\..\..\include\tc\io\IReadableSink.h" />
+    <ClInclude Include="..\..\..\include\tc\io\ISink.h" />
+    <ClInclude Include="..\..\..\include\tc\io\ISource.h" />
+    <ClInclude Include="..\..\..\include\tc\io\IFileSystem.h" />
+    <ClInclude Include="..\..\..\include\tc\io\IStream.h" />
+    <ClInclude Include="..\..\..\include\tc\io\LocalFileSystem.h" />
+    <ClInclude Include="..\..\..\include\tc\io\MemorySource.h" />
+    <ClInclude Include="..\..\..\include\tc\io\MemoryStream.h" />
+    <ClInclude Include="..\..\..\include\tc\io\OverlayedSource.h" />
+    <ClInclude Include="..\..\..\include\tc\io\PaddingSource.h" />
+    <ClInclude Include="..\..\..\include\tc\io\Path.h" />
+    <ClInclude Include="..\..\..\include\tc\io\PathTooLongException.h" />
+    <ClInclude Include="..\..\..\include\tc\io\PathUtil.h" />
+    <ClInclude Include="..\..\..\include\tc\io\SeekOrigin.h" />
+    <ClInclude Include="..\..\..\include\tc\io\StreamSink.h" />
+    <ClInclude Include="..\..\..\include\tc\io\StreamSource.h" />
+    <ClInclude Include="..\..\..\include\tc\io\StreamUtil.h" />
+    <ClInclude Include="..\..\..\include\tc\io\SubSink.h" />
+    <ClInclude Include="..\..\..\include\tc\io\SubSource.h" />
+    <ClInclude Include="..\..\..\include\tc\io\SubFileSystem.h" />
+    <ClInclude Include="..\..\..\include\tc\io\SubStream.h" />
+    <ClInclude Include="..\..\..\include\tc\io\VirtualFileSystem.h" />
+    <ClInclude Include="..\..\..\include\tc\io.h" />
+    <ClInclude Include="..\..\..\include\tc\os\Environment.h" />
+    <ClInclude Include="..\..\..\include\tc\os\UnicodeMain.h" />
+    <ClInclude Include="..\..\..\include\tc\os.h" />
+    <ClInclude Include="..\..\..\include\tc\string\TranscodeUtil.h" />
+    <ClInclude Include="..\..\..\include\tc\string.h" />
+    <ClInclude Include="..\..\..\include\tc\types.h" />
+    <ClInclude Include="..\..\..\include\tc.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\src\ByteData.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\Aes128CbcEncryptedStream.cpp" />
+    <ClCompile Include="..\..\..\src\Exception.cpp" />
+    <ClCompile Include="..\..\..\src\PlatformErrorHandlingUtil.cpp" />
+    <ClCompile Include="..\..\..\src\cli\FormatUtil.cpp" />
+    <ClCompile Include="..\..\..\src\cli\OptionParser.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\Aes128CbcEncryptor.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\Aes128CtrEncryptedStream.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\Aes128CtrEncryptor.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\Aes128EcbEncryptor.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\Aes128XtsEncryptor.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\Aes192CbcEncryptor.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\Aes192CtrEncryptor.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\Aes192EcbEncryptor.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\Aes256CbcEncryptor.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\Aes256CtrEncryptor.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\Aes256EcbEncryptor.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\Aes256XtsEncryptor.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\HmacMd5Generator.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\HmacSha1Generator.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\HmacSha256Generator.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\HmacSha512Generator.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\Md5Generator.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\Pbkdf1Md5KeyDeriver.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\Pbkdf1Sha1KeyDeriver.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\Pbkdf2Sha1KeyDeriver.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\Pbkdf2Sha256KeyDeriver.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\Pbkdf2Sha512KeyDeriver.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\PseudoRandomByteGenerator.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\RsaKey.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\RsaKeyGenerator.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\RsaOaepSha256Encryptor.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\RsaOaepSha512Encryptor.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\RsaPkcs1Md5Signer.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\RsaPkcs1Sha1Signer.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\RsaPkcs1Sha256Signer.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\RsaPkcs1Sha512Signer.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\RsaPssSha256Signer.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\RsaPssSha512Signer.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\Sha1Generator.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\Sha256Generator.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\Sha512Generator.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\detail\AesImpl.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\detail\Md5Impl.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\detail\PrbgImpl.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\detail\RsaImpl.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\detail\RsaKeyGeneratorImpl.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\detail\Sha1Impl.cpp" />
+    <ClCompile Include="..\..\..\src\crypto\detail\Sha2Impl.cpp" />
+    <ClCompile Include="..\..\..\src\io\BasicPathResolver.cpp" />
+    <ClCompile Include="..\..\..\src\io\ConcatenatedStream.cpp" />
+    <ClCompile Include="..\..\..\src\io\FileStream.cpp" />
+    <ClCompile Include="..\..\..\src\io\IOUtil.cpp" />
+    <ClCompile Include="..\..\..\src\io\LocalFileSystem.cpp" />
+    <ClCompile Include="..\..\..\src\io\MemorySource.cpp" />
+    <ClCompile Include="..\..\..\src\io\MemoryStream.cpp" />
+    <ClCompile Include="..\..\..\src\io\OverlayedSource.cpp" />
+    <ClCompile Include="..\..\..\src\io\PaddingSource.cpp" />
+    <ClCompile Include="..\..\..\src\io\Path.cpp" />
+    <ClCompile Include="..\..\..\src\io\PathUtil.cpp" />
+    <ClCompile Include="..\..\..\src\io\StreamSink.cpp" />
+    <ClCompile Include="..\..\..\src\io\StreamSource.cpp" />
+    <ClCompile Include="..\..\..\src\io\StreamUtil.cpp" />
+    <ClCompile Include="..\..\..\src\io\SubSink.cpp" />
+    <ClCompile Include="..\..\..\src\io\SubSource.cpp" />
+    <ClCompile Include="..\..\..\src\io\SubFileSystem.cpp" />
+    <ClCompile Include="..\..\..\src\io\SubStream.cpp" />
+    <ClCompile Include="..\..\..\src\io\VirtualFileSystem.cpp" />
+    <ClCompile Include="..\..\..\src\os\Environment.cpp" />
+    <ClCompile Include="..\..\..\src\string\TranscodeUtil.cpp" />
+    <ClCompile Include="..\..\..\src\types.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(SolutionDir)..\..\deps\libmbedtls\build\visualstudio\libmbedtls\libmbedtls.vcxproj">
+      <Project>{7a7c66f3-2b5b-4e23-85d8-2a74fedad92c}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(SolutionDir)..\..\deps\libfmt\build\visualstudio\libfmt\libfmt.vcxproj">
+      <Project>{f4b0540e-0aae-4006-944b-356944ef61fa}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

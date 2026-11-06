@@ -1,0 +1,147 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\es">
+      <UniqueIdentifier>{6ff37ad4-4d41-489a-8dee-7a67ae5c3a0c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ntd">
+      <UniqueIdentifier>{a8556034-ba3b-4e55-99fe-75f9cec9442d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ntd\n3ds">
+      <UniqueIdentifier>{27d62e82-f179-4eaf-9592-4aefd77854a0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ntd\n3ds\es">
+      <UniqueIdentifier>{8ca97abf-9738-4b26-a728-0bb7a705496a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\src\CciFsSnapshotGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\CiaFsSnapshotGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\CtrKeyGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\ExeFsSnapshotGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\IvfcStream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\RomFsSnapshotGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\es\Certificate.cpp">
+      <Filter>Source Files\es</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\es\RsaSigner.cpp">
+      <Filter>Source Files\es</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\es\Signature.cpp">
+      <Filter>Source Files\es</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\es\Ticket.cpp">
+      <Filter>Source Files\es</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\es\TitleMetaData.cpp">
+      <Filter>Source Files\es</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\include\ntd\n3ds.h">
+      <Filter>Header Files\ntd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\bcwav.h">
+      <Filter>Header Files\ntd\n3ds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\cci.h">
+      <Filter>Header Files\ntd\n3ds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\CciFsSnapshotGenerator.h">
+      <Filter>Header Files\ntd\n3ds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\cia.h">
+      <Filter>Header Files\ntd\n3ds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\CiaFsSnapshotGenerator.h">
+      <Filter>Header Files\ntd\n3ds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\cro.h">
+      <Filter>Header Files\ntd\n3ds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\crr.h">
+      <Filter>Header Files\ntd\n3ds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\CtrKeyGenerator.h">
+      <Filter>Header Files\ntd\n3ds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\es.h">
+      <Filter>Header Files\ntd\n3ds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\exefs.h">
+      <Filter>Header Files\ntd\n3ds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\ExeFsSnapshotGenerator.h">
+      <Filter>Header Files\ntd\n3ds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\exheader.h">
+      <Filter>Header Files\ntd\n3ds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\firm.h">
+      <Filter>Header Files\ntd\n3ds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\ivfc.h">
+      <Filter>Header Files\ntd\n3ds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\IvfcStream.h">
+      <Filter>Header Files\ntd\n3ds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\ncch.h">
+      <Filter>Header Files\ntd\n3ds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\romfs.h">
+      <Filter>Header Files\ntd\n3ds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\RomFsSnapshotGenerator.h">
+      <Filter>Header Files\ntd\n3ds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\smdh.h">
+      <Filter>Header Files\ntd\n3ds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\systemupdater.h">
+      <Filter>Header Files\ntd\n3ds</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\es\Certificate.h">
+      <Filter>Header Files\ntd\n3ds\es</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\es\ISigner.h">
+      <Filter>Header Files\ntd\n3ds\es</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\es\RsaSigner.h">
+      <Filter>Header Files\ntd\n3ds\es</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\es\Signature.h">
+      <Filter>Header Files\ntd\n3ds\es</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\es\Ticket.h">
+      <Filter>Header Files\ntd\n3ds\es</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ntd\n3ds\es\TitleMetaData.h">
+      <Filter>Header Files\ntd\n3ds\es</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
